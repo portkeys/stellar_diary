@@ -1,172 +1,194 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ApodResponse } from "@shared/schema";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+interface ApodData {
+  date: string;
+  explanation: string;
+  hdurl?: string;
+  media_type: string;
+  service_version: string;
+  title: string;
+  url: string;
+  copyright?: string;
+}
 
 const ApodSection = () => {
-  const [showFullExplanation, setShowFullExplanation] = useState(false);
-  
-  const { data: apod, isLoading, isError } = useQuery<ApodResponse>({
-    queryKey: ['/api/apod'],
+  const { toast } = useToast();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [dateParam, setDateParam] = useState<string | null>(null);
+
+  // Format the date for the API request (YYYY-MM-DD)
+  const formatDateForApi = (date: Date) => {
+    return format(date, "yyyy-MM-dd");
+  };
+
+  // Get APOD data
+  const { data: apodData, isLoading, isError, error } = useQuery<ApodData>({
+    queryKey: [dateParam ? `/api/apod?date=${dateParam}` : "/api/apod"],
+    refetchOnWindowFocus: false,
   });
-  
-  if (isLoading) {
-    return (
-      <section className="my-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-space font-bold">
-            <i className="fas fa-camera-retro text-stellar-gold mr-2"></i> NASA Astronomy Picture of the Day
-          </h2>
-          <Button variant="ghost" className="text-star-dim hover:text-star-white">
-            <i className="fas fa-calendar-alt mr-1"></i> Archive
-          </Button>
-        </div>
-        
-        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-          <div className="relative">
-            <Skeleton className="w-full h-[400px] md:h-[500px]" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="bg-space-blue-dark bg-opacity-90 backdrop-blur-sm p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <Skeleton className="h-6 w-2/3" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-                <Skeleton className="h-20 w-full mb-3" />
-                <div className="flex justify-between items-center">
-                  <Skeleton className="h-4 w-1/3" />
-                  <div className="flex space-x-2">
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-  
-  if (isError || !apod) {
-    return (
-      <section className="my-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-space font-bold">
-            <i className="fas fa-camera-retro text-stellar-gold mr-2"></i> NASA Astronomy Picture of the Day
-          </h2>
-        </div>
-        
-        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden p-6 text-center">
-          <div className="flex flex-col items-center">
-            <i className="fas fa-satellite-dish text-4xl text-nebula-pink mb-4"></i>
-            <h3 className="text-xl font-semibold mb-2">Unable to load today's astronomy picture</h3>
-            <p className="text-star-dim mb-4">There was an error connecting to the NASA APOD API. Please try again later.</p>
-            <Button 
-              variant="default" 
-              className="bg-cosmic-purple hover:bg-cosmic-purple-light"
-              onClick={() => window.location.reload()}
+
+  // Handle date select
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setDate(date);
+      setDateParam(formatDateForApi(date));
+    }
+  };
+
+  // Handle date reset
+  const handleResetDate = () => {
+    setDate(new Date());
+    setDateParam(null);
+    toast({
+      title: "Date Reset",
+      description: "Showing today's Astronomy Picture of the Day",
+    });
+  };
+
+  return (
+    <Card className="relative mt-12 bg-space-blue-dark bg-opacity-80 backdrop-blur-sm border-stellar-blue shadow-xl">
+      <CardHeader className="pb-4">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <CardTitle className="text-2xl text-stellar-gold">
+            <span className="mr-2">
+              <i className="fas fa-camera-retro"></i>
+            </span>
+            NASA Astronomy Picture of the Day
+          </CardTitle>
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-stellar-blue text-white hover:bg-stellar-blue/20"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-space-blue-dark border-stellar-blue">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  className="bg-space-blue-dark text-white"
+                  classNames={{
+                    day_selected: "bg-nebula-pink text-white",
+                    day_today: "bg-stellar-gold/20 text-stellar-gold",
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              onClick={handleResetDate}
+              className="text-white hover:bg-nebula-pink/20"
+              title="Show today's APOD"
             >
-              <i className="fas fa-sync-alt mr-2"></i> Retry
+              <i className="fas fa-rotate-left"></i>
             </Button>
           </div>
         </div>
-      </section>
-    );
-  }
-  
-  // Format date for display
-  const formattedDate = new Date(apod.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  
-  // Truncate explanation if it's too long
-  const shouldTruncate = apod.explanation.length > 300;
-  const truncatedExplanation = shouldTruncate && !showFullExplanation 
-    ? apod.explanation.substring(0, 300) + '...' 
-    : apod.explanation;
-  
-  return (
-    <section className="my-10">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-camera-retro text-stellar-gold mr-2"></i> NASA Astronomy Picture of the Day
-        </h2>
-        <Button variant="ghost" className="text-star-dim hover:text-star-white">
-          <i className="fas fa-calendar-alt mr-1"></i> Archive
-        </Button>
-      </div>
-      
-      <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-        <div className="relative">
-          {apod.media_type === 'image' ? (
-            <img 
-              src={apod.url} 
-              alt={apod.title} 
-              className="w-full h-[400px] md:h-[500px] object-cover"
-            />
-          ) : apod.media_type === 'video' ? (
-            <div className="relative w-full h-[400px] md:h-[500px]">
-              <iframe 
-                src={apod.url} 
-                title={apod.title}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          ) : (
-            <div className="w-full h-[400px] md:h-[500px] flex items-center justify-center bg-space-blue-dark">
-              <p className="text-lg text-star-dim">Media type not supported</p>
-            </div>
-          )}
-          
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="bg-space-blue-dark bg-opacity-90 backdrop-blur-sm p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-xl text-space font-semibold text-stellar-gold">
-                  {apod.title}
-                </h3>
-                <span className="text-star-dim text-sm">{formattedDate}</span>
-              </div>
-              <p className="text-sm mb-3">
-                {truncatedExplanation}
-                {shouldTruncate && (
-                  <button 
-                    className="text-nebula-pink hover:text-opacity-80 ml-1"
-                    onClick={() => setShowFullExplanation(!showFullExplanation)}
-                  >
-                    {showFullExplanation ? 'Show less' : 'Read more'}
-                  </button>
+      </CardHeader>
+      <CardContent className="pb-2">
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-[300px] w-full bg-stellar-blue/20" />
+            <Skeleton className="h-4 w-2/3 bg-stellar-blue/20" />
+            <Skeleton className="h-4 w-full bg-stellar-blue/20" />
+            <Skeleton className="h-4 w-full bg-stellar-blue/20" />
+          </div>
+        ) : isError ? (
+          <div className="p-4 bg-red-500/20 border border-red-500 rounded-md text-center">
+            <p className="text-red-300 font-medium">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              Failed to load NASA APOD:
+            </p>
+            <p className="text-white/80">
+              {(error as Error)?.message || "Please try again later."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {apodData?.media_type === "image" ? (
+              <div className="relative">
+                <a
+                  href={apodData.hdurl || apodData.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:opacity-95 transition-opacity"
+                >
+                  <img
+                    src={apodData.url}
+                    alt={apodData.title}
+                    className="w-full h-auto max-h-[500px] object-cover rounded-md shadow-lg"
+                  />
+                </a>
+                {apodData.copyright && (
+                  <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs text-white/90">
+                    © {apodData.copyright.trim()}
+                  </div>
                 )}
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-star-dim">
-                  {apod.copyright ? `© ${apod.copyright} - ` : ''}Image Credit & Copyright: NASA
-                </span>
-                <div className="flex space-x-2">
-                  <button className="text-nebula-pink hover:text-opacity-80">
-                    <i className="fas fa-heart"></i>
-                  </button>
-                  <button className="text-stellar-gold hover:text-opacity-80">
-                    <i className="fas fa-share-alt"></i>
-                  </button>
-                  <button className="text-star-white hover:text-opacity-80">
-                    <i className="fas fa-info-circle"></i>
-                  </button>
-                </div>
               </div>
+            ) : apodData?.media_type === "video" ? (
+              <div className="relative aspect-video">
+                <iframe
+                  src={apodData.url}
+                  title={apodData.title}
+                  className="w-full h-[400px] rounded-md shadow-lg"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            ) : null}
+
+            <div>
+              <h3 className="text-xl font-semibold text-stellar-gold">
+                {apodData?.title}
+              </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                {apodData?.date}{" "}
+                {apodData?.copyright && `• © ${apodData.copyright.trim()}`}
+              </p>
+              <p className="mt-3 text-white/90 leading-relaxed">
+                {apodData?.explanation}
+              </p>
             </div>
           </div>
+        )}
+      </CardContent>
+      <CardFooter className="text-gray-400 text-sm pt-2">
+        <div className="flex justify-between items-center w-full">
+          <span>
+            <span className="font-medium text-white/80">Source:</span> NASA
+            Astronomy Picture of the Day
+          </span>
+          <a
+            href="https://apod.nasa.gov/apod/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-nebula-pink hover:text-nebula-pink/80"
+          >
+            Visit APOD Website <i className="fas fa-external-link-alt ml-1"></i>
+          </a>
         </div>
-      </div>
-    </section>
+      </CardFooter>
+    </Card>
   );
 };
 

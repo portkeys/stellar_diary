@@ -1,1 +1,1 @@
-# This file makes the data directory a Python package
+# Data models and storage

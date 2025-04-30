@@ -1,6 +1,10 @@
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import List, Dict, Optional, Union, Any
 
+# Define celestial object types
+celestial_object_types = ["planet", "galaxy", "nebula", "star_cluster", "double_star", "moon", "other"]
+
+# Define ApodResponse type for NASA API
 class ApodResponse(Dict[str, Any]):
     """
     Astronomy Picture of the Day response model
@@ -26,9 +30,9 @@ class User:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email
+            "id": self.id,
+            "username": self.username,
+            "email": self.email
         }
 
 class CelestialObject:
@@ -66,20 +70,20 @@ class CelestialObject:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'name': self.name,
-            'type': self.type,
-            'description': self.description,
-            'coordinates': self.coordinates,
-            'month': self.month,
-            'bestViewingTime': self.best_viewing_time,
-            'imageUrl': self.image_url,
-            'visibilityRating': self.visibility_rating,
-            'information': self.information,
-            'constellation': self.constellation,
-            'magnitude': self.magnitude,
-            'hemisphere': self.hemisphere,
-            'recommendedEyepiece': self.recommended_eyepiece
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "description": self.description,
+            "coordinates": self.coordinates,
+            "month": self.month,
+            "bestViewingTime": self.best_viewing_time,
+            "imageUrl": self.image_url,
+            "visibilityRating": self.visibility_rating,
+            "information": self.information,
+            "constellation": self.constellation,
+            "magnitude": self.magnitude,
+            "hemisphere": self.hemisphere,
+            "recommendedEyepiece": self.recommended_eyepiece
         }
 
 class Observation:
@@ -103,13 +107,13 @@ class Observation:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'userId': self.user_id,
-            'objectId': self.object_id,
-            'dateAdded': self.date_added.isoformat() if self.date_added else None,
-            'isObserved': self.is_observed,
-            'observationNotes': self.observation_notes,
-            'plannedDate': self.planned_date
+            "id": self.id,
+            "userId": self.user_id,
+            "objectId": self.object_id,
+            "dateAdded": self.date_added.isoformat(),
+            "isObserved": self.is_observed,
+            "observationNotes": self.observation_notes,
+            "plannedDate": self.planned_date
         }
 
 class MonthlyGuide:
@@ -133,13 +137,13 @@ class MonthlyGuide:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'month': self.month,
-            'year': self.year,
-            'headline': self.headline,
-            'content': self.content,
-            'hemisphere': self.hemisphere,
-            'featuredObjects': self.featured_objects
+            "id": self.id,
+            "month": self.month,
+            "year": self.year,
+            "headline": self.headline,
+            "content": self.content,
+            "hemisphere": self.hemisphere,
+            "featuredObjects": self.featured_objects
         }
 
 class TelescopeTip:
@@ -159,20 +163,9 @@ class TelescopeTip:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'title': self.title,
-            'content': self.content,
-            'category': self.category,
-            'imageUrl': self.image_url
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "category": self.category,
+            "imageUrl": self.image_url
         }
-
-# Available celestial object types for filtering
-celestial_object_types = [
-    'planet', 
-    'galaxy', 
-    'nebula', 
-    'star_cluster', 
-    'double_star', 
-    'moon', 
-    'other'
-]

@@ -1,106 +1,163 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { TelescopeTip } from "@shared/schema";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Link } from "wouter";
+
+interface TelescopeTip {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  imageUrl?: string;
+}
 
 const TelescopeTips = () => {
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  // Get telescope tips
   const { data: tips, isLoading, isError } = useQuery<TelescopeTip[]>({
-    queryKey: ['/api/telescope-tips'],
+    queryKey: [activeCategory === "all" ? "/api/telescope-tips" : `/api/telescope-tips?category=${activeCategory}`],
+    refetchOnWindowFocus: false,
   });
-  
-  if (isLoading) {
-    return (
-      <section className="my-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-space font-bold">
-            <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Tips
-          </h2>
-          <Button variant="ghost" className="text-star-dim hover:text-star-white">
-            View All Tips
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2].map((_, index) => (
-            <div key={index} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-              <Skeleton className="w-full h-40" />
-              <div className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-16 w-full mb-3" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-  
-  if (isError || !tips || tips.length === 0) {
-    return (
-      <section className="my-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl text-space font-bold">
-            <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Tips
-          </h2>
-        </div>
-        
-        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden p-6 text-center">
-          <div className="flex flex-col items-center">
-            <i className="fas fa-exclamation-triangle text-4xl text-nebula-pink mb-4"></i>
-            <h3 className="text-xl font-semibold mb-2">Unable to load telescope tips</h3>
-            <p className="text-star-dim mb-4">There was an error loading the telescope tips. Please try again later.</p>
-            <Button 
-              variant="default" 
-              className="bg-cosmic-purple hover:bg-cosmic-purple-light"
-              onClick={() => window.location.reload()}
-            >
-              <i className="fas fa-sync-alt mr-2"></i> Retry
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-  
-  // Display at most 2 tips
-  const displayTips = tips.slice(0, 2);
-  
+
+  // Get unique categories from tips
+  const categories = tips ? 
+    Array.from(new Set(tips.map(tip => tip.category))) : 
+    [];
+
+  // Handle category change
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+  };
+
   return (
-    <section className="my-16">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Tips
-        </h2>
-        <Button variant="ghost" className="text-star-dim hover:text-star-white">
-          View All Tips
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {displayTips.map(tip => (
-          <div key={tip.id} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-            <div className="relative">
-              <img 
-                src={tip.imageUrl} 
-                alt={tip.title} 
-                className="w-full h-40 object-cover"
-              />
-            </div>
-            <div className="p-4">
-              <h3 className="text-lg text-space font-semibold mb-2">{tip.title}</h3>
-              <p className="text-sm text-star-dim mb-3">
-                {tip.content}
-              </p>
-              <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
-                Read Guide <i className="fas fa-arrow-right ml-1"></i>
-              </Button>
-            </div>
+    <Card className="relative mt-12 bg-space-blue-dark bg-opacity-80 backdrop-blur-sm border-stellar-blue shadow-xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-2xl text-stellar-gold">
+          <span className="mr-2">
+            <i className="fas fa-lightbulb"></i>
+          </span>
+          Telescope Tips
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full max-w-md mx-auto bg-stellar-blue/20" />
+            <Skeleton className="h-24 w-full bg-stellar-blue/20" />
+            <Skeleton className="h-24 w-full bg-stellar-blue/20" />
           </div>
-        ))}
-      </div>
-    </section>
+        ) : isError ? (
+          <div className="p-4 bg-red-500/20 border border-red-500 rounded-md text-center">
+            <p className="text-red-300 font-medium">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              Failed to load telescope tips
+            </p>
+            <p className="text-white/80">
+              Please try again later or check your connection.
+            </p>
+          </div>
+        ) : tips && tips.length > 0 ? (
+          <>
+            <Tabs 
+              defaultValue="all" 
+              value={activeCategory}
+              onValueChange={handleCategoryChange}
+              className="w-full"
+            >
+              <TabsList className="mb-6 w-full max-w-md mx-auto bg-space-blue/60">
+                <TabsTrigger 
+                  value="all"
+                  className="data-[state=active]:bg-nebula-pink data-[state=active]:text-white"
+                >
+                  All Tips
+                </TabsTrigger>
+                {categories.map((category) => (
+                  <TabsTrigger 
+                    key={category} 
+                    value={category}
+                    className="capitalize data-[state=active]:bg-nebula-pink data-[state=active]:text-white"
+                  >
+                    {category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {tips.map((tip) => (
+                  <div
+                    key={tip.id}
+                    className="bg-space-blue/50 border border-stellar-blue/30 rounded-md p-4 hover:border-stellar-blue/60 transition-colors"
+                  >
+                    <div className="flex">
+                      {tip.imageUrl && (
+                        <div className="w-16 h-16 rounded-md overflow-hidden mr-3 flex-shrink-0">
+                          <img 
+                            src={tip.imageUrl} 
+                            alt={tip.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-lg font-medium text-stellar-gold mb-1">
+                          {tip.title}
+                        </h4>
+                        <div className="text-white/90 text-sm">{tip.content}</div>
+                        <div className="mt-2">
+                          <Badge className="capitalize bg-nebula-pink/20 text-nebula-pink/90 hover:bg-nebula-pink/30">
+                            {tip.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Tabs>
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-3">
+              <i className="fas fa-file-circle-question text-4xl"></i>
+            </div>
+            <h3 className="text-stellar-gold font-medium mb-1">
+              No tips available
+            </h3>
+            <p className="text-white/70">
+              Check back later for helpful telescope usage tips
+            </p>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="justify-end pt-2">
+        <Link href="/learn">
+          <Button 
+            variant="link" 
+            className="text-nebula-pink hover:text-nebula-pink/80"
+          >
+            View all learning resources 
+            <i className="fas fa-arrow-right ml-2"></i>
+          </Button>
+        </Link>
+      </CardFooter>
+    </Card>
   );
 };
+
+// Adding Badge component to avoid import issues
+const Badge = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <span className={`inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium ${className}`}>
+    {children}
+  </span>
+);
 
 export default TelescopeTips;

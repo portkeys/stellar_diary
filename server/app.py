@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
@@ -18,124 +18,6 @@ load_dotenv()
 app = Flask(__name__)
 # Enable CORS for all routes and origins
 CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-# Root route for API documentation
-@app.route('/')
-def index():
-    return """
-    <html>
-        <head>
-            <title>StellarView API</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
-                }
-                h1 { color: #4a69bd; }
-                h2 { color: #6a89cc; margin-top: 30px; }
-                pre {
-                    background-color: #f5f5f5;
-                    padding: 15px;
-                    border-radius: 5px;
-                    overflow-x: auto;
-                }
-                .endpoint {
-                    margin-bottom: 10px;
-                    padding: 10px;
-                    border-left: 3px solid #4a69bd;
-                    background-color: rgba(74, 105, 189, 0.1);
-                }
-                .method {
-                    display: inline-block;
-                    padding: 2px 6px;
-                    margin-right: 8px;
-                    border-radius: 4px;
-                    color: white;
-                    font-weight: bold;
-                }
-                .get { background-color: #2ecc71; }
-                .post { background-color: #3498db; }
-                .patch { background-color: #f39c12; }
-                .delete { background-color: #e74c3c; }
-            </style>
-        </head>
-        <body>
-            <h1>StellarView API Documentation</h1>
-            <p>
-                This is the backend API for the StellarView astronomy application.
-                All endpoints are prefixed with <code>/api</code>.
-            </p>
-            
-            <h2>NASA APOD</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/apod</code>
-                <p>Get the Astronomy Picture of the Day</p>
-                <p>Optional query parameter: <code>date</code> (YYYY-MM-DD format)</p>
-            </div>
-            
-            <h2>Celestial Objects</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/celestial-objects</code>
-                <p>Get all celestial objects</p>
-                <p>Optional query parameters: <code>type</code>, <code>month</code>, <code>hemisphere</code></p>
-            </div>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/celestial-objects/:id</code>
-                <p>Get a specific celestial object by ID</p>
-            </div>
-            <div class="endpoint">
-                <span class="method post">POST</span> <code>/api/celestial-objects</code>
-                <p>Create a new custom celestial object</p>
-            </div>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/celestial-object-types</code>
-                <p>Get list of valid celestial object types</p>
-            </div>
-            
-            <h2>Monthly Guides</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/monthly-guide</code>
-                <p>Get the monthly viewing guide</p>
-                <p>Optional query parameters: <code>month</code>, <code>year</code>, <code>hemisphere</code></p>
-            </div>
-            
-            <h2>Observations</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/observations</code>
-                <p>Get the user's observation list</p>
-            </div>
-            <div class="endpoint">
-                <span class="method post">POST</span> <code>/api/observations</code>
-                <p>Add a celestial object to the observation list</p>
-            </div>
-            <div class="endpoint">
-                <span class="method patch">PATCH</span> <code>/api/observations/:id</code>
-                <p>Update an observation (mark as observed, add notes)</p>
-            </div>
-            <div class="endpoint">
-                <span class="method delete">DELETE</span> <code>/api/observations/:id</code>
-                <p>Remove an object from the observation list</p>
-            </div>
-            
-            <h2>Telescope Tips</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/telescope-tips</code>
-                <p>Get telescope usage tips</p>
-                <p>Optional query parameter: <code>category</code></p>
-            </div>
-            
-            <h2>API Info</h2>
-            <div class="endpoint">
-                <span class="method get">GET</span> <code>/api/info</code>
-                <p>Get information about the API configuration</p>
-            </div>
-        </body>
-    </html>
-    """
 
 # Initialize storage
 from python_server.data.storage import storage
@@ -411,4 +293,4 @@ def get_api_info():
         }), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)))

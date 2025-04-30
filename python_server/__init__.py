@@ -1,1 +1,1 @@
-# This file makes the python_server directory a Python package
+# StellarView Python Backend package

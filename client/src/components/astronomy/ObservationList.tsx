@@ -1,223 +1,243 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Observation } from "@shared/schema";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Observation } from "@shared/schema";
 
-interface EnhancedObservation extends Observation {
-  celestialObject?: any; // Using any since it's dynamically added by the server
+interface ObservationWithObject extends Observation {
+  celestialObject: {
+    id: number;
+    name: string;
+    type: string;
+    description: string;
+    imageUrl?: string;
+    visibilityRating?: string;
+  };
 }
 
 const ObservationList = () => {
   const { toast } = useToast();
-  
-  const { data: observations, isLoading, isError } = useQuery<EnhancedObservation[]>({
-    queryKey: ['/api/observations'],
+
+  // Get user observations
+  const { data: observations, isLoading, isError } = useQuery<ObservationWithObject[]>({
+    queryKey: ["/api/observations"],
+    refetchOnWindowFocus: false,
   });
-  
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest('DELETE', `/api/observations/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
-      toast({
-        title: "Observation removed",
-        description: "The object has been removed from your observation list.",
-        variant: "default",
+
+  // Toggle observation status
+  const toggleObservation = useMutation({
+    mutationFn: async ({ id, isObserved }: { id: number; isObserved: boolean }) => {
+      await apiRequest("PATCH", `/api/observations/${id}`, {
+        isObserved,
       });
     },
-    onError: (error) => {
-      toast({
-        title: "Failed to remove observation",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  const markAsObservedMutation = useMutation({
-    mutationFn: async ({ id, isObserved }: { id: number, isObserved: boolean }) => {
-      await apiRequest('PATCH', `/api/observations/${id}`, { isObserved });
-    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/observations"] });
       toast({
         title: "Observation updated",
-        description: "Your observation status has been updated.",
-        variant: "default",
+        description: "Your observation list has been updated",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
-        title: "Failed to update observation",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        title: "Error",
+        description: "Failed to update observation status",
         variant: "destructive",
       });
-    }
+    },
   });
+
+  // Delete observation
+  const deleteObservation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/observations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/observations"] });
+      toast({
+        title: "Observation removed",
+        description: "Object has been removed from your observation list",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove observation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if the user has any observed objects
+  const hasObserved = observations?.some((obs) => obs.isObserved) || false;
   
-  const handleRemove = (id: number) => {
-    deleteMutation.mutate(id);
-  };
+  // Count of total objects
+  const totalObjects = observations?.length || 0;
   
-  const handleToggleObserved = (id: number, currentStatus: boolean) => {
-    markAsObservedMutation.mutate({ id, isObserved: !currentStatus });
-  };
-  
+  // Count of observed objects
+  const observedCount = observations?.filter((obs) => obs.isObserved).length || 0;
+
   return (
-    <section className="my-16">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Observation List
-        </h2>
-        <Link href="/monthly-guide">
-          <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
-            <i className="fas fa-plus mr-1"></i> Add Object
-          </Button>
-        </Link>
-      </div>
-      
-      <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-        <div className="p-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <Skeleton className="h-6 w-40" />
-                <div className="flex space-x-3">
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-              </div>
-              {[1, 2, 3].map((_, index) => (
-                <div key={index} className="bg-space-blue-light rounded-lg p-3 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Skeleton className="w-12 h-12 rounded-md mr-3" />
-                    <div>
-                      <Skeleton className="h-5 w-40 mb-2" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                    <Skeleton className="h-6 w-6 rounded-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : isError ? (
-            <div className="text-center py-8">
-              <i className="fas fa-exclamation-triangle text-4xl text-nebula-pink mb-4"></i>
-              <h3 className="text-xl font-semibold mb-2">Error loading your observation list</h3>
-              <p className="text-star-dim mb-4">
-                We encountered a problem while loading your observation list. Please try again later.
-              </p>
-              <Button 
-                variant="default" 
-                className="bg-cosmic-purple hover:bg-cosmic-purple-light"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/observations'] })}
-              >
-                <i className="fas fa-sync-alt mr-2"></i> Retry
-              </Button>
-            </div>
-          ) : observations && observations.length > 0 ? (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center space-x-3">
-                  <span className="text-star-white font-medium">{observations.length} objects in your list</span>
-                  <div className="flex items-center text-xs text-star-dim">
-                    <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span> 
-                    Observed: {observations.filter(obs => obs.isObserved).length}
-                  </div>
-                </div>
-                <div className="flex space-x-3 text-sm">
-                  <button className="text-star-dim hover:text-star-white">
-                    <i className="fas fa-print mr-1"></i> Print List
-                  </button>
-                  <button className="text-star-dim hover:text-star-white">
-                    <i className="fas fa-sort mr-1"></i> Sort
-                  </button>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                {observations.map(observation => (
-                  <div key={observation.id} className="bg-space-blue-light rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <img 
-                        src={observation.celestialObject?.imageUrl} 
-                        alt={observation.celestialObject?.name} 
-                        className="w-12 h-12 rounded-md object-cover mr-3" 
-                      />
-                      <div>
-                        <h4 className="text-space font-medium">{observation.celestialObject?.name}</h4>
-                        <div className="flex items-center text-xs text-star-dim">
-                          <span className="mr-3">
-                            <i className={`fas fa-${
-                              observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
-                              observation.celestialObject?.type === 'nebula' ? 'meteor' : 
-                              observation.celestialObject?.type === 'planet' ? 'globe' : 
-                              'star'
-                            } mr-1`}></i> 
-                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                          </span>
-                          <span>
-                            <i className="fas fa-calendar mr-1"></i> Best: {observation.celestialObject?.month}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        className={`${observation.isObserved ? 'text-green-500 hover:text-green-400' : 'text-star-dim hover:text-green-500'}`}
-                        onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
-                        title={observation.isObserved ? "Mark as not observed" : "Mark as observed"}
-                      >
-                        <i className={`${observation.isObserved ? 'fas' : 'far'} fa-check-circle text-xl`}></i>
-                      </button>
-                      <button 
-                        className="text-star-dim hover:text-stellar-gold"
-                        title="View details"
-                      >
-                        <i className="fas fa-info-circle text-xl"></i>
-                      </button>
-                      <button 
-                        className="text-star-dim hover:text-nebula-pink"
-                        onClick={() => handleRemove(observation.id)}
-                        title="Remove from list"
-                      >
-                        <i className="fas fa-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <img 
-                src="https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=300&h=200" 
-                alt="Empty space" 
-                className="mx-auto h-40 object-cover rounded-lg opacity-50 mb-4" 
-              />
-              <h3 className="text-xl text-space font-semibold mb-2">Your observation list is empty</h3>
-              <p className="text-star-dim mb-4 max-w-md mx-auto">
-                Start adding celestial objects from the monthly guide or search for specific targets to build your personal observation plan.
-              </p>
-              <Link href="/monthly-guide">
-                <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 px-6 py-2 rounded-lg font-medium">
-                  Browse Recommendations
-                </Button>
-              </Link>
+    <Card className="relative mt-12 bg-space-blue-dark bg-opacity-80 backdrop-blur-sm border-stellar-blue shadow-xl">
+      <CardHeader className="pb-4">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <CardTitle className="text-2xl text-stellar-gold">
+            <span className="mr-2">
+              <i className="fas fa-list-check"></i>
+            </span>
+            My Observation List
+          </CardTitle>
+          {!isLoading && !isError && (
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-space-blue/50 text-white border-stellar-blue">
+                {observedCount}/{totalObjects} Observed
+              </Badge>
             </div>
           )}
         </div>
-      </div>
-    </section>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-5 w-5 rounded-sm bg-stellar-blue/20" />
+                <Skeleton className="h-12 flex-grow bg-stellar-blue/20" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="p-4 bg-red-500/20 border border-red-500 rounded-md text-center">
+            <p className="text-red-300 font-medium">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              Failed to load your observation list
+            </p>
+            <p className="text-white/80">
+              Please try again later or check your connection.
+            </p>
+          </div>
+        ) : observations && observations.length > 0 ? (
+          <div className="space-y-3">
+            {observations.map((observation) => (
+              <div 
+                key={observation.id}
+                className={`p-3 rounded-md border ${
+                  observation.isObserved 
+                    ? 'bg-green-900/20 border-green-600/40' 
+                    : 'bg-space-blue/30 border-stellar-blue/30 hover:border-stellar-blue/60'
+                } transition-colors`}
+              >
+                <div className="flex items-center">
+                  <div className="mr-3">
+                    <Checkbox 
+                      id={`obs-${observation.id}`}
+                      checked={observation.isObserved}
+                      onCheckedChange={(checked) => {
+                        toggleObservation.mutate({
+                          id: observation.id,
+                          isObserved: checked as boolean,
+                        });
+                      }}
+                      className={`${observation.isObserved ? 'border-green-400 text-green-400' : 'border-stellar-blue text-stellar-gold'}`}
+                    />
+                  </div>
+                  <div className="flex-grow mr-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-stellar-gold">
+                        {observation.celestialObject.name}
+                      </span>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs px-1 py-0 h-5 capitalize bg-nebula-pink/20 border-nebula-pink/40 text-nebula-pink/90"
+                      >
+                        {observation.celestialObject.type.replace('_', ' ')}
+                      </Badge>
+                      {observation.isObserved && (
+                        <Badge className="bg-green-600/90 hover:bg-green-600 text-xs px-1.5 py-0 h-5">
+                          <i className="fas fa-check text-xs mr-1"></i> Observed
+                        </Badge>
+                      )}
+                    </div>
+                    {observation.plannedDate && (
+                      <p className="text-xs text-white/70 mt-1">
+                        <i className="far fa-calendar-alt mr-1"></i>
+                        Planned: {observation.plannedDate}
+                      </p>
+                    )}
+                    {observation.observationNotes && (
+                      <p className="text-sm text-white/80 mt-1 italic">
+                        "{observation.observationNotes}"
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full text-gray-400 hover:text-red-400 hover:bg-red-500/20"
+                    onClick={() => deleteObservation.mutate(observation.id)}
+                  >
+                    <i className="fas fa-times"></i>
+                    <span className="sr-only">Remove</span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-3">
+              <i className="fas fa-telescope text-4xl"></i>
+            </div>
+            <h3 className="text-stellar-gold font-medium mb-1">
+              Your observation list is empty
+            </h3>
+            <p className="text-white/70 mb-4">
+              Start adding celestial objects you want to observe
+            </p>
+            <Link href="/monthly-guide">
+              <Button className="bg-nebula-pink hover:bg-nebula-pink/90">
+                Explore Objects to Observe
+              </Button>
+            </Link>
+          </div>
+        )}
+      </CardContent>
+      {hasObserved && (
+        <CardFooter className="pt-0">
+          <div className="w-full bg-gradient-to-r from-stellar-gold/20 to-nebula-pink/20 rounded-md p-3 mt-2">
+            <div className="flex items-center gap-2">
+              <div className="text-yellow-400 text-lg">
+                <i className="fas fa-trophy"></i>
+              </div>
+              <div>
+                <p className="text-white font-medium">
+                  Great job! You've observed {observedCount} celestial objects.
+                </p>
+                <p className="text-white/70 text-sm">
+                  Keep exploring the night sky to earn more achievements.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardFooter>
+      )}
+      <CardFooter className="justify-end pt-2">
+        <Link href="/my-observations">
+          <Button 
+            variant="link" 
+            className="text-nebula-pink hover:text-nebula-pink/80"
+          >
+            Manage all observations 
+            <i className="fas fa-arrow-right ml-2"></i>
+          </Button>
+        </Link>
+      </CardFooter>
+    </Card>
   );
 };
 

@@ -1,23 +1,21 @@
-from typing import Dict, List, Any, Optional
 from datetime import datetime
-from python_server.data.models import (
-    User, CelestialObject, Observation, MonthlyGuide, TelescopeTip
-)
+from typing import List, Dict, Optional, Union, Any
+from .models import User, CelestialObject, Observation, MonthlyGuide, TelescopeTip
 
 class MemStorage:
     def __init__(self):
-        self.users = {}  # id -> User
-        self.celestial_objects = {}  # id -> CelestialObject
-        self.observations = {}  # id -> Observation
-        self.monthly_guides = {}  # id -> MonthlyGuide
-        self.telescope_tips = {}  # id -> TelescopeTip
+        self.users = {}
+        self.celestial_objects = {}
+        self.observations = {}
+        self.monthly_guides = {}
+        self.telescope_tips = {}
         
-        # Counter for ID generation
-        self.user_id_counter = 1
-        self.object_id_counter = 1
-        self.observation_id_counter = 1
-        self.guide_id_counter = 1
-        self.tip_id_counter = 1
+        # Counters for IDs
+        self.user_current_id = 0
+        self.object_current_id = 0
+        self.observation_current_id = 0
+        self.guide_current_id = 0
+        self.tip_current_id = 0
     
     # User operations
     def get_user(self, id: int) -> Optional[User]:
@@ -30,20 +28,20 @@ class MemStorage:
         return None
     
     def create_user(self, user_data: Dict[str, Any]) -> User:
-        id = self.user_id_counter
-        self.user_id_counter += 1
+        self.user_current_id += 1
+        id = self.user_current_id
         
         user = User(
             id=id,
-            username=user_data['username'],
-            email=user_data['email'],
-            password_hash=user_data['passwordHash']
+            username=user_data.get('username', ''),  # Default empty string
+            email=user_data.get('email', ''),  # Default empty string 
+            password_hash=user_data.get('passwordHash', '')  # Default empty string
         )
         
         self.users[id] = user
         return user
     
-    # Celestial Object operations
+    # Celestial object operations
     def get_celestial_object(self, id: int) -> Optional[CelestialObject]:
         return self.celestial_objects.get(id)
     
@@ -60,34 +58,29 @@ class MemStorage:
         return [obj for obj in self.celestial_objects.values() if obj.hemisphere == hemisphere]
     
     def create_celestial_object(self, object_data: Dict[str, Any]) -> CelestialObject:
-        id = self.object_id_counter
-        self.object_id_counter += 1
+        self.object_current_id += 1
+        id = self.object_current_id
         
-        # Convert camelCase to snake_case
-        best_viewing_time = object_data.get('bestViewingTime')
-        image_url = object_data.get('imageUrl')
-        visibility_rating = object_data.get('visibilityRating')
-        recommended_eyepiece = object_data.get('recommendedEyepiece')
-        
-        obj = CelestialObject(
+        # Convert camelCase keys to snake_case for our Python model
+        celestial_object = CelestialObject(
             id=id,
-            name=object_data['name'],
-            type=object_data['type'],
-            description=object_data['description'],
-            coordinates=object_data['coordinates'],
+            name=object_data.get('name', ''),
+            type=object_data.get('type', ''),
+            description=object_data.get('description', ''),
+            coordinates=object_data.get('coordinates', ''),
             month=object_data.get('month'),
-            best_viewing_time=best_viewing_time,
-            image_url=image_url,
-            visibility_rating=visibility_rating,
+            best_viewing_time=object_data.get('bestViewingTime'),
+            image_url=object_data.get('imageUrl'),
+            visibility_rating=object_data.get('visibilityRating'),
             information=object_data.get('information'),
             constellation=object_data.get('constellation'),
             magnitude=object_data.get('magnitude'),
             hemisphere=object_data.get('hemisphere'),
-            recommended_eyepiece=recommended_eyepiece
+            recommended_eyepiece=object_data.get('recommendedEyepiece')
         )
         
-        self.celestial_objects[id] = obj
-        return obj
+        self.celestial_objects[id] = celestial_object
+        return celestial_object
     
     # Observation operations
     def get_observation(self, id: int) -> Optional[Observation]:
@@ -97,39 +90,29 @@ class MemStorage:
         return [obs for obs in self.observations.values() if obs.user_id == user_id]
     
     def create_observation(self, observation_data: Dict[str, Any]) -> Observation:
-        id = self.observation_id_counter
-        self.observation_id_counter += 1
-        
-        # Convert camelCase to snake_case
-        user_id = observation_data.get('userId', 1)  # Default to 1 if not provided
-        object_id = observation_data.get('objectId', 1)  # Default to 1 if not provided
-        is_observed = observation_data.get('isObserved', False)
-        observation_notes = observation_data.get('observationNotes')
-        planned_date = observation_data.get('plannedDate')
-        
-        # Ensure user_id and object_id are integers
-        user_id = int(user_id) if user_id is not None else 1
-        object_id = int(object_id) if object_id is not None else 1
+        self.observation_current_id += 1
+        id = self.observation_current_id
+        date_added = datetime.now()
         
         observation = Observation(
             id=id,
-            user_id=user_id,
-            object_id=object_id,
-            date_added=datetime.now(),
-            is_observed=is_observed,
-            observation_notes=observation_notes,
-            planned_date=planned_date
+            user_id=observation_data.get('userId', 1),  # Default to user ID 1
+            object_id=observation_data.get('objectId', 1),  # Default to object ID 1 
+            date_added=date_added,
+            is_observed=observation_data.get('isObserved', False),
+            observation_notes=observation_data.get('observationNotes'),
+            planned_date=observation_data.get('plannedDate')
         )
         
         self.observations[id] = observation
         return observation
     
     def update_observation(self, id: int, update_data: Dict[str, Any]) -> Optional[Observation]:
-        observation = self.get_observation(id)
+        observation = self.observations.get(id)
         if not observation:
             return None
         
-        # Update fields
+        # Update the fields
         if 'isObserved' in update_data:
             observation.is_observed = update_data['isObserved']
         
@@ -147,7 +130,7 @@ class MemStorage:
             return True
         return False
     
-    # Monthly Guide operations
+    # Monthly guide operations
     def get_monthly_guide(self, id: int) -> Optional[MonthlyGuide]:
         return self.monthly_guides.get(id)
     
@@ -156,7 +139,9 @@ class MemStorage:
         current_year = datetime.now().year
         
         for guide in self.monthly_guides.values():
-            if guide.month == current_month and guide.year == current_year and guide.hemisphere == hemisphere:
+            if (guide.month == current_month and 
+                guide.year == current_year and 
+                (guide.hemisphere == hemisphere or guide.hemisphere == 'both')):
                 return guide
         
         return None
@@ -165,26 +150,23 @@ class MemStorage:
         return list(self.monthly_guides.values())
     
     def create_monthly_guide(self, guide_data: Dict[str, Any]) -> MonthlyGuide:
-        id = self.guide_id_counter
-        self.guide_id_counter += 1
-        
-        # Convert camelCase to snake_case
-        featured_objects = guide_data.get('featuredObjects', [])
+        self.guide_current_id += 1
+        id = self.guide_current_id
         
         guide = MonthlyGuide(
             id=id,
-            month=guide_data['month'],
-            year=guide_data['year'],
-            headline=guide_data['headline'],
-            content=guide_data['content'],
-            hemisphere=guide_data['hemisphere'],
-            featured_objects=featured_objects
+            month=guide_data.get('month', ''),
+            year=guide_data.get('year', 2025),
+            headline=guide_data.get('headline', ''),
+            content=guide_data.get('content', ''),
+            hemisphere=guide_data.get('hemisphere', 'both'),
+            featured_objects=guide_data.get('featuredObjects', [])
         )
         
         self.monthly_guides[id] = guide
         return guide
     
-    # Telescope Tip operations
+    # Telescope tip operations
     def get_telescope_tip(self, id: int) -> Optional[TelescopeTip]:
         return self.telescope_tips.get(id)
     
@@ -195,18 +177,15 @@ class MemStorage:
         return [tip for tip in self.telescope_tips.values() if tip.category == category]
     
     def create_telescope_tip(self, tip_data: Dict[str, Any]) -> TelescopeTip:
-        id = self.tip_id_counter
-        self.tip_id_counter += 1
-        
-        # Convert camelCase to snake_case
-        image_url = tip_data.get('imageUrl')
+        self.tip_current_id += 1
+        id = self.tip_current_id
         
         tip = TelescopeTip(
             id=id,
-            title=tip_data['title'],
-            content=tip_data['content'],
-            category=tip_data['category'],
-            image_url=image_url
+            title=tip_data.get('title', ''),
+            content=tip_data.get('content', ''),
+            category=tip_data.get('category', ''),
+            image_url=tip_data.get('imageUrl')
         )
         
         self.telescope_tips[id] = tip

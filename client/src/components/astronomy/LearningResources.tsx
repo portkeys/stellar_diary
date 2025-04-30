@@ -1,75 +1,79 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 const LearningResources = () => {
+  // Learning resource data
+  const resources = [
+    {
+      id: 1,
+      title: "Getting Started with Your Dobsonian",
+      description: "Learn the basics of setting up and using your 8-inch Dobsonian telescope.",
+      icon: "fa-solid fa-telescope",
+      link: "/learn",
+      color: "from-stellar-gold to-orange-500",
+    },
+    {
+      id: 2,
+      title: "Understanding Celestial Coordinates",
+      description: "Master the coordinate systems used to locate objects in the night sky.",
+      icon: "fa-solid fa-compass",
+      link: "/learn",
+      color: "from-nebula-pink to-purple-600",
+    },
+    {
+      id: 3,
+      title: "Eyepiece Selection Guide",
+      description: "Choose the right eyepieces for different observing conditions and targets.",
+      icon: "fa-solid fa-glasses",
+      link: "/learn",
+      color: "from-blue-500 to-stellar-blue",
+    },
+  ];
+
   return (
-    <section className="my-16">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-graduation-cap text-stellar-gold mr-2"></i> Learning Resources
-        </h2>
-      </div>
-      
-      <div className="bg-gradient-to-br from-space-blue to-cosmic-purple rounded-xl shadow-xl overflow-hidden">
-        <div className="p-6 md:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="col-span-1 md:col-span-2">
-              <h3 className="text-xl text-space font-semibold mb-3">Deep Sky Objects</h3>
-              <p className="text-star-dim mb-4">
-                Deep sky objects include galaxies, nebulae, and star clusters located beyond our solar system. Your 8-inch Dobsonian telescope is powerful enough to reveal many of these celestial wonders.
-              </p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div className="bg-space-blue-dark bg-opacity-50 rounded-lg p-3">
-                  <h4 className="text-space font-medium mb-1">Galaxies</h4>
-                  <p className="text-sm text-star-dim">
-                    Collections of stars, gas, and dust bound together by gravity, ranging from spiral to elliptical shapes.
-                  </p>
+    <Card className="relative mt-12 bg-space-blue-dark bg-opacity-80 backdrop-blur-sm border-stellar-blue shadow-xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-2xl text-stellar-gold">
+          <span className="mr-2">
+            <i className="fas fa-graduation-cap"></i>
+          </span>
+          Learning Resources
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {resources.map((resource) => (
+            <div 
+              key={resource.id}
+              className="bg-space-blue/50 border border-stellar-blue/30 rounded-md overflow-hidden hover:border-stellar-blue/60 transition-all hover:shadow-lg"
+            >
+              <div className={`h-2 bg-gradient-to-r ${resource.color}`}></div>
+              <div className="p-5">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${resource.color} flex items-center justify-center text-white mb-3`}>
+                  <i className={resource.icon}></i>
                 </div>
-                <div className="bg-space-blue-dark bg-opacity-50 rounded-lg p-3">
-                  <h4 className="text-space font-medium mb-1">Nebulae</h4>
-                  <p className="text-sm text-star-dim">
-                    Clouds of gas and dust in space, often the birthplaces of stars or remnants of dying stars.
-                  </p>
-                </div>
-                <div className="bg-space-blue-dark bg-opacity-50 rounded-lg p-3">
-                  <h4 className="text-space font-medium mb-1">Star Clusters</h4>
-                  <p className="text-sm text-star-dim">
-                    Groups of stars that formed from the same molecular cloud, either loose (open) or densely packed (globular).
-                  </p>
-                </div>
-                <div className="bg-space-blue-dark bg-opacity-50 rounded-lg p-3">
-                  <h4 className="text-space font-medium mb-1">Double Stars</h4>
-                  <p className="text-sm text-star-dim">
-                    Two stars that appear close to each other in the sky, either physically bound or merely along the same line of sight.
-                  </p>
-                </div>
-              </div>
-              
-              <Link href="/learn">
-                <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
-                  Start Learning <i className="fas fa-arrow-right ml-1"></i>
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="relative h-60 md:h-auto overflow-hidden rounded-lg">
-              <img 
-                src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&h=600" 
-                alt="Galaxy in deep space" 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-space-blue-dark to-transparent opacity-60"></div>
-              <div className="absolute bottom-4 left-4 right-4">
-                <Button className="bg-space-blue-dark bg-opacity-75 backdrop-blur-sm w-full py-2 rounded-lg font-medium text-star-white">
-                  <i className="fas fa-play-circle mr-1"></i> Watch Tutorial
-                </Button>
+                <h3 className="text-lg font-medium text-stellar-gold mb-2">
+                  {resource.title}
+                </h3>
+                <p className="text-white/80 text-sm mb-4">
+                  {resource.description}
+                </p>
+                <Link href={resource.link}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-stellar-blue/50 text-white hover:bg-stellar-blue/20"
+                  >
+                    Learn More
+                    <i className="fas fa-arrow-right ml-2"></i>
+                  </Button>
+                </Link>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 };
 

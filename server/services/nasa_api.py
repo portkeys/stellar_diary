@@ -1,13 +1,15 @@
 import os
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
 from python_server.data.models import ApodResponse
 
 # Load environment variables
 load_dotenv()
 
-# Get NASA API key from environment variable or use demo key
+# Get NASA API key from environment or use DEMO_KEY
+# Note: DEMO_KEY is limited to 30 requests per hour, 50 per day
+# For production use, it's recommended to get a free API key from https://api.nasa.gov/
 NASA_API_KEY = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
 
 def fetch_apod(date: Optional[str] = None) -> ApodResponse:
