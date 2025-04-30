@@ -103,7 +103,10 @@ const ApodSection = () => {
   }
   
   // Format date for display
-  const formattedDate = new Date(apod.date).toLocaleDateString('en-US', {
+  // Make sure to display the date in correct format - April 30, 2025
+  const [year, month, day] = apod.date.split('-');
+  const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  const formattedDate = dateObj.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
