@@ -17,10 +17,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NASA APOD API endpoint
   app.get("/api/apod", async (req: Request, res: Response) => {
     try {
+      // If no date is specified, use today's date (NASA API defaults to today)
       const { date } = req.query;
+      
+      // Set cache control headers to ensure fresh data
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      
       const apodData = await fetchApod(date as string | undefined);
       res.json(apodData);
     } catch (error) {
+      console.error('NASA APOD API error:', error);
       res.status(500).json({ 
         message: `Failed to fetch APOD: ${error instanceof Error ? error.message : 'Unknown error'}` 
       });

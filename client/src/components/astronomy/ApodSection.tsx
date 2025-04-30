@@ -2,14 +2,37 @@ import { useQuery } from "@tanstack/react-query";
 import { ApodResponse } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const ApodSection = () => {
   const [showFullExplanation, setShowFullExplanation] = useState(false);
   
-  const { data: apod, isLoading, isError } = useQuery<ApodResponse>({
-    queryKey: ['/api/apod'],
+  // Get today's date in YYYY-MM-DD format for the cache key
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { data: apod, isLoading, isError, refetch } = useQuery<ApodResponse>({
+    queryKey: ['/api/apod', today],
+    staleTime: 1000 * 60 * 60, // 1 hour
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
+  
+  // Force refetch at midnight to get the new APOD
+  useEffect(() => {
+    // Calculate time until midnight
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    // Set up a timer to refetch at midnight
+    const timer = setTimeout(() => {
+      refetch();
+    }, timeUntilMidnight);
+    
+    return () => clearTimeout(timer);
+  }, [refetch]);
   
   if (isLoading) {
     return (
