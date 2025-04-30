@@ -1,5 +1,5 @@
 #!/bin/bash
 
-# We only need to start the Vite server since the proxy server is already running
+# Start the Vite development server
 echo "Starting Vite frontend server..."
 cd client && npx vite --port 5173 --host
