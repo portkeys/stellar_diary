@@ -7,14 +7,16 @@ import { useState, useEffect } from "react";
 const ApodSection = () => {
   const [showFullExplanation, setShowFullExplanation] = useState(false);
   
-  // Get today's date in YYYY-MM-DD format for the cache key
-  const today = new Date().toISOString().split('T')[0];
+  // Get current timestamp for cache busting
+  const timestamp = Date.now();
   
+  // Define query options with proper typing
   const { data: apod, isLoading, isError, refetch } = useQuery<ApodResponse>({
-    queryKey: ['/api/apod', today],
-    staleTime: 1000 * 60 * 60, // 1 hour
+    queryKey: ['/api/apod', timestamp], // Use timestamp to force new request
+    staleTime: 0, // Don't cache at all
     refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
   });
   
   // Force refetch at midnight to get the new APOD
@@ -119,9 +121,18 @@ const ApodSection = () => {
         <h2 className="text-2xl text-space font-bold">
           <i className="fas fa-camera-retro text-stellar-gold mr-2"></i> NASA Astronomy Picture of the Day
         </h2>
-        <Button variant="ghost" className="text-star-dim hover:text-star-white">
-          <i className="fas fa-calendar-alt mr-1"></i> Archive
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            className="text-star-dim hover:text-star-white"
+            onClick={() => refetch()}
+          >
+            <i className="fas fa-sync-alt mr-1"></i> Refresh
+          </Button>
+          <Button variant="ghost" className="text-star-dim hover:text-star-white">
+            <i className="fas fa-calendar-alt mr-1"></i> Archive
+          </Button>
+        </div>
       </div>
       
       <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">

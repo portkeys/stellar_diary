@@ -13,18 +13,35 @@ export async function fetchApod(date?: string): Promise<ApodResponse> {
   // Add API key
   url.searchParams.append('api_key', NASA_API_KEY);
   
-  // Add date parameter if provided
+  // Add date parameter if provided, or use today's date explicitly
   if (date) {
     url.searchParams.append('date', date);
+  } else {
+    // Force today's date (YYYY-MM-DD)
+    const today = new Date().toISOString().split('T')[0];
+    url.searchParams.append('date', today);
   }
   
-  const response = await fetch(url.toString());
+  // Add cache-busting parameter
+  url.searchParams.append('_t', Date.now().toString());
+  
+  console.log(`Fetching NASA APOD with URL: ${url.toString()}`);
+  
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
   
   if (!response.ok) {
     throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
   }
   
-  return await response.json() as ApodResponse;
+  const data = await response.json() as ApodResponse;
+  console.log(`NASA APOD response for date: ${data.date}`);
+  return data;
 }
 
 /**

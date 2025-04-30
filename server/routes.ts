@@ -20,8 +20,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no date is specified, use today's date (NASA API defaults to today)
       const { date } = req.query;
       
-      // Set cache control headers to ensure fresh data
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      // Set cache control headers to prevent caching
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       const apodData = await fetchApod(date as string | undefined);
       res.json(apodData);
