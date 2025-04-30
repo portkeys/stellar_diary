@@ -1,3 +1,3 @@
-# This file defines a new workflow for running the Python server
-name = "Start Python Server"
-command = "python run.py"
+# This file defines the workflow for starting the application
+name = "Start application"
+command = "./start.sh"
