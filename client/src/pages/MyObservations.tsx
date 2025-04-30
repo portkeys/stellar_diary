@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import AddObservationDialog from "@/components/astronomy/AddObservationDialog";
 
 interface EnhancedObservation extends Observation {
   celestialObject?: any;
@@ -18,6 +19,7 @@ const MyObservations = () => {
   const [selectedObservation, setSelectedObservation] = useState<EnhancedObservation | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [openAddDialog, setOpenAddDialog] = useState(false);
 
   // Fetch user's observation list
   const { data: observations, isLoading, isError } = useQuery<EnhancedObservation[]>({
@@ -121,11 +123,22 @@ const MyObservations = () => {
               Track your celestial observation goals and record your experiences
             </p>
           </div>
-          <Link href="/monthly-guide">
-            <Button className="bg-nebula-pink hover:bg-opacity-90 px-6 py-3 rounded-lg font-medium">
-              <i className="fas fa-plus mr-2"></i> Add New Objects
+          <div className="flex gap-2">
+            <Button 
+              className="bg-nebula-pink hover:bg-opacity-90 px-6 py-3 rounded-lg font-medium"
+              onClick={() => setOpenAddDialog(true)}
+            >
+              <i className="fas fa-plus mr-2"></i> Add Custom Object
             </Button>
-          </Link>
+            <Link href="/monthly-guide">
+              <Button 
+                variant="outline" 
+                className="border-cosmic-purple hover:bg-space-blue-dark px-6 py-3 rounded-lg font-medium"
+              >
+                <i className="fas fa-search mr-2"></i> Browse Catalog
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { fetchApod } from "./services/nasaApi";
 import { seedDatabase, getCurrentMonth, getCurrentYear, filterCelestialObjects } from "./services/celestialObjects";
 import { 
   insertObservationSchema,
+  insertCelestialObjectSchema,
   celestialObjectTypes
 } from "@shared/schema";
 
@@ -65,6 +66,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ 
         message: `Failed to get celestial object: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+  
+  // Create a new celestial object (for custom observations)
+  app.post("/api/celestial-objects", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const validatedData = insertCelestialObjectSchema.parse({
+        ...req.body,
+        // Set default values for required fields if they're not provided
+        visibilityRating: req.body.visibilityRating || "Custom",
+        information: req.body.information || "Custom celestial object",
+        // Generate a placeholder image if none is provided
+        imageUrl: req.body.imageUrl || "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500",
+        // Other fields
+        constellation: req.body.constellation || "Not specified",
+        magnitude: req.body.magnitude || "Not specified",
+        recommendedEyepiece: req.body.recommendedEyepiece || "Not specified",
+      });
+      
+      // Create the celestial object
+      const newObject = await storage.createCelestialObject(validatedData);
+      
+      res.status(201).json(newObject);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      
+      res.status(500).json({ 
+        message: `Failed to create celestial object: ${error instanceof Error ? error.message : 'Unknown error'}` 
       });
     }
   });
