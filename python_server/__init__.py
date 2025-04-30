@@ -1,1 +1,0 @@
-# StellarView Python Backend package

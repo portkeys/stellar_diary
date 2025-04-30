@@ -1,45 +1,21 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
-const NotFound = () => {
+export default function NotFound() {
   return (
-    <div className="relative z-10 h-[80vh] flex flex-col items-center justify-center px-4 max-w-3xl mx-auto text-center">
-      <h1 className="text-5xl md:text-6xl font-bold text-stellar-gold mb-6">
-        <span className="block">404</span>
-        <span className="block mt-2">Lost in Space</span>
-      </h1>
-      
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-gradient-to-r from-nebula-pink/10 to-stellar-gold/10 blur-2xl"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1614642264762-d0a3b8bf3700?auto=format&fit=crop&w=600&h=400" 
-          alt="Deep space nebula" 
-          className="relative rounded-lg shadow-2xl w-full max-w-md"
-        />
-      </div>
-      
-      <p className="text-xl text-white/80 mb-8 max-w-lg">
-        The celestial coordinates you're looking for couldn't be found. This object may have drifted out of our telescope's view.
-      </p>
-      
-      <div className="flex flex-wrap gap-4 justify-center">
-        <Link href="/">
-          <Button size="lg" className="bg-nebula-pink hover:bg-nebula-pink/90">
-            <i className="fas fa-home mr-2"></i> Return to Home
-          </Button>
-        </Link>
-        <Link href="/monthly-guide">
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="border-stellar-gold text-stellar-gold hover:bg-stellar-gold/20"
-          >
-            <i className="fas fa-star mr-2"></i> Explore Monthly Guide
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="pt-6">
+          <div className="flex mb-4 gap-2">
+            <AlertCircle className="h-8 w-8 text-red-500" />
+            <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
+          </div>
+
+          <p className="mt-4 text-sm text-gray-600">
+            Did you forget to add the page to the router?
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default NotFound;
+}

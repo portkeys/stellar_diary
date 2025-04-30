@@ -1,3 +1,0 @@
-# This file defines the workflow for the Vite frontend server
-name = "Start Frontend"
-command = "cd client && npx vite --port 5173 --host"

@@ -1,3 +1,0 @@
-# This file defines the workflow for the Vite frontend server
-name = "Frontend"
-command = "./start-frontend.sh"
