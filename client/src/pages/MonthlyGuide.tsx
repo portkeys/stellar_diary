@@ -15,8 +15,10 @@ const MonthlyGuidePage = () => {
   const currentYear = new Date().getFullYear();
   
   // Fetch monthly guide info
-  const { data: guide, isLoading: isGuideLoading } = useQuery<MonthlyGuide>({
+  const { data: guide, isLoading: isGuideLoading, isError: isGuideError } = useQuery<MonthlyGuide>({
     queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`],
+    // Continue even if the monthly guide is not found
+    retry: false
   });
   
   // Construct query string for celestial objects
@@ -26,7 +28,7 @@ const MonthlyGuidePage = () => {
   queryParams.append('month', currentMonth);
   
   // Fetch celestial objects
-  const { data: celestialObjects, isLoading: isObjectsLoading, isError } = useQuery<CelestialObject[]>({
+  const { data: celestialObjects, isLoading: isObjectsLoading, isError: isObjectsError } = useQuery<CelestialObject[]>({
     queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
   });
   
@@ -36,6 +38,7 @@ const MonthlyGuidePage = () => {
   });
   
   const isLoading = isGuideLoading || isObjectsLoading;
+  const isError = isObjectsError; // Use the objects error state for the main error display
   
   const handleHemisphereChange = (value: string) => {
     setHemisphere(value);

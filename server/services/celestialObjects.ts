@@ -4,6 +4,36 @@ import { storage } from "../storage";
 // Seed data for celestial objects (to be used on application startup)
 const seedCelestialObjects: InsertCelestialObject[] = [
   {
+    name: "Leo Triplet",
+    type: "galaxy",
+    description: "The Leo Triplet is a small group of galaxies about 35 million light-years away in the constellation Leo. It consists of the spiral galaxies M65, M66, and NGC 3628.",
+    coordinates: "RA: 11h 20m | Dec: +13° 00′",
+    bestViewingTime: "Best after 9 PM",
+    imageUrl: "https://images.unsplash.com/photo-1614732414444-096e5f1122d5?auto=format&fit=crop&w=800&h=500",
+    visibilityRating: "Good Visibility",
+    information: "The Leo Triplet (also called the M66 Group) is a spectacular sight in amateur telescopes. In good viewing conditions, all three galaxies can be seen in the same field of view with a low power eyepiece.",
+    constellation: "Leo",
+    magnitude: "9.3",
+    hemisphere: "Northern",
+    recommendedEyepiece: "Low power, wide field eyepiece (25mm or higher)",
+    month: "April"
+  },
+  {
+    name: "Markarian's Chain",
+    type: "galaxy",
+    description: "Markarian's Chain is a stretch of galaxies that forms part of the Virgo Cluster. It's named after the Armenian astrophysicist B. E. Markarian, who discovered their common motion.",
+    coordinates: "RA: 12h 20m | Dec: +13° 00′",
+    bestViewingTime: "Best after 11 PM",
+    imageUrl: "https://images.unsplash.com/photo-1614314107768-6018061b5b72?auto=format&fit=crop&w=800&h=500",
+    visibilityRating: "Moderate Visibility",
+    information: "Markarian's Chain contains at least 7 galaxies that appear to form an arc. With an 8-inch Dobsonian, you can see several of these galaxies as faint fuzzy patches.",
+    constellation: "Virgo",
+    magnitude: "9.5",
+    hemisphere: "Northern",
+    recommendedEyepiece: "Low power, wide field eyepiece (25mm or higher)",
+    month: "April"
+  },
+  {
     name: "Whirlpool Galaxy (M51)",
     type: "galaxy",
     description: "The Whirlpool Galaxy is a classic spiral galaxy located in the constellation Canes Venatici. It's one of the best examples of a face-on spiral galaxy visible from Earth.",
@@ -98,15 +128,29 @@ const seedCelestialObjects: InsertCelestialObject[] = [
 // Monthly sky guides seed data
 const seedMonthlyGuides = [
   {
-    month: "May",
-    year: 2023,
+    month: "April",
+    year: 2025,
     headline: "Galaxy Season in the Northern Hemisphere",
+    description: "April offers excellent opportunities to observe galaxies in the northern hemisphere, particularly in the Virgo Cluster. It's also a good time to observe Jupiter in the early morning sky.",
+    hemisphere: "Northern"
+  },
+  {
+    month: "April",
+    year: 2025,
+    headline: "Autumn Night Sky in the Southern Hemisphere",
+    description: "April in the southern hemisphere brings clear views of the Large and Small Magellanic Clouds, as well as excellent visibility of the southern constellations like Crux and Centaurus.",
+    hemisphere: "Southern"
+  },
+  {
+    month: "May",
+    year: 2025,
+    headline: "Spring Nebulae and Star Clusters",
     description: "May offers excellent opportunities to observe galaxies in the northern hemisphere, particularly in the Virgo Cluster. It's also a good time to observe Jupiter in the early morning sky.",
     hemisphere: "Northern"
   },
   {
     month: "June",
-    year: 2023,
+    year: 2025,
     headline: "Summer Nebulae and Globular Clusters",
     description: "June brings warmer nights and excellent viewing of nebulae and globular clusters in the Sagittarius region, including the Lagoon Nebula (M8) and Omega Nebula (M17).",
     hemisphere: "Northern"
