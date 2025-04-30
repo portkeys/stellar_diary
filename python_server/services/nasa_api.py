@@ -2,6 +2,7 @@ import os
 import requests
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
+from python_server.data.models import ApodResponse
 
 # Load environment variables
 load_dotenv()
@@ -9,7 +10,7 @@ load_dotenv()
 # Get NASA API key from environment or use DEMO_KEY
 NASA_API_KEY = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
 
-def fetch_apod(date: Optional[str] = None) -> Dict[str, Any]:
+def fetch_apod(date: Optional[str] = None) -> ApodResponse:
     """
     Fetches the Astronomy Picture of the Day from NASA's API
     
@@ -17,7 +18,7 @@ def fetch_apod(date: Optional[str] = None) -> Dict[str, Any]:
         date: Optional date in YYYY-MM-DD format. If not specified, returns today's APOD
         
     Returns:
-        Dictionary with APOD data
+        ApodResponse with APOD data
     """
     url = "https://api.nasa.gov/planetary/apod"
     params = {
@@ -32,7 +33,7 @@ def fetch_apod(date: Optional[str] = None) -> Dict[str, Any]:
     
     return response.json()
 
-def fetch_apod_range(start_date: str, end_date: str) -> List[Dict[str, Any]]:
+def fetch_apod_range(start_date: str, end_date: str) -> List[ApodResponse]:
     """
     Fetches the Astronomy Pictures of the Day for a range of dates
     
@@ -41,7 +42,7 @@ def fetch_apod_range(start_date: str, end_date: str) -> List[Dict[str, Any]]:
         end_date: End date in YYYY-MM-DD format
         
     Returns:
-        List of dictionaries with APOD data
+        List of ApodResponse objects with APOD data
     """
     url = "https://api.nasa.gov/planetary/apod"
     params = {

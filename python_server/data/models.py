@@ -4,6 +4,23 @@ from typing import List, Dict, Optional, Union, Any
 # Define celestial object types
 celestial_object_types = ["planet", "galaxy", "nebula", "star_cluster", "double_star", "moon", "other"]
 
+# Define ApodResponse type for NASA API
+class ApodResponse(Dict[str, Any]):
+    """
+    Astronomy Picture of the Day response model
+    
+    Fields:
+        date: Date of the APOD photo
+        explanation: Description of the photo
+        hdurl: High definition URL of the photo (optional)
+        media_type: Type of media (image or video)
+        service_version: API service version
+        title: Title of the image
+        url: URL of the photo
+        copyright: Copyright information (optional)
+    """
+    pass
+
 class User:
     def __init__(self, id: int, username: str, email: str, password_hash: str):
         self.id = id

@@ -16,7 +16,8 @@ from python_server.services.celestial_objects import seed_database, get_current_
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Enable CORS for all routes and origins
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Initialize storage
 from python_server.data.storage import storage
@@ -194,7 +195,9 @@ def update_observation(id):
             return jsonify({'message': 'Not authorized to update this observation'}), 403
         
         updated_observation = storage.update_observation(id, request.json)
-        return jsonify(updated_observation.to_dict())
+        if updated_observation:
+            return jsonify(updated_observation.to_dict())
+        return jsonify({'message': 'Failed to update observation'}), 500
     except Exception as e:
         return jsonify({
             'message': f'Failed to update observation: {str(e)}'
