@@ -33,9 +33,9 @@ class MemStorage:
         
         user = User(
             id=id,
-            username=user_data.get('username'),
-            email=user_data.get('email'),
-            password_hash=user_data.get('passwordHash')
+            username=user_data.get('username', ''),  # Default empty string
+            email=user_data.get('email', ''),  # Default empty string 
+            password_hash=user_data.get('passwordHash', '')  # Default empty string
         )
         
         self.users[id] = user
@@ -64,10 +64,10 @@ class MemStorage:
         # Convert camelCase keys to snake_case for our Python model
         celestial_object = CelestialObject(
             id=id,
-            name=object_data.get('name'),
-            type=object_data.get('type'),
-            description=object_data.get('description'),
-            coordinates=object_data.get('coordinates'),
+            name=object_data.get('name', ''),
+            type=object_data.get('type', ''),
+            description=object_data.get('description', ''),
+            coordinates=object_data.get('coordinates', ''),
             month=object_data.get('month'),
             best_viewing_time=object_data.get('bestViewingTime'),
             image_url=object_data.get('imageUrl'),
@@ -96,8 +96,8 @@ class MemStorage:
         
         observation = Observation(
             id=id,
-            user_id=observation_data.get('userId'),
-            object_id=observation_data.get('objectId'),
+            user_id=observation_data.get('userId', 1),  # Default to user ID 1
+            object_id=observation_data.get('objectId', 1),  # Default to object ID 1 
             date_added=date_added,
             is_observed=observation_data.get('isObserved', False),
             observation_notes=observation_data.get('observationNotes'),
@@ -155,11 +155,11 @@ class MemStorage:
         
         guide = MonthlyGuide(
             id=id,
-            month=guide_data.get('month'),
-            year=guide_data.get('year'),
-            headline=guide_data.get('headline'),
-            content=guide_data.get('content'),
-            hemisphere=guide_data.get('hemisphere'),
+            month=guide_data.get('month', ''),
+            year=guide_data.get('year', 2025),
+            headline=guide_data.get('headline', ''),
+            content=guide_data.get('content', ''),
+            hemisphere=guide_data.get('hemisphere', 'both'),
             featured_objects=guide_data.get('featuredObjects', [])
         )
         
@@ -182,9 +182,9 @@ class MemStorage:
         
         tip = TelescopeTip(
             id=id,
-            title=tip_data.get('title'),
-            content=tip_data.get('content'),
-            category=tip_data.get('category'),
+            title=tip_data.get('title', ''),
+            content=tip_data.get('content', ''),
+            category=tip_data.get('category', ''),
             image_url=tip_data.get('imageUrl')
         )
         
