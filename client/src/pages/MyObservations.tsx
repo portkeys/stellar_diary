@@ -334,6 +334,9 @@ const MyObservations = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Add Custom Observation Dialog */}
+      <AddObservationDialog open={openAddDialog} onOpenChange={setOpenAddDialog} />
 
       {/* Tips section */}
       <div className="mt-12">
