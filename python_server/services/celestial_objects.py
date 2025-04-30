@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Dict, Optional, Any
-from data.storage import storage
-from data.models import CelestialObject, MonthlyGuide, TelescopeTip
+from python_server.data.storage import storage
+from python_server.data.models import CelestialObject, MonthlyGuide, TelescopeTip
 
 def seed_database() -> None:
     """

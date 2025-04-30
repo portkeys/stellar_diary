@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 import requests
 import json
 from datetime import datetime
-from data.models import (
+from python_server.data.models import (
     CelestialObject, Observation, MonthlyGuide, TelescopeTip, User,
     celestial_object_types
 )
-from services.nasa_api import fetch_apod, fetch_apod_range
-from services.celestial_objects import seed_database, get_current_month, get_current_year, filter_celestial_objects
+from python_server.services.nasa_api import fetch_apod, fetch_apod_range
+from python_server.services.celestial_objects import seed_database, get_current_month, get_current_year, filter_celestial_objects
 
 # Load environment variables
 load_dotenv()
@@ -19,12 +19,10 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize storage
-from data.storage import storage
+from python_server.data.storage import storage
 
-# Seed the database with initial data
-@app.before_first_request
-def initialize():
-    seed_database()
+# We'll seed the database in run.py instead of using before_first_request
+# as it's deprecated in newer Flask versions
 
 # NASA APOD API endpoint
 @app.route('/api/apod', methods=['GET'])
