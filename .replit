@@ -9,7 +9,7 @@ packages = ["libxcrypt"]
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = ["sh", "-c", "python run.py"]
 
 [[ports]]
 localPort = 5000
