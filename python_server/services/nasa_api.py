@@ -8,6 +8,8 @@ from python_server.data.models import ApodResponse
 load_dotenv()
 
 # Get NASA API key from environment or use DEMO_KEY
+# Note: DEMO_KEY is limited to 30 requests per hour, 50 per day
+# For production use, it's recommended to get a free API key from https://api.nasa.gov/
 NASA_API_KEY = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
 
 def fetch_apod(date: Optional[str] = None) -> ApodResponse:
@@ -19,6 +21,12 @@ def fetch_apod(date: Optional[str] = None) -> ApodResponse:
         
     Returns:
         ApodResponse with APOD data
+        
+    Raises:
+        requests.exceptions.HTTPError: If the HTTP request to NASA API fails
+        requests.exceptions.ConnectionError: If there's a network issue
+        requests.exceptions.Timeout: If the request times out
+        requests.exceptions.RequestException: For any other request-related errors
     """
     url = "https://api.nasa.gov/planetary/apod"
     params = {
@@ -28,10 +36,14 @@ def fetch_apod(date: Optional[str] = None) -> ApodResponse:
     if date:
         params['date'] = date
     
-    response = requests.get(url, params=params)
-    response.raise_for_status()  # Raise an exception for HTTP errors
-    
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=10)  # Added timeout
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        # Log the error details here if needed
+        print(f"NASA API Error: {str(e)}")
+        raise  # Re-raise the exception to be handled by the caller
 
 def fetch_apod_range(start_date: str, end_date: str) -> List[ApodResponse]:
     """
@@ -43,6 +55,12 @@ def fetch_apod_range(start_date: str, end_date: str) -> List[ApodResponse]:
         
     Returns:
         List of ApodResponse objects with APOD data
+        
+    Raises:
+        requests.exceptions.HTTPError: If the HTTP request to NASA API fails
+        requests.exceptions.ConnectionError: If there's a network issue
+        requests.exceptions.Timeout: If the request times out
+        requests.exceptions.RequestException: For any other request-related errors
     """
     url = "https://api.nasa.gov/planetary/apod"
     params = {
@@ -51,7 +69,11 @@ def fetch_apod_range(start_date: str, end_date: str) -> List[ApodResponse]:
         'end_date': end_date
     }
     
-    response = requests.get(url, params=params)
-    response.raise_for_status()  # Raise an exception for HTTP errors
-    
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=10)  # Added timeout
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        # Log the error details here if needed
+        print(f"NASA API Error (range request): {str(e)}")
+        raise  # Re-raise the exception to be handled by the caller

@@ -9,7 +9,7 @@ from python_server.data.models import (
     CelestialObject, Observation, MonthlyGuide, TelescopeTip, User,
     celestial_object_types
 )
-from python_server.services.nasa_api import fetch_apod, fetch_apod_range
+from python_server.services.nasa_api import fetch_apod, fetch_apod_range, NASA_API_KEY
 from python_server.services.celestial_objects import seed_database, get_current_month, get_current_year, filter_celestial_objects
 
 # Load environment variables
@@ -32,6 +32,34 @@ def get_apod():
         date = request.args.get('date')
         apod_data = fetch_apod(date)
         return jsonify(apod_data)
+    except requests.exceptions.HTTPError as e:
+        # Handle specific HTTP errors
+        status_code = e.response.status_code if hasattr(e, 'response') and e.response else 500
+        
+        if status_code == 400:
+            return jsonify({
+                'message': 'Invalid request parameters. Please check your date format (YYYY-MM-DD).'
+            }), 400
+        elif status_code == 404:
+            return jsonify({
+                'message': 'No APOD data found for the specified date. Please try a different date.'
+            }), 404
+        elif status_code == 429:
+            return jsonify({
+                'message': 'NASA API rate limit exceeded. Please try again later or use a personal API key.'
+            }), 429
+        else:
+            return jsonify({
+                'message': f'NASA API error: {str(e)}'
+            }), status_code
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            'message': 'Unable to connect to NASA API. Please check your internet connection and try again.'
+        }), 503
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'message': 'NASA API request timed out. Please try again later.'
+        }), 504
     except Exception as e:
         return jsonify({
             'message': f'Failed to fetch APOD: {str(e)}'
@@ -239,6 +267,29 @@ def get_telescope_tips():
     except Exception as e:
         return jsonify({
             'message': f'Failed to get telescope tips: {str(e)}'
+        }), 500
+
+# Get API info (for informational purposes)
+@app.route('/api/info', methods=['GET'])
+def get_api_info():
+    """Returns information about the API configuration"""
+    try:
+        using_demo_key = NASA_API_KEY == 'DEMO_KEY'
+        
+        return jsonify({
+            'version': '1.0.0',
+            'nasa_api': {
+                'using_demo_key': using_demo_key,
+                'limitations': {
+                    'hourly_limit': 30 if using_demo_key else 1000,
+                    'daily_limit': 50 if using_demo_key else 10000
+                },
+                'api_key_info': 'Get your free NASA API key at https://api.nasa.gov/' if using_demo_key else 'Using custom NASA API key'
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'message': f'Failed to get API information: {str(e)}'
         }), 500
 
 if __name__ == '__main__':
