@@ -139,44 +139,52 @@ const ObservationList = () => {
               <div className="space-y-3">
                 {observations.slice(0, 3).map(observation => (
                   <div key={observation.id} className="bg-space-blue-light rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <img 
-                        src={observation.celestialObject?.imageUrl} 
-                        alt={observation.celestialObject?.name} 
-                        className="w-12 h-12 rounded-md object-cover mr-3" 
-                      />
-                      <div>
-                        <h4 className="text-space font-medium">{observation.celestialObject?.name}</h4>
-                        <div className="flex flex-wrap items-center text-xs text-star-dim">
-                          <span className="mr-3">
-                            <i className={`fas fa-${
-                              observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
-                              observation.celestialObject?.type === 'nebula' ? 'meteor' : 
-                              observation.celestialObject?.type === 'planet' ? 'globe' : 
-                              'star'
-                            } mr-1`}></i> 
-                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                          </span>
-                          <span className="mr-3">
-                            <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? 
-                              (() => {
-                                const date = new Date(observation.plannedDate);
-                                // Adjust for PST timezone (UTC-8)
-                                const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
-                                return userTimezoneDate.toLocaleDateString();
-                              })() : 
-                              (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
-                          </span>
-                          {observation.observationNotes && (
-                            <span className="text-nebula-pink">
-                              <i className="fas fa-sticky-note mr-1"></i> 
-                              Notes: {observation.observationNotes.length > 20 ? 
-                                `${observation.observationNotes.substring(0, 20)}...` : 
-                                observation.observationNotes}
+                    <div className="flex flex-col w-full">
+                      <div className="flex items-center">
+                        <img 
+                          src={observation.celestialObject?.imageUrl} 
+                          alt={observation.celestialObject?.name} 
+                          className="w-12 h-12 rounded-md object-cover mr-3" 
+                        />
+                        <div>
+                          <h4 className="text-space font-medium">{observation.celestialObject?.name}</h4>
+                          <div className="flex flex-wrap items-center text-xs text-star-dim">
+                            <span className="mr-3">
+                              <i className={`fas fa-${
+                                observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
+                                observation.celestialObject?.type === 'nebula' ? 'meteor' : 
+                                observation.celestialObject?.type === 'planet' ? 'globe' : 
+                                'star'
+                              } mr-1`}></i> 
+                              {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </span>
-                          )}
+                            <span className="mr-3">
+                              <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? 
+                                (() => {
+                                  const date = new Date(observation.plannedDate);
+                                  // Adjust for PST timezone (UTC-8)
+                                  const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                  return userTimezoneDate.toLocaleDateString();
+                                })() : 
+                                (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      
+                      {/* Journal-style notes preview */}
+                      {observation.observationNotes && (
+                        <div className="mt-2 ml-15 bg-space-blue-dark p-2 rounded text-sm text-star-white">
+                          <p className="flex items-start">
+                            <span className="text-nebula-pink mr-2 mt-1"><i className="fas fa-sticky-note"></i></span>
+                            <span className="flex-1">
+                              {observation.observationNotes.length > 120 ? 
+                                `${observation.observationNotes.substring(0, 120)}...` : 
+                                observation.observationNotes}
+                            </span>
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <button 
@@ -202,7 +210,7 @@ const ObservationList = () => {
                 <div className="mt-5 text-center">
                   <Link href="/my-observations">
                     <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 px-4 py-2 rounded-lg">
-                      View All My Observation List <i className="fas fa-arrow-right ml-1"></i>
+                      View All Entries <i className="fas fa-arrow-right ml-1"></i>
                     </Button>
                   </Link>
                 </div>

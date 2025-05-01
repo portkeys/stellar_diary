@@ -168,10 +168,10 @@ const MyObservations = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-4xl text-space font-bold text-stellar-gold mb-2">
-              My Observation List
+              My Observation Journal
             </h1>
             <p className="text-star-dim text-lg">
-              Track your celestial observation goals and record your experiences
+              Record your celestial observations and plan your future stargazing
             </p>
           </div>
           <div className="flex gap-2">
@@ -234,7 +234,7 @@ const MyObservations = () => {
               <div className="bg-space-blue-dark p-4 rounded-lg mb-6">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                   <div className="flex items-center space-x-3">
-                    <span className="text-star-white font-medium text-lg">{observations.length} objects in your list</span>
+                    <span className="text-star-white font-medium text-lg">{observations.length} entries in your journal</span>
                     <div className="flex items-center text-sm text-star-dim">
                       <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span> 
                       Observed: {observations.filter(obs => obs.isObserved).length}
@@ -243,91 +243,180 @@ const MyObservations = () => {
                 </div>
               </div>
               
-              <div className="space-y-3">
-                {observations.map(observation => (
-                  <div key={observation.id} className="bg-space-blue-light rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center">
-                      <img 
-                        src={observation.celestialObject?.imageUrl} 
-                        alt={observation.celestialObject?.name} 
-                        className="w-16 h-16 rounded-md object-cover mr-4" 
-                      />
-                      <div>
-                        <h4 className="text-space font-medium text-lg">{observation.celestialObject?.name}</h4>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-star-dim">
-                          <span>
-                            <i className={`fas fa-${
-                              observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
-                              observation.celestialObject?.type === 'nebula' ? 'meteor' : 
-                              observation.celestialObject?.type === 'planet' ? 'globe' : 
-                              observation.celestialObject?.type === 'star_cluster' ? 'star' :
-                              'star'
-                            } mr-1`}></i> 
-                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                          </span>
-                          <span className="flex items-center">
-                            <i className="fas fa-calendar mr-1"></i> 
-                            Observed: {observation.plannedDate ? 
-                              (() => {
-                                const date = new Date(observation.plannedDate);
-                                // Adjust for PST timezone (UTC-8)
-                                const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
-                                return userTimezoneDate.toLocaleDateString();
-                              })() : 
-                              (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
-                            <Button
-                              variant="ghost"
-                              className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDateDialog(observation);
-                              }}
-                              title="Edit observation date"
-                            >
-                              <i className="fas fa-pencil-alt text-xs"></i>
-                            </Button>
-                          </span>
-                          {observation.observationNotes && (
-                            <span 
-                              className="text-nebula-pink cursor-pointer hover:text-opacity-80 flex items-center" 
-                              onClick={() => handleOpenNotesDialog(observation)}
-                              title="Click to view notes"
-                            >
-                              <i className="fas fa-sticky-note mr-1"></i> Has Notes
-                            </span>
+              {/* Observed Entries Section */}
+              {observations.filter(obs => obs.isObserved).length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-xl text-space font-bold mb-4 flex items-center">
+                    <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                    Observed Entries
+                  </h3>
+                  <div className="space-y-6">
+                    {observations.filter(obs => obs.isObserved).map(observation => (
+                      <div key={observation.id} className="bg-space-blue-light rounded-lg p-6 flex flex-col gap-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <img 
+                            src={observation.celestialObject?.imageUrl} 
+                            alt={observation.celestialObject?.name} 
+                            className="w-20 h-20 rounded-md object-cover" 
+                          />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                              <h4 className="text-space font-semibold text-xl">{observation.celestialObject?.name}</h4>
+                              <div className="flex items-center space-x-2">
+                                <Button 
+                                  variant="ghost"
+                                  className="text-green-500 hover:text-green-400"
+                                  onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
+                                  title="Mark as not observed"
+                                >
+                                  <i className="fas fa-check-circle text-xl"></i>
+                                </Button>
+                                <Button 
+                                  variant="ghost"
+                                  className="text-star-dim hover:text-stellar-gold"
+                                  onClick={() => handleOpenNotesDialog(observation)}
+                                  title="Edit notes"
+                                >
+                                  <i className="fas fa-edit text-xl"></i>
+                                </Button>
+                                <Button 
+                                  variant="ghost"
+                                  className="text-star-dim hover:text-nebula-pink"
+                                  onClick={() => handleRemove(observation.id)}
+                                  title="Remove from list"
+                                >
+                                  <i className="fas fa-trash-alt text-xl"></i>
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 my-1 text-sm text-star-dim">
+                              <span>
+                                <i className={`fas fa-${
+                                  observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
+                                  observation.celestialObject?.type === 'nebula' ? 'meteor' : 
+                                  observation.celestialObject?.type === 'planet' ? 'globe' : 
+                                  observation.celestialObject?.type === 'star_cluster' ? 'star' :
+                                  'star'
+                                } mr-1`}></i> 
+                                {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </span>
+                              <span className="flex items-center">
+                                <i className="fas fa-calendar mr-1"></i> 
+                                Observed: {observation.plannedDate ? 
+                                  (() => {
+                                    const date = new Date(observation.plannedDate);
+                                    // Adjust for PST timezone (UTC-8)
+                                    const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                    return userTimezoneDate.toLocaleDateString();
+                                  })() : 
+                                  (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                                <Button
+                                  variant="ghost"
+                                  className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDateDialog(observation);
+                                  }}
+                                  title="Edit observation date"
+                                >
+                                  <i className="fas fa-pencil-alt text-xs"></i>
+                                </Button>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Journal-style notes display */}
+                        <div className="mt-2">
+                          {observation.observationNotes ? (
+                            <div className="bg-space-blue-dark rounded-lg p-4 text-star-white">
+                              <h5 className="text-nebula-pink text-sm font-medium mb-2 flex items-center">
+                                <i className="fas fa-sticky-note mr-2"></i> Observation Notes
+                              </h5>
+                              <p className="whitespace-pre-line text-sm">{observation.observationNotes}</p>
+                            </div>
+                          ) : (
+                            <div className="border border-dashed border-cosmic-purple rounded-lg p-4 text-center cursor-pointer" 
+                                 onClick={() => handleOpenNotesDialog(observation)}>
+                              <p className="text-star-dim">
+                                <i className="fas fa-plus-circle mr-1"></i> Add your observation notes
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3 ml-auto">
-                      <Button 
-                        variant="ghost"
-                        className={`${observation.isObserved ? 'text-green-500 hover:text-green-400' : 'text-star-dim hover:text-green-500'}`}
-                        onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
-                        title={observation.isObserved ? "Mark as not observed" : "Mark as observed"}
-                      >
-                        <i className={`${observation.isObserved ? 'fas' : 'far'} fa-check-circle text-xl`}></i>
-                      </Button>
-                      <Button 
-                        variant="ghost"
-                        className="text-star-dim hover:text-stellar-gold"
-                        onClick={() => handleOpenNotesDialog(observation)}
-                        title="Add/edit notes"
-                      >
-                        <i className="fas fa-edit text-xl"></i>
-                      </Button>
-                      <Button 
-                        variant="ghost"
-                        className="text-star-dim hover:text-nebula-pink"
-                        onClick={() => handleRemove(observation.id)}
-                        title="Remove from list"
-                      >
-                        <i className="fas fa-trash-alt text-xl"></i>
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+              
+              {/* To Observe Entries Section */}
+              {observations.filter(obs => !obs.isObserved).length > 0 && (
+                <div>
+                  <h3 className="text-xl text-space font-bold mb-4 flex items-center">
+                    <span className="inline-block w-3 h-3 rounded-full bg-cosmic-purple mr-2"></span>
+                    To Observe
+                  </h3>
+                  <div className="space-y-3">
+                    {observations.filter(obs => !obs.isObserved).map(observation => (
+                      <div key={observation.id} className="bg-space-blue-light rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center">
+                          <img 
+                            src={observation.celestialObject?.imageUrl} 
+                            alt={observation.celestialObject?.name} 
+                            className="w-16 h-16 rounded-md object-cover mr-4" 
+                          />
+                          <div>
+                            <h4 className="text-space font-medium text-lg">{observation.celestialObject?.name}</h4>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-star-dim">
+                              <span>
+                                <i className={`fas fa-${
+                                  observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
+                                  observation.celestialObject?.type === 'nebula' ? 'meteor' : 
+                                  observation.celestialObject?.type === 'planet' ? 'globe' : 
+                                  observation.celestialObject?.type === 'star_cluster' ? 'star' :
+                                  'star'
+                                } mr-1`}></i> 
+                                {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </span>
+                              <span className="flex items-center">
+                                <i className="fas fa-calendar mr-1"></i> 
+                                Added: {observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3 ml-auto">
+                          <Button 
+                            variant="ghost"
+                            className="text-star-dim hover:text-green-500"
+                            onClick={() => handleOpenDateDialog(observation)}
+                            title="Record observation date"
+                          >
+                            <i className="far fa-check-circle text-xl"></i>
+                          </Button>
+                          <Button 
+                            variant="ghost"
+                            className="text-star-dim hover:text-stellar-gold"
+                            onClick={() => handleOpenNotesDialog(observation)}
+                            title="Add notes"
+                          >
+                            <i className="fas fa-edit text-xl"></i>
+                          </Button>
+                          <Button 
+                            variant="ghost"
+                            className="text-star-dim hover:text-nebula-pink"
+                            onClick={() => handleRemove(observation.id)}
+                            title="Remove from list"
+                          >
+                            <i className="fas fa-trash-alt text-xl"></i>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12">
@@ -336,9 +425,9 @@ const MyObservations = () => {
                 alt="Empty space" 
                 className="mx-auto h-40 object-cover rounded-lg opacity-50 mb-4" 
               />
-              <h3 className="text-xl text-space font-semibold mb-2">Your observation list is empty</h3>
+              <h3 className="text-xl text-space font-semibold mb-2">Your observation journal is empty</h3>
               <p className="text-star-dim mb-6 max-w-md mx-auto">
-                Start adding celestial objects from the monthly guide or search for specific targets to build your personal observation plan.
+                Start adding celestial entries from the monthly guide or add your own observations to build your personal stargazing journal.
               </p>
               <Link href="/monthly-guide">
                 <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 px-6 py-2 rounded-lg font-medium">
