@@ -293,7 +293,13 @@ const MyObservations = () => {
                             </Button>
                           </span>
                           {observation.observationNotes && (
-                            <span className="text-nebula-pink"><i className="fas fa-sticky-note mr-1"></i> Has Notes</span>
+                            <span 
+                              className="text-nebula-pink cursor-pointer hover:text-opacity-80 flex items-center" 
+                              onClick={() => handleOpenNotesDialog(observation)}
+                              title="Click to view notes"
+                            >
+                              <i className="fas fa-sticky-note mr-1"></i> Has Notes
+                            </span>
                           )}
                         </div>
                       </div>
