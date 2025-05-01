@@ -51,10 +51,19 @@ export const observations = pgTable("observations", {
   plannedDate: date("planned_date"),
 });
 
-export const insertObservationSchema = createInsertSchema(observations).omit({
-  id: true,
-  dateAdded: true,
-});
+// Create a modified schema with better validation
+export const insertObservationSchema = createInsertSchema(observations)
+  .omit({
+    id: true,
+    dateAdded: true,
+  })
+  .transform((data) => {
+    // If plannedDate is empty or undefined, set it to null
+    if (!data.plannedDate) {
+      data.plannedDate = null;
+    }
+    return data;
+  });
 
 // Monthly sky guides schema
 export const monthlyGuides = pgTable("monthly_guides", {
