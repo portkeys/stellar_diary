@@ -72,7 +72,7 @@ const ObservationList = () => {
     <section className="my-16">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Recent Observations
+          <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Observation Journal
         </h2>
         <Link href="/my-observations">
           <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
@@ -128,10 +128,14 @@ const ObservationList = () => {
             <div>
               <div className="mb-4">
                 <div className="flex items-center space-x-3">
-                  <span className="text-star-white font-medium">{observations.length} objects in your list</span>
-                  <div className="flex items-center text-xs text-star-dim">
+                  <span className="text-star-white font-medium">{observations.length} objects in your journal</span>
+                  <div className="flex items-center text-xs text-green-500">
                     <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span> 
                     Observed: {observations.filter(obs => obs.isObserved).length}
+                  </div>
+                  <div className="flex items-center text-xs text-amber-500">
+                    <span className="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1"></span> 
+                    Planned: {observations.filter(obs => !obs.isObserved).length}
                   </div>
                 </div>
               </div>
@@ -158,15 +162,17 @@ const ObservationList = () => {
                               } mr-1`}></i> 
                               {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </span>
-                            <span className="mr-3">
-                              <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? 
+                            <span className={`mr-3 ${observation.isObserved ? 'text-green-500' : 'text-amber-500'}`}>
+                              <i className={`${observation.isObserved ? 'fas fa-check-circle' : 'fas fa-hourglass'} mr-1`}></i> 
+                              {observation.isObserved ? 'Observed: ' : 'Planned: '}
+                              {observation.plannedDate ? 
                                 (() => {
                                   const date = new Date(observation.plannedDate);
                                   // Adjust for PST timezone (UTC-8)
                                   const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
                                   return userTimezoneDate.toLocaleDateString();
                                 })() : 
-                                (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                                (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Not set')}
                             </span>
                           </div>
                         </div>
