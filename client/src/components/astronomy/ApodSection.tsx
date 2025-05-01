@@ -148,9 +148,11 @@ const ApodSection = () => {
           <Button 
             variant="outline" 
             className="text-star-dim hover:text-star-white"
-            onClick={() => refetch()}
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
           >
-            <i className="fas fa-sync-alt mr-1"></i> Refresh
+            <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'} mr-1`}></i> 
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
           <Button variant="ghost" className="text-star-dim hover:text-star-white">
             <i className="fas fa-calendar-alt mr-1"></i> Archive

@@ -1,5 +1,6 @@
-import { CelestialObject, InsertCelestialObject } from "@shared/schema";
+import { CelestialObject, InsertCelestialObject, InsertApodCache, apodCache } from "@shared/schema";
 import { storage } from "../storage";
+import { db } from "../db";
 
 // Seed data for celestial objects (to be used on application startup)
 const seedCelestialObjects: InsertCelestialObject[] = [
@@ -225,7 +226,7 @@ const seedTelescopeTips = [
 ];
 
 /**
- * Seeds the database with initial celestial objects, monthly guides, and telescope tips
+ * Seeds the database with initial celestial objects, monthly guides, telescope tips, and APOD cache
  */
 export async function seedDatabase(): Promise<void> {
   // Seed celestial objects
@@ -253,6 +254,37 @@ export async function seedDatabase(): Promise<void> {
       await storage.createTelescopeTip(tip);
     }
     console.log('Seeded telescope tips');
+  }
+  
+  // Check if we have an APOD cache entry
+  try {
+    const existingApodEntries = await db.select().from(apodCache);
+    
+    // If no APOD entries exist, seed with a default one for the current date
+    if (existingApodEntries.length === 0) {
+      const today = new Date();
+      const year = 2025;
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+      const formattedDate = `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`;
+      
+      // Create a default APOD entry that will serve as fallback
+      const defaultApod: InsertApodCache = {
+        date: formattedDate,
+        title: "A Happy Sky over Bufa Hill in Mexico",
+        explanation: "Sometimes, the sky itself seems to smile. A few days ago, visible over much of the world, an unusual superposition of our Moon with the planets Venus and Saturn created just such an iconic facial expression. Specifically, a crescent Moon appeared to make a happy face on the night sky when paired with seemingly nearby planets.",
+        media_type: "image",
+        service_version: "v1",
+        url: "https://apod.nasa.gov/apod/image/2504/HappySkyMexico_Korona_960.jpg",
+        hdurl: "https://apod.nasa.gov/apod/image/2504/HappySkyMexico_Korona_1358.jpg",
+        copyright: "Daniel Korona"
+      };
+      
+      await db.insert(apodCache).values(defaultApod);
+      console.log("Seeded APOD cache with default entry");
+    }
+  } catch (error) {
+    console.error("Error checking APOD cache:", error);
   }
 }
 
