@@ -240,11 +240,6 @@ const MyObservations = () => {
                       Observed: {observations.filter(obs => obs.isObserved).length}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" className="border-cosmic-purple text-star-dim hover:text-star-white">
-                      <i className="fas fa-sort mr-1"></i> Sort by Name
-                    </Button>
-                  </div>
                 </div>
               </div>
               

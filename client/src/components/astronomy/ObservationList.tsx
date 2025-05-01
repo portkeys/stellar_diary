@@ -72,7 +72,7 @@ const ObservationList = () => {
     <section className="my-16">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Observation List
+          <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Recent Observations
         </h2>
         <Link href="/my-observations">
           <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
@@ -137,7 +137,7 @@ const ObservationList = () => {
               </div>
               
               <div className="space-y-3">
-                {observations.map(observation => (
+                {observations.slice(0, 3).map(observation => (
                   <div key={observation.id} className="bg-space-blue-light rounded-lg p-3 flex items-center justify-between">
                     <div className="flex items-center">
                       <img 
@@ -197,6 +197,16 @@ const ObservationList = () => {
                   </div>
                 ))}
               </div>
+              
+              {observations.length > 3 && (
+                <div className="mt-5 text-center">
+                  <Link href="/my-observations">
+                    <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 px-4 py-2 rounded-lg">
+                      View All My Observation List <i className="fas fa-arrow-right ml-1"></i>
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-8">
