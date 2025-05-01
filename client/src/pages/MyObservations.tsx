@@ -128,16 +128,8 @@ const MyObservations = () => {
               className="bg-nebula-pink hover:bg-opacity-90 px-6 py-3 rounded-lg font-medium"
               onClick={() => setOpenAddDialog(true)}
             >
-              <i className="fas fa-plus mr-2"></i> Add Custom Object
+              <i className="fas fa-plus mr-2"></i> Add Entry
             </Button>
-            <Link href="/monthly-guide">
-              <Button 
-                variant="outline" 
-                className="border-cosmic-purple hover:bg-space-blue-dark px-6 py-3 rounded-lg font-medium"
-              >
-                <i className="fas fa-search mr-2"></i> Browse Catalog
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
@@ -231,9 +223,9 @@ const MyObservations = () => {
                               observation.celestialObject?.type === 'star_cluster' ? 'star' :
                               'star'
                             } mr-1`}></i> 
-                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
-                          <span><i className="fas fa-calendar mr-1"></i> Best: {observation.celestialObject?.month}</span>
+                          <span><i className="fas fa-calendar mr-1"></i> Added: {observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown'}</span>
                           {observation.observationNotes && (
                             <span className="text-nebula-pink"><i className="fas fa-sticky-note mr-1"></i> Has Notes</span>
                           )}

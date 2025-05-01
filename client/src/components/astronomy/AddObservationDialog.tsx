@@ -122,10 +122,10 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
       <DialogContent className="bg-space-blue border-cosmic-purple sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-stellar-gold text-space">
-            Add Custom Observation
+            Add Observation Entry
           </DialogTitle>
           <DialogDescription>
-            Add your own celestial object to your observation list.
+            Add a new observation entry to your list.
           </DialogDescription>
         </DialogHeader>
 
@@ -167,7 +167,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
                     <SelectContent className="bg-space-blue border-cosmic-purple">
                       {celestialObjectTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                          {type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                         </SelectItem>
                       ))}
                     </SelectContent>
