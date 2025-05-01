@@ -74,9 +74,9 @@ const ObservationList = () => {
         <h2 className="text-2xl text-space font-bold">
           <i className="fas fa-list-check text-stellar-gold mr-2"></i> My Observation List
         </h2>
-        <Link href="/monthly-guide">
+        <Link href="/my-observations">
           <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
-            <i className="fas fa-plus mr-1"></i> Add Object
+            <i className="fas fa-plus mr-1"></i> Add Entry
           </Button>
         </Link>
       </div>
@@ -163,10 +163,10 @@ const ObservationList = () => {
                               observation.celestialObject?.type === 'planet' ? 'globe' : 
                               'star'
                             } mr-1`}></i> 
-                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
                           <span>
-                            <i className="fas fa-calendar mr-1"></i> Best: {observation.celestialObject?.month}
+                            <i className="fas fa-calendar mr-1"></i> Added: {observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown'}
                           </span>
                         </div>
                       </div>
