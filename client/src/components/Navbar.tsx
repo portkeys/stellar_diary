@@ -44,10 +44,7 @@ const Navbar = () => {
             </div>
           </div>
           <div className="flex items-center">
-            <button className="bg-cosmic-purple hover:bg-cosmic-purple-light text-white px-4 py-2 rounded-md text-sm font-medium">
-              <i className="fas fa-user mr-1"></i> Sign In
-            </button>
-            <div className="ml-3 md:hidden">
+            <div className="md:hidden">
               <button 
                 type="button" 
                 className="text-gray-300 hover:text-white"

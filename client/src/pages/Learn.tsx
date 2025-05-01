@@ -18,13 +18,13 @@ const Learn = () => {
         <div className="flex flex-col md:flex-row gap-10 items-center">
           <div className="md:w-1/2">
             <h1 className="text-4xl text-space font-bold text-stellar-gold mb-4">
-              Explore the Universe with Your Telescope
+              Explore the Universe with My Apertura AD8
             </h1>
             <p className="text-lg text-star-white mb-4">
-              Learn how to get the most out of your 8-inch Dobsonian telescope and discover the wonders of the night sky.
+              Join me in learning how to get the most out of the Apertura AD8 Dobsonian telescope and discover the wonders of the night sky.
             </p>
             <p className="text-star-dim mb-6">
-              Our comprehensive guides cover everything from basic setup and maintenance to advanced observing techniques. Whether you're a beginner or experienced observer, you'll find valuable information to enhance your stargazing experience.
+              These guides document my personal journey learning about telescope setup, maintenance, and observing techniques. I'm sharing what I've learned to help others with similar interests enhance their own stargazing experience.
             </p>
           </div>
           <div className="md:w-1/2">

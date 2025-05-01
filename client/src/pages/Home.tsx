@@ -17,8 +17,8 @@ const Home = () => {
               StellarDiary
             </h1>
             <p className="text-lg mb-6">
-              Your personal guide to exploring the cosmos with your 8-inch Dobsonian telescope. 
-              Track celestial events, build your observation list, and learn about our fascinating universe.
+              My personal journey exploring the cosmos with my Apertura AD8 Dobsonian telescope. 
+              Follow along as I track celestial events, record observations, and share discoveries about our fascinating universe.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/monthly-guide">
