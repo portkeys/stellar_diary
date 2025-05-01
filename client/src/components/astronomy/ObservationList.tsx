@@ -126,21 +126,13 @@ const ObservationList = () => {
             </div>
           ) : observations && observations.length > 0 ? (
             <div>
-              <div className="flex justify-between items-center mb-4">
+              <div className="mb-4">
                 <div className="flex items-center space-x-3">
                   <span className="text-star-white font-medium">{observations.length} objects in your list</span>
                   <div className="flex items-center text-xs text-star-dim">
                     <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span> 
                     Observed: {observations.filter(obs => obs.isObserved).length}
                   </div>
-                </div>
-                <div className="flex space-x-3 text-sm">
-                  <button className="text-star-dim hover:text-star-white">
-                    <i className="fas fa-print mr-1"></i> Print List
-                  </button>
-                  <button className="text-star-dim hover:text-star-white">
-                    <i className="fas fa-sort mr-1"></i> Sort
-                  </button>
                 </div>
               </div>
               
@@ -155,7 +147,7 @@ const ObservationList = () => {
                       />
                       <div>
                         <h4 className="text-space font-medium">{observation.celestialObject?.name}</h4>
-                        <div className="flex items-center text-xs text-star-dim">
+                        <div className="flex flex-wrap items-center text-xs text-star-dim">
                           <span className="mr-3">
                             <i className={`fas fa-${
                               observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
@@ -165,9 +157,24 @@ const ObservationList = () => {
                             } mr-1`}></i> 
                             {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
-                          <span>
-                            <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                          <span className="mr-3">
+                            <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? 
+                              (() => {
+                                const date = new Date(observation.plannedDate);
+                                // Adjust for PST timezone (UTC-8)
+                                const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                return userTimezoneDate.toLocaleDateString();
+                              })() : 
+                              (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
                           </span>
+                          {observation.observationNotes && (
+                            <span className="text-nebula-pink">
+                              <i className="fas fa-sticky-note mr-1"></i> 
+                              Notes: {observation.observationNotes.length > 20 ? 
+                                `${observation.observationNotes.substring(0, 20)}...` : 
+                                observation.observationNotes}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -178,12 +185,6 @@ const ObservationList = () => {
                         title={observation.isObserved ? "Mark as not observed" : "Mark as observed"}
                       >
                         <i className={`${observation.isObserved ? 'fas' : 'far'} fa-check-circle text-xl`}></i>
-                      </button>
-                      <button 
-                        className="text-star-dim hover:text-stellar-gold"
-                        title="View details"
-                      >
-                        <i className="fas fa-info-circle text-xl"></i>
                       </button>
                       <button 
                         className="text-star-dim hover:text-nebula-pink"
