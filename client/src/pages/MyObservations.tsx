@@ -19,6 +19,8 @@ const MyObservations = () => {
   const [selectedObservation, setSelectedObservation] = useState<EnhancedObservation | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [openDateDialog, setOpenDateDialog] = useState(false);
+  const [dateInput, setDateInput] = useState("");
   const [openAddDialog, setOpenAddDialog] = useState(false);
 
   // Fetch user's observation list
@@ -109,6 +111,49 @@ const MyObservations = () => {
       updateNotesMutation.mutate({ id: selectedObservation.id, notes: notesInput });
     }
   };
+  
+  // Function to open the date dialog
+  const handleOpenDateDialog = (observation: EnhancedObservation) => {
+    setSelectedObservation(observation);
+    // Format the date to YYYY-MM-DD for the date input
+    if (observation.plannedDate) {
+      const date = new Date(observation.plannedDate);
+      const formattedDate = date.toISOString().split('T')[0];
+      setDateInput(formattedDate);
+    } else {
+      // Default to Jan 13, 2025 as requested by the user
+      setDateInput("2025-01-13");
+    }
+    setOpenDateDialog(true);
+  };
+
+  // Mutation to update observation date
+  const updateDateMutation = useMutation({
+    mutationFn: async ({ id, date }: { id: number, date: string }) => {
+      await apiRequest('PATCH', `/api/observations/${id}`, { plannedDate: date });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
+      setOpenDateDialog(false);
+      toast({
+        title: "Observation date updated",
+        description: "Your observation date has been updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update date",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSaveDate = () => {
+    if (selectedObservation && dateInput) {
+      updateDateMutation.mutate({ id: selectedObservation.id, date: dateInput });
+    }
+  };
 
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
@@ -191,13 +236,7 @@ const MyObservations = () => {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <Button variant="outline" className="border-cosmic-purple text-star-dim hover:text-star-white">
-                      <i className="fas fa-print mr-1"></i> Print List
-                    </Button>
-                    <Button variant="outline" className="border-cosmic-purple text-star-dim hover:text-star-white">
                       <i className="fas fa-sort mr-1"></i> Sort by Name
-                    </Button>
-                    <Button variant="outline" className="border-cosmic-purple text-star-dim hover:text-star-white">
-                      <i className="fas fa-filter mr-1"></i> Filter
                     </Button>
                   </div>
                 </div>
@@ -225,7 +264,21 @@ const MyObservations = () => {
                             } mr-1`}></i> 
                             {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
-                          <span><i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}</span>
+                          <span className="flex items-center">
+                            <i className="fas fa-calendar mr-1"></i> 
+                            Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                            <Button
+                              variant="ghost"
+                              className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDateDialog(observation);
+                              }}
+                              title="Edit observation date"
+                            >
+                              <i className="fas fa-pencil-alt text-xs"></i>
+                            </Button>
+                          </span>
                           {observation.observationNotes && (
                             <span className="text-nebula-pink"><i className="fas fa-sticky-note mr-1"></i> Has Notes</span>
                           )}
@@ -329,6 +382,53 @@ const MyObservations = () => {
       
       {/* Add Custom Observation Dialog */}
       <AddObservationDialog open={openAddDialog} onOpenChange={setOpenAddDialog} />
+
+      {/* Date edit dialog */}
+      <Dialog open={openDateDialog} onOpenChange={setOpenDateDialog}>
+        <DialogContent className="bg-space-blue border-cosmic-purple">
+          <DialogHeader>
+            <DialogTitle className="text-stellar-gold text-space">
+              {selectedObservation?.celestialObject?.name} - Edit Observation Date
+            </DialogTitle>
+            <DialogDescription>
+              Update the date when you observed this object.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-4">
+            <label htmlFor="observation-date" className="block text-star-white mb-2">Observation Date:</label>
+            <input 
+              id="observation-date"
+              type="date"
+              className="w-full rounded-md bg-space-blue-dark border-cosmic-purple p-3 text-star-white focus:outline-none focus:ring-2 focus:ring-nebula-pink"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+            />
+            <p className="mt-2 text-sm text-star-dim">Select the date when you actually observed this object.</p>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="border-cosmic-purple text-star-dim"
+              onClick={() => setOpenDateDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-nebula-pink hover:bg-opacity-90"
+              onClick={handleSaveDate}
+              disabled={updateDateMutation.isPending}
+            >
+              {updateDateMutation.isPending ? (
+                <>Saving <i className="fas fa-spinner fa-spin ml-1"></i></>
+              ) : (
+                <>Update Date</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Tips section */}
       <div className="mt-12">
