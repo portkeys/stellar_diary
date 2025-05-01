@@ -199,43 +199,43 @@ const MonthlyGuidePage = () => {
       {/* Viewing Tips */}
       <div className="mb-10">
         <h2 className="text-2xl text-space font-bold mb-6">
-          <i className="fas fa-lightbulb text-stellar-gold mr-2"></i> Viewing Tips for {currentMonth}
+          <i className="fas fa-lightbulb text-stellar-gold mr-2"></i> Viewing Tips for {currentMonth} 2025
         </h2>
         
         <div className="bg-gradient-to-r from-space-blue to-cosmic-purple-light rounded-xl shadow-xl p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-space-blue-dark bg-opacity-70 rounded-lg p-4">
-              <h3 className="text-lg text-space font-semibold text-nebula-pink mb-3">Best Viewing Times</h3>
+              <h3 className="text-lg text-space font-semibold text-nebula-pink mb-3">April 2025 Highlights</h3>
               <ul className="space-y-2 text-star-dim">
                 <li className="flex items-start">
-                  <i className="fas fa-moon mt-1 mr-2 text-stellar-gold"></i>
-                  <span>Wait until at least 1-2 hours after sunset for the sky to get completely dark.</span>
+                  <i className="fas fa-meteor mt-1 mr-2 text-stellar-gold"></i>
+                  <span>The Lyrid meteor shower peaks on the night of April 21-22. Look for up to 18 meteors per hour under ideal conditions.</span>
                 </li>
                 <li className="flex items-start">
-                  <i className="fas fa-clock mt-1 mr-2 text-stellar-gold"></i>
-                  <span>The best viewing time is typically between 9 PM and 2 AM, when objects are highest in the sky.</span>
+                  <i className="fas fa-star-half-alt mt-1 mr-2 text-stellar-gold"></i>
+                  <span>Double stars like Mizar & Alcor in the Big Dipper handle and Cor Caroli are excellent targets even in light-polluted areas.</span>
                 </li>
                 <li className="flex items-start">
-                  <i className="fas fa-calendar-alt mt-1 mr-2 text-stellar-gold"></i>
-                  <span>Check the moon phase calendar - objects are easier to see during the new moon phase.</span>
+                  <i className="fas fa-galaxy mt-1 mr-2 text-stellar-gold"></i>
+                  <span>Spring is galaxy season! The Whirlpool Galaxy and Leo Triplet are at their best in April's clear, dark skies.</span>
                 </li>
               </ul>
             </div>
             
             <div className="bg-space-blue-dark bg-opacity-70 rounded-lg p-4">
-              <h3 className="text-lg text-space font-semibold text-nebula-pink mb-3">Dobsonian Setup</h3>
+              <h3 className="text-lg text-space font-semibold text-nebula-pink mb-3">Observation Tips</h3>
               <ul className="space-y-2 text-star-dim">
                 <li className="flex items-start">
-                  <i className="fas fa-temperature-low mt-1 mr-2 text-stellar-gold"></i>
-                  <span>Allow your telescope to acclimate to the outside temperature for at least 30 minutes.</span>
+                  <i className="fas fa-search mt-1 mr-2 text-stellar-gold"></i>
+                  <span>For galaxies like the Leo Triplet, a magnification of around 70x will show all three as elongated patches within the same field of view.</span>
                 </li>
                 <li className="flex items-start">
                   <i className="fas fa-eye mt-1 mr-2 text-stellar-gold"></i>
-                  <span>Use lower power eyepieces (25mm or 32mm) to find objects, then switch to higher power.</span>
+                  <span>Start with low magnification (30x) for double stars like Cor Caroli to see the brilliant white primary and fainter companion.</span>
                 </li>
                 <li className="flex items-start">
-                  <i className="fas fa-compass mt-1 mr-2 text-stellar-gold"></i>
-                  <span>Make sure your finder scope is properly aligned before attempting to locate objects.</span>
+                  <i className="fas fa-ruler mt-1 mr-2 text-stellar-gold"></i>
+                  <span>Remember that aperture matters - larger scopes (10 inches/250mm+) will reveal more detail in galaxies like the Whirlpool's spiral arms.</span>
                 </li>
               </ul>
             </div>

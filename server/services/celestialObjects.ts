@@ -4,14 +4,29 @@ import { storage } from "../storage";
 // Seed data for celestial objects (to be used on application startup)
 const seedCelestialObjects: InsertCelestialObject[] = [
   {
-    name: "Leo Triplet",
+    name: "Whirlpool Galaxy (M51)",
     type: "galaxy",
-    description: "The Leo Triplet is a small group of galaxies about 35 million light-years away in the constellation Leo. It consists of the spiral galaxies M65, M66, and NGC 3628.",
+    description: "Spring is galaxy season, and one of the most popular targets for visual observers and astrophotographers alike is the Whirlpool Galaxy.",
+    coordinates: "RA: 13h 29m 53s | Dec: +47° 11′ 48″",
+    bestViewingTime: "Best after 9 PM",
+    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/MonthlyNewsletter/May2024/Screenshot_2024-01-03_at_12.18.37_pm.png",
+    visibilityRating: "Good Visibility",
+    information: "It's conveniently located about three and a half degrees from Alkaid, the star at the end of the handle of the Big Dipper, and forms a triangle with another star, 24 Canum Venaticorum. Through a small scope, the galaxy appears as a faint patch, with some texture potentially being visible, while its tiny companion, NGC 5195, shows a starlike core. Larger telescopes (250mm, or 10 inches in aperture) are needed to clearly show its famous spiral arms.",
+    constellation: "Canes Venatici",
+    magnitude: "8.4",
+    hemisphere: "Northern",
+    recommendedEyepiece: "Low power first, then higher magnification",
+    month: "April"
+  },
+  {
+    name: "Leo Triplet (M65, M66, NGC 3628)",
+    type: "galaxy",
+    description: "The Leo Triplet is a small group of galaxies about 35 million light-years away in the constellation Leo consisting of M65, M66, and NGC 3628.",
     coordinates: "RA: 11h 20m | Dec: +13° 00′",
     bestViewingTime: "Best after 9 PM",
-    imageUrl: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500",
+    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/Leo-Triplet-Ron_Brecher1.jpg",
     visibilityRating: "Good Visibility",
-    information: "The Leo Triplet (also called the M66 Group) is a spectacular sight in amateur telescopes. In good viewing conditions, all three galaxies can be seen in the same field of view with a low power eyepiece.",
+    information: "The two brightest galaxies in this trio - M65 and M66 - are bright enough to be spotted with binoculars, but you'll need a scope to see NGC 3628. A magnification of around 70x will show all three as elongated patches within the same field of view, but you'll likely need a scope of 250mm in aperture to see any detail.",
     constellation: "Leo",
     magnitude: "9.3",
     hemisphere: "Northern",
@@ -19,34 +34,64 @@ const seedCelestialObjects: InsertCelestialObject[] = [
     month: "April"
   },
   {
-    name: "Markarian's Chain",
-    type: "galaxy",
-    description: "Markarian's Chain is a stretch of galaxies that forms part of the Virgo Cluster. It's named after the Armenian astrophysicist B. E. Markarian, who discovered their common motion.",
-    coordinates: "RA: 12h 20m | Dec: +13° 00′",
-    bestViewingTime: "Best after 11 PM",
-    imageUrl: "https://images.unsplash.com/photo-1593085512500-5d55148d6f0d?auto=format&fit=crop&w=800&h=500",
-    visibilityRating: "Moderate Visibility",
-    information: "Markarian's Chain contains at least 7 galaxies that appear to form an arc. With an 8-inch Dobsonian, you can see several of these galaxies as faint fuzzy patches.",
-    constellation: "Virgo",
-    magnitude: "9.5",
+    name: "Mizar & Alcor (Zeta Ursae Majoris)",
+    type: "double_star",
+    description: "An outstanding double star for beginners, located in the handle of the Big Dipper.",
+    coordinates: "RA: 13h 23m 56s | Dec: +54° 55′ 31″",
+    bestViewingTime: "Best after 8 PM",
+    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/Mizar_Alcor.png",
+    visibilityRating: "Excellent Visibility",
+    information: "Look carefully with the naked eye at Mizar, the middle star in the handle of the Big Dipper, and you'll see a tiny star beside it. This is Alcor, and while the pair make a pretty sight for binoculars, almost any telescope will show Mizar itself to be double.",
+    constellation: "Ursa Major",
+    magnitude: "2.2",
     hemisphere: "Northern",
-    recommendedEyepiece: "Low power, wide field eyepiece (25mm or higher)",
+    recommendedEyepiece: "Low power eyepiece (30x)",
     month: "April"
   },
   {
-    name: "Whirlpool Galaxy (M51)",
-    type: "galaxy",
-    description: "The Whirlpool Galaxy is a classic spiral galaxy located in the constellation Canes Venatici. It's one of the best examples of a face-on spiral galaxy visible from Earth.",
-    coordinates: "RA: 13h 29m 53s | Dec: +47° 11′ 48″",
-    bestViewingTime: "Best after 10 PM",
-    imageUrl: "https://images.unsplash.com/photo-1543722530-d2c3201371e7?auto=format&fit=crop&w=800&h=500",
+    name: "Cor Caroli (Alpha Canum Venaticorum)",
+    type: "double_star",
+    description: "A relatively easy double star for beginners, located near the Big Dipper.",
+    coordinates: "RA: 12h 56m 02s | Dec: +38° 19′ 06″",
+    bestViewingTime: "Best after 9 PM",
+    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/MonthlyNewsletter/May2024/corcaroli.jpg",
     visibilityRating: "Good Visibility",
-    information: "Also known as NGC 5194, the Whirlpool Galaxy is interacting with a smaller galaxy called NGC 5195. This interaction is distorting the spiral arms of M51 due to gravitational effects.",
+    information: "Like the Whirlpool Galaxy, Cor Caroli is located close to Alkaid in the Big Dipper, and like Mizar, it's a relatively easy double for beginners. A low magnification of around 30x will show a brilliant white star with a fainter creamy-white companion.",
     constellation: "Canes Venatici",
-    magnitude: "8.4",
+    magnitude: "2.9",
     hemisphere: "Northern",
-    recommendedEyepiece: "Low power, wide field eyepiece (20-25mm)",
-    month: "May"
+    recommendedEyepiece: "Low power eyepiece (30x)",
+    month: "April"
+  },
+  {
+    name: "Mars Near Pollux",
+    type: "planet",
+    description: "Mars is visible just four degrees from Pollux in Gemini, giving observers the opportunity to compare their colors.",
+    coordinates: "Varies by date",
+    bestViewingTime: "Evening after sunset",
+    imageUrl: "https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=800&h=500",
+    visibilityRating: "Good Visibility",
+    information: "Mars is just four degrees from Pollux in Gemini, giving observers the opportunity to compare their colors. You'll find them high in the southwest after sunset.",
+    constellation: "Gemini",
+    magnitude: "1.2",
+    hemisphere: "Northern",
+    recommendedEyepiece: "Medium power eyepiece (10-15mm)",
+    month: "April"
+  },
+  {
+    name: "Lyrid Meteor Shower",
+    type: "other",
+    description: "The Lyrids are one of the oldest recorded meteor showers, with observations dating back 2,700 years.",
+    coordinates: "Radiant near star Vega",
+    bestViewingTime: "April 21-22, after midnight",
+    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/MonthlyNewsletter/April2023/Lyrids_PawelZgrzebnicki.jpg",
+    visibilityRating: "Good Visibility",
+    information: "The Lyrids reach their maximum on the evening of the 21st but are best seen during the early hours of the 22nd. Fortunately, the Moon is a waning crescent this year, and its light won't brighten the sky, allowing you to see up to 18 shooting stars every hour under ideal conditions.",
+    constellation: "Lyra",
+    magnitude: "Variable",
+    hemisphere: "Northern",
+    recommendedEyepiece: "No telescope needed - use your naked eyes",
+    month: "April"
   },
   {
     name: "Ring Nebula (M57)",
@@ -130,8 +175,8 @@ const seedMonthlyGuides = [
   {
     month: "April",
     year: 2025,
-    headline: "Galaxy Season in the Northern Hemisphere",
-    description: "April offers excellent opportunities to observe galaxies in the northern hemisphere, particularly in the Virgo Cluster. It's also a good time to observe Jupiter in the early morning sky.",
+    headline: "Galaxy Season and Double Stars in the Northern Hemisphere",
+    description: "Spring is galaxy season, and April 2025 offers excellent opportunities to observe spectacular galaxies like the Whirlpool and Leo Triplet. It's also a great time to observe the Lyrid meteor shower (peaking April 21-22) and interesting double stars like Mizar & Alcor and Cor Caroli. Mars can be found near Pollux in Gemini, and Jupiter remains visible in the early evening during the first half of the month.",
     hemisphere: "Northern"
   },
   {
@@ -170,6 +215,12 @@ const seedTelescopeTips = [
     content: "Discover which eyepieces work best with your 8-inch Dobsonian for different celestial objects, from planets to deep sky targets.",
     category: "Equipment",
     imageUrl: "https://images.unsplash.com/photo-1536697246787-1f7ae568d89a?auto=format&fit=crop&w=600&h=300"
+  },
+  {
+    title: "Understanding Aperture",
+    content: "When it comes to telescopes, there's one key feature that stands out from everything else: aperture. The aperture of a telescope is the diameter of the lens or mirror, and the bigger the aperture, the more light the telescope can gather. As a result, observers are able to identify fainter objects and see more detail than would be possible with a smaller aperture scope. The downside? Larger apertures can lack portability, and of course, they cost more!",
+    category: "Astronomy Basics",
+    imageUrl: "https://images.unsplash.com/photo-1522124624696-7ea32eb9592c?auto=format&fit=crop&w=600&h=300"
   }
 ];
 
