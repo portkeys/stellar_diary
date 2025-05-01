@@ -195,8 +195,6 @@ const MonthlyGuidePage = () => {
           </div>
         )}
       </div>
-      
-
     </div>
   );
 };

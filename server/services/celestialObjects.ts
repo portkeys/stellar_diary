@@ -85,7 +85,7 @@ const seedCelestialObjects: InsertCelestialObject[] = [
     description: "The Lyrids are one of the oldest recorded meteor showers, with observations dating back 2,700 years.",
     coordinates: "Radiant near star Vega",
     bestViewingTime: "April 21-22, after midnight",
-    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/MonthlyNewsletter/April2023/Lyrids_PawelZgrzebnicki.jpg",
+    imageUrl: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=800&h=500&fit=crop&auto=format",
     visibilityRating: "Good Visibility",
     information: "The Lyrids reach their maximum on the evening of the 21st but are best seen during the early hours of the 22nd. Fortunately, the Moon is a waning crescent this year, and its light won't brighten the sky, allowing you to see up to 18 shooting stars every hour under ideal conditions.",
     constellation: "Lyra",
