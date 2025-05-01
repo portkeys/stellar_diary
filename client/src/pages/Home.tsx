@@ -14,7 +14,7 @@ const Home = () => {
         <div className="flex flex-col md:flex-row items-center md:items-start">
           <div className="md:w-1/2 md:pr-8">
             <h1 className="text-4xl lg:text-5xl text-space font-bold text-stellar-gold mb-4">
-              Discover the Wonders of the Night Sky
+              StellarDiary
             </h1>
             <p className="text-lg mb-6">
               Your personal guide to exploring the cosmos with your 8-inch Dobsonian telescope. 
@@ -48,8 +48,8 @@ const Home = () => {
       
       {/* Main Content Sections */}
       <ApodSection />
-      <MonthlyGuideSection />
       <ObservationList />
+      <MonthlyGuideSection />
       <TelescopeTips />
       <LearningResources />
     </div>

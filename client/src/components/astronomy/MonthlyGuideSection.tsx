@@ -117,8 +117,8 @@ const MonthlyGuideSection = () => {
       ) : (
         <>
           {celestialObjects && celestialObjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {celestialObjects.map(object => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {celestialObjects.slice(0, 2).map(object => (
                 <CelestialCard key={object.id} celestialObject={object} />
               ))}
             </div>

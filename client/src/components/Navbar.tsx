@@ -18,7 +18,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
               <i className="fas fa-telescope text-stellar-gold text-2xl mr-2"></i>
-              <span className="text-space font-bold text-xl">StellarView</span>
+              <span className="text-space font-bold text-xl">StellarDiary</span>
             </div>
             <div className="hidden md:ml-6 md:flex md:space-x-6">
               <Link href="/">
