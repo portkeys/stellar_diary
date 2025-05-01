@@ -3,21 +3,41 @@ import { ApodResponse } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { queryClient } from "@/lib/queryClient";
 
 const ApodSection = () => {
   const [showFullExplanation, setShowFullExplanation] = useState(false);
-  
-  // Get current timestamp for cache busting
-  const timestamp = Date.now();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Define query options with proper typing
   const { data: apod, isLoading, isError, refetch } = useQuery<ApodResponse>({
-    queryKey: ['/api/apod', timestamp], // Use timestamp to force new request
-    staleTime: 0, // Don't cache at all
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
+    queryKey: ['/api/apod'],
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    // No need for refetchInterval, we'll use cached database results
   });
+  
+  // Function to manually refresh APOD with force flag
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.fetchQuery({
+        queryKey: ['/api/apod'],
+        queryFn: async () => {
+          const response = await fetch('/api/apod?refresh=true');
+          if (!response.ok) {
+            throw new Error('Failed to refresh APOD');
+          }
+          return response.json();
+        }
+      });
+    } catch (error) {
+      console.error('Error refreshing APOD:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   // Force refetch at midnight to get the new APOD
   useEffect(() => {
@@ -28,13 +48,13 @@ const ApodSection = () => {
     tomorrow.setHours(0, 0, 0, 0);
     const timeUntilMidnight = tomorrow.getTime() - now.getTime();
     
-    // Set up a timer to refetch at midnight
+    // Set up a timer to refetch at midnight (with force refresh)
     const timer = setTimeout(() => {
-      refetch();
+      handleManualRefresh();
     }, timeUntilMidnight);
     
     return () => clearTimeout(timer);
-  }, [refetch]);
+  }, []);
   
   if (isLoading) {
     return (

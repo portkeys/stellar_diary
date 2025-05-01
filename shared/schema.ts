@@ -100,6 +100,27 @@ export type TelescopeTip = typeof telescopeTips.$inferSelect;
 export type InsertTelescopeTip = z.infer<typeof insertTelescopeTipSchema>;
 
 // NASA APOD response type
+export const apodCache = pgTable("apod_cache", {
+  id: serial("id").primaryKey(),
+  date: text("date").notNull(),
+  title: text("title").notNull(),
+  explanation: text("explanation").notNull(),
+  url: text("url").notNull(),
+  hdurl: text("hdurl"),
+  media_type: text("media_type").notNull(),
+  copyright: text("copyright"),
+  service_version: text("service_version"),
+  cached_at: timestamp("cached_at").defaultNow().notNull(),
+});
+
+export const insertApodCacheSchema = createInsertSchema(apodCache).omit({
+  id: true,
+  cached_at: true,
+});
+
+export type ApodCache = typeof apodCache.$inferSelect;
+export type InsertApodCache = z.infer<typeof insertApodCacheSchema>;
+
 export interface ApodResponse {
   date: string;
   explanation: string;
