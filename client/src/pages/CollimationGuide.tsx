@@ -247,9 +247,11 @@ const CollimationGuide = () => {
       </div>
       
       <div className="flex justify-center mb-12">
-        <Button className="bg-nebula-pink hover:bg-opacity-90 px-6 py-4 text-lg rounded-lg">
-          <i className="fas fa-arrow-left mr-2"></i> Back to Learning Resources
-        </Button>
+        <Link href="/learn">
+          <Button className="bg-nebula-pink hover:bg-opacity-90 px-6 py-4 text-lg rounded-lg">
+            <i className="fas fa-arrow-left mr-2"></i> Back to Learning Resources
+          </Button>
+        </Link>
       </div>
     </div>
   );

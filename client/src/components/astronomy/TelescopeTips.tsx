@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TelescopeTip } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 const TelescopeTips = () => {
   const { data: tips, isLoading, isError } = useQuery<TelescopeTip[]>({
@@ -82,7 +83,7 @@ const TelescopeTips = () => {
           <div key={tip.id} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
             <div className="relative">
               <img 
-                src={tip.imageUrl} 
+                src={tip.imageUrl || ''} 
                 alt={tip.title} 
                 className="w-full h-40 object-cover"
               />
@@ -92,9 +93,17 @@ const TelescopeTips = () => {
               <p className="text-sm text-star-dim mb-3">
                 {tip.content}
               </p>
-              <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
-                Read Guide <i className="fas fa-arrow-right ml-1"></i>
-              </Button>
+              {tip.title.includes("Collimating") ? (
+                <Link href="/collimation-guide">
+                  <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
+                    Read Guide <i className="fas fa-arrow-right ml-1"></i>
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
+                  Read Guide <i className="fas fa-arrow-right ml-1"></i>
+                </Button>
+              )}
             </div>
           </div>
         ))}

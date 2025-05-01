@@ -4,6 +4,7 @@ import { TelescopeTip } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "wouter";
 
 const Learn = () => {
   // Fetch telescope tips
@@ -194,9 +195,17 @@ const Learn = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-star-dim mb-4">{tip.content}</p>
-                    <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
-                      Read Full Guide
-                    </Button>
+                    {tip.title.includes("Collimating") ? (
+                      <Link href="/collimation-guide">
+                        <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
+                          Read Full Guide
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
+                        Read Full Guide
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))
