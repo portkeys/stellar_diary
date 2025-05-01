@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -92,7 +93,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
         objectId: celestialObject.id,
         isObserved: values.isObserved,
         observationNotes: values.observationNotes,
-        plannedDate: values.isObserved ? values.observationDate : null,
+        plannedDate: values.observationDate, // Always save the observation date
       });
     },
     onSuccess: () => {
@@ -240,8 +241,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
               )}
             />
 
-            {showDateField && (
-              <FormField
+            <FormField
                 control={form.control}
                 name="observationDate"
                 render={({ field }) => (
@@ -254,11 +254,13 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
                         {...field}
                       />
                     </FormControl>
+                    <FormDescription className="text-sm text-star-dim">
+                      The date when you observed or plan to observe this object
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
             <FormField
               control={form.control}

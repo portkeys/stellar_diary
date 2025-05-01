@@ -225,7 +225,7 @@ const MyObservations = () => {
                             } mr-1`}></i> 
                             {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
-                          <span><i className="fas fa-calendar mr-1"></i> Added: {observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown'}</span>
+                          <span><i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}</span>
                           {observation.observationNotes && (
                             <span className="text-nebula-pink"><i className="fas fa-sticky-note mr-1"></i> Has Notes</span>
                           )}

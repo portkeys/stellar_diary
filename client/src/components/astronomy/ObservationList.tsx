@@ -166,7 +166,7 @@ const ObservationList = () => {
                             {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                           </span>
                           <span>
-                            <i className="fas fa-calendar mr-1"></i> Added: {observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown'}
+                            <i className="fas fa-calendar mr-1"></i> Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
                           </span>
                         </div>
                       </div>
