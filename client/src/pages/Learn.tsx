@@ -183,7 +183,7 @@ const Learn = () => {
                 <Card key={tip.id} className="bg-space-blue border-cosmic-purple">
                   <div className="w-full h-48 overflow-hidden">
                     <img 
-                      src={tip.imageUrl} 
+                      src={tip.imageUrl || ''} 
                       alt={tip.title} 
                       className="w-full h-full object-cover"
                     />

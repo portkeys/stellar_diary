@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import MonthlyGuide from "@/pages/MonthlyGuide";
 import MyObservations from "@/pages/MyObservations";
 import Learn from "@/pages/Learn";
+import CollimationGuide from "@/pages/CollimationGuide";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/monthly-guide" component={MonthlyGuide} />
       <Route path="/my-observations" component={MyObservations} />
       <Route path="/learn" component={Learn} />
+      <Route path="/collimation-guide" component={CollimationGuide} />
       <Route component={NotFound} />
     </Switch>
   );
