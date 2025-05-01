@@ -115,10 +115,12 @@ const MyObservations = () => {
   // Function to open the date dialog
   const handleOpenDateDialog = (observation: EnhancedObservation) => {
     setSelectedObservation(observation);
-    // Format the date to YYYY-MM-DD for the date input
+    // Format the date to YYYY-MM-DD for the date input, adjusting for PST timezone
     if (observation.plannedDate) {
       const date = new Date(observation.plannedDate);
-      const formattedDate = date.toISOString().split('T')[0];
+      // Ensure we're not losing a day due to timezone conversion
+      const userTimezoneDate = new Date(date.getTime() + (480 * 60000)); // Add 8 hours for PST
+      const formattedDate = userTimezoneDate.toISOString().split('T')[0];
       setDateInput(formattedDate);
     } else {
       // Default to Jan 13, 2025 as requested by the user
@@ -130,14 +132,18 @@ const MyObservations = () => {
   // Mutation to update observation date
   const updateDateMutation = useMutation({
     mutationFn: async ({ id, date }: { id: number, date: string }) => {
-      await apiRequest('PATCH', `/api/observations/${id}`, { plannedDate: date });
+      // When updating the observation date, also mark the observation as observed
+      await apiRequest('PATCH', `/api/observations/${id}`, { 
+        plannedDate: date,
+        isObserved: true // Make sure to set as observed when a date is provided
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
       setOpenDateDialog(false);
       toast({
         title: "Observation date updated",
-        description: "Your observation date has been updated.",
+        description: "Your observation date has been updated and marked as observed.",
       });
     },
     onError: (error) => {
@@ -266,7 +272,14 @@ const MyObservations = () => {
                           </span>
                           <span className="flex items-center">
                             <i className="fas fa-calendar mr-1"></i> 
-                            Observed: {observation.plannedDate ? new Date(observation.plannedDate).toLocaleDateString() : (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
+                            Observed: {observation.plannedDate ? 
+                              (() => {
+                                const date = new Date(observation.plannedDate);
+                                // Adjust for PST timezone (UTC-8)
+                                const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                return userTimezoneDate.toLocaleDateString();
+                              })() : 
+                              (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
                             <Button
                               variant="ghost"
                               className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
