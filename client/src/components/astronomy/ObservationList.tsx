@@ -194,13 +194,6 @@ const ObservationList = () => {
                       >
                         <i className={`${observation.isObserved ? 'fas' : 'far'} fa-check-circle text-xl`}></i>
                       </button>
-                      <button 
-                        className="text-star-dim hover:text-nebula-pink"
-                        onClick={() => handleRemove(observation.id)}
-                        title="Remove from list"
-                      >
-                        <i className="fas fa-trash-alt text-xl"></i>
-                      </button>
                     </div>
                   </div>
                 ))}

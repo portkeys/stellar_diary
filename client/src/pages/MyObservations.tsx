@@ -279,14 +279,7 @@ const MyObservations = () => {
                                 >
                                   <i className="fas fa-edit text-xl"></i>
                                 </Button>
-                                <Button 
-                                  variant="ghost"
-                                  className="text-star-dim hover:text-nebula-pink"
-                                  onClick={() => handleRemove(observation.id)}
-                                  title="Remove from list"
-                                >
-                                  <i className="fas fa-trash-alt text-xl"></i>
-                                </Button>
+
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 my-1 text-sm text-star-dim">
@@ -403,14 +396,7 @@ const MyObservations = () => {
                           >
                             <i className="fas fa-edit text-xl"></i>
                           </Button>
-                          <Button 
-                            variant="ghost"
-                            className="text-star-dim hover:text-nebula-pink"
-                            onClick={() => handleRemove(observation.id)}
-                            title="Remove from list"
-                          >
-                            <i className="fas fa-trash-alt text-xl"></i>
-                          </Button>
+
                         </div>
                       </div>
                     ))}
