@@ -3,8 +3,12 @@ import {
   CelestialObject, InsertCelestialObject,
   Observation, InsertObservation,
   MonthlyGuide, InsertMonthlyGuide,
-  TelescopeTip, InsertTelescopeTip
+  TelescopeTip, InsertTelescopeTip,
+  users, celestialObjects, observations, 
+  monthlyGuides, telescopeTips, apodCache
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, or } from "drizzle-orm";
 
 // Extend the storage interface with all required CRUD operations
 export interface IStorage {
@@ -41,165 +45,153 @@ export interface IStorage {
   createTelescopeTip(tip: InsertTelescopeTip): Promise<TelescopeTip>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private celestialObjects: Map<number, CelestialObject>;
-  private observations: Map<number, Observation>;
-  private monthlyGuides: Map<number, MonthlyGuide>;
-  private telescopeTips: Map<number, TelescopeTip>;
-  
-  private userCurrentId: number;
-  private objectCurrentId: number;
-  private observationCurrentId: number;
-  private guideCurrentId: number;
-  private tipCurrentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.celestialObjects = new Map();
-    this.observations = new Map();
-    this.monthlyGuides = new Map();
-    this.telescopeTips = new Map();
-    
-    this.userCurrentId = 1;
-    this.objectCurrentId = 1;
-    this.observationCurrentId = 1;
-    this.guideCurrentId = 1;
-    this.tipCurrentId = 1;
-  }
-
-  // User operations
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
-  // Celestial objects operations
   async getCelestialObject(id: number): Promise<CelestialObject | undefined> {
-    return this.celestialObjects.get(id);
+    const [object] = await db.select().from(celestialObjects).where(eq(celestialObjects.id, id));
+    return object || undefined;
   }
 
   async getAllCelestialObjects(): Promise<CelestialObject[]> {
-    return Array.from(this.celestialObjects.values());
+    return await db.select().from(celestialObjects);
   }
 
   async getCelestialObjectsByType(type: string): Promise<CelestialObject[]> {
-    return Array.from(this.celestialObjects.values()).filter(
-      (object) => object.type === type,
-    );
+    return await db.select().from(celestialObjects).where(eq(celestialObjects.type, type));
   }
 
   async getCelestialObjectsByMonth(month: string): Promise<CelestialObject[]> {
-    return Array.from(this.celestialObjects.values()).filter(
-      (object) => object.month === month,
-    );
+    return await db.select().from(celestialObjects).where(eq(celestialObjects.month, month));
   }
 
   async getCelestialObjectsByHemisphere(hemisphere: string): Promise<CelestialObject[]> {
-    return Array.from(this.celestialObjects.values()).filter(
-      (object) => object.hemisphere === hemisphere || object.hemisphere === 'both',
-    );
+    // For hemisphere we need to check both exact match and 'both'
+    if (hemisphere === 'both') {
+      return await db.select().from(celestialObjects);
+    } else {
+      return await db.select().from(celestialObjects).where(
+        or(
+          eq(celestialObjects.hemisphere, hemisphere), 
+          eq(celestialObjects.hemisphere, 'both')
+        )
+      );
+    }
   }
 
   async createCelestialObject(insertObject: InsertCelestialObject): Promise<CelestialObject> {
-    const id = this.objectCurrentId++;
-    const object: CelestialObject = { ...insertObject, id };
-    this.celestialObjects.set(id, object);
+    const [object] = await db
+      .insert(celestialObjects)
+      .values(insertObject)
+      .returning();
     return object;
   }
 
-  // Observation operations
   async getObservation(id: number): Promise<Observation | undefined> {
-    return this.observations.get(id);
+    const [observation] = await db.select().from(observations).where(eq(observations.id, id));
+    return observation || undefined;
   }
 
   async getUserObservations(userId: number): Promise<Observation[]> {
-    return Array.from(this.observations.values()).filter(
-      (observation) => observation.userId === userId,
-    );
+    return await db.select().from(observations).where(eq(observations.userId, userId));
   }
 
   async createObservation(insertObservation: InsertObservation): Promise<Observation> {
-    const id = this.observationCurrentId++;
-    const dateAdded = new Date();
-    const observation: Observation = { ...insertObservation, id, dateAdded };
-    this.observations.set(id, observation);
+    const [observation] = await db
+      .insert(observations)
+      .values(insertObservation)
+      .returning();
     return observation;
   }
 
   async updateObservation(id: number, update: Partial<Observation>): Promise<Observation | undefined> {
-    const observation = this.observations.get(id);
-    if (!observation) return undefined;
-    
-    const updatedObservation = { ...observation, ...update };
-    this.observations.set(id, updatedObservation);
-    return updatedObservation;
+    const [updatedObservation] = await db
+      .update(observations)
+      .set(update)
+      .where(eq(observations.id, id))
+      .returning();
+    return updatedObservation || undefined;
   }
 
   async deleteObservation(id: number): Promise<boolean> {
-    return this.observations.delete(id);
+    const [deleted] = await db
+      .delete(observations)
+      .where(eq(observations.id, id))
+      .returning();
+    return !!deleted;
   }
 
-  // Monthly guides operations
   async getMonthlyGuide(id: number): Promise<MonthlyGuide | undefined> {
-    return this.monthlyGuides.get(id);
+    const [guide] = await db.select().from(monthlyGuides).where(eq(monthlyGuides.id, id));
+    return guide || undefined;
   }
 
   async getCurrentMonthlyGuide(hemisphere: string): Promise<MonthlyGuide | undefined> {
     const currentMonth = new Date().toLocaleString('default', { month: 'long' });
     const currentYear = new Date().getFullYear();
     
-    return Array.from(this.monthlyGuides.values()).find(
-      (guide) => guide.month === currentMonth && 
-                guide.year === currentYear && 
-                (guide.hemisphere === hemisphere || guide.hemisphere === 'both'),
+    const [guide] = await db.select().from(monthlyGuides).where(
+      and(
+        eq(monthlyGuides.month, currentMonth),
+        eq(monthlyGuides.year, currentYear),
+        or(
+          eq(monthlyGuides.hemisphere, hemisphere),
+          eq(monthlyGuides.hemisphere, 'both')
+        )
+      )
     );
+    return guide || undefined;
   }
 
   async getAllMonthlyGuides(): Promise<MonthlyGuide[]> {
-    return Array.from(this.monthlyGuides.values());
+    return await db.select().from(monthlyGuides);
   }
 
   async createMonthlyGuide(insertGuide: InsertMonthlyGuide): Promise<MonthlyGuide> {
-    const id = this.guideCurrentId++;
-    const guide: MonthlyGuide = { ...insertGuide, id };
-    this.monthlyGuides.set(id, guide);
+    const [guide] = await db
+      .insert(monthlyGuides)
+      .values(insertGuide)
+      .returning();
     return guide;
   }
 
-  // Telescope tips operations
   async getTelescopeTip(id: number): Promise<TelescopeTip | undefined> {
-    return this.telescopeTips.get(id);
+    const [tip] = await db.select().from(telescopeTips).where(eq(telescopeTips.id, id));
+    return tip || undefined;
   }
 
   async getAllTelescopeTips(): Promise<TelescopeTip[]> {
-    return Array.from(this.telescopeTips.values());
+    return await db.select().from(telescopeTips);
   }
 
   async getTelescopeTipsByCategory(category: string): Promise<TelescopeTip[]> {
-    return Array.from(this.telescopeTips.values()).filter(
-      (tip) => tip.category === category,
-    );
+    return await db.select().from(telescopeTips).where(eq(telescopeTips.category, category));
   }
 
   async createTelescopeTip(insertTip: InsertTelescopeTip): Promise<TelescopeTip> {
-    const id = this.tipCurrentId++;
-    const tip: TelescopeTip = { ...insertTip, id };
-    this.telescopeTips.set(id, tip);
+    const [tip] = await db
+      .insert(telescopeTips)
+      .values(insertTip)
+      .returning();
     return tip;
   }
 }
 
-export const storage = new MemStorage();
+// Use DatabaseStorage instead of MemStorage for persistent storage
+export const storage = new DatabaseStorage();
