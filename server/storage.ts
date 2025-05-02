@@ -19,11 +19,13 @@ export interface IStorage {
   
   // Celestial objects operations
   getCelestialObject(id: number): Promise<CelestialObject | undefined>;
+  getCelestialObjectByName(name: string): Promise<CelestialObject | undefined>;
   getAllCelestialObjects(): Promise<CelestialObject[]>;
   getCelestialObjectsByType(type: string): Promise<CelestialObject[]>;
   getCelestialObjectsByMonth(month: string): Promise<CelestialObject[]>;
   getCelestialObjectsByHemisphere(hemisphere: string): Promise<CelestialObject[]>;
   createCelestialObject(object: InsertCelestialObject): Promise<CelestialObject>;
+  deleteCelestialObject(id: number): Promise<boolean>;
   
   // Observation operations
   getObservation(id: number): Promise<Observation | undefined>;
@@ -68,6 +70,11 @@ export class DatabaseStorage implements IStorage {
     const [object] = await db.select().from(celestialObjects).where(eq(celestialObjects.id, id));
     return object || undefined;
   }
+  
+  async getCelestialObjectByName(name: string): Promise<CelestialObject | undefined> {
+    const [object] = await db.select().from(celestialObjects).where(eq(celestialObjects.name, name));
+    return object || undefined;
+  }
 
   async getAllCelestialObjects(): Promise<CelestialObject[]> {
     return await db.select().from(celestialObjects);
@@ -101,6 +108,14 @@ export class DatabaseStorage implements IStorage {
       .values(insertObject)
       .returning();
     return object;
+  }
+  
+  async deleteCelestialObject(id: number): Promise<boolean> {
+    const [deleted] = await db
+      .delete(celestialObjects)
+      .where(eq(celestialObjects.id, id))
+      .returning();
+    return !!deleted;
   }
 
   async getObservation(id: number): Promise<Observation | undefined> {
