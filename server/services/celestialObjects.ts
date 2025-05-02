@@ -236,6 +236,16 @@ export async function seedDatabase(): Promise<void> {
       await storage.createCelestialObject(object);
     }
     console.log('Seeded celestial objects');
+  } else {
+    // Check for missing objects in case we've added new ones to the seed data
+    for (const seedObject of seedCelestialObjects) {
+      // Check if this object already exists
+      const existingObject = await storage.getCelestialObjectByName(seedObject.name);
+      if (!existingObject) {
+        console.log(`Adding new celestial object "${seedObject.name}" from seed data`);
+        await storage.createCelestialObject(seedObject);
+      }
+    }
   }
 
   // Seed monthly guides
