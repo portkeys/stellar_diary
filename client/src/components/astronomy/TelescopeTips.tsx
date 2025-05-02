@@ -73,31 +73,14 @@ const TelescopeTips = () => {
   
   return (
     <section className="my-16">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Maintenance
-        </h2>
-      </div>
-      
       <div className="flex justify-center">
         <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-3xl w-full">
           <div className="relative">
             <img 
-              src={collimationTip.imageUrl || ''} 
-              alt={collimationTip.title} 
-              className="w-full h-48 object-cover"
+              src="/assets/collimate_AD8.png" 
+              alt="Collimation Guide" 
+              className="w-full object-contain"
             />
-          </div>
-          <div className="p-5">
-            <h3 className="text-lg text-space font-semibold mb-2">{collimationTip.title}</h3>
-            <p className="text-sm text-star-dim mb-3">
-              {collimationTip.content}
-            </p>
-            <Link href="/collimation-guide">
-              <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
-                Read Guide <i className="fas fa-arrow-right ml-1"></i>
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
