@@ -16,7 +16,7 @@ def get_apod(date=None, force_refresh=False):
     Returns:
         dict: APOD data in JSON format
     """
-    api_key = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
+    api_key = os.environ.get('NASA_API_KEY')
     
     # Build request URL
     url = f"https://api.nasa.gov/planetary/apod?api_key={api_key}"
