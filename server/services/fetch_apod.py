@@ -5,18 +5,21 @@ import os
 import sys
 from datetime import datetime
 
-def get_apod(date=None, force_refresh=False):
+def get_apod(date=None, force_refresh=False, api_key=None):
     """
     Fetch the Astronomy Picture of the Day from NASA's API
     
     Args:
         date (str, optional): A date string in YYYY-MM-DD format. Defaults to today.
         force_refresh (bool, optional): Force refresh from API. Defaults to False.
+        api_key (str, optional): NASA API key. If not provided, will try to get from environment.
     
     Returns:
         dict: APOD data in JSON format
     """
-    api_key = os.environ.get('NASA_API_KEY')
+    # If no API key provided, try to get from environment or use DEMO_KEY as last resort
+    if not api_key:
+        api_key = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
     
     # Build request URL
     url = f"https://api.nasa.gov/planetary/apod?api_key={api_key}"
@@ -55,18 +58,21 @@ def get_apod(date=None, force_refresh=False):
         }
         return error
 
-def get_apod_range(start_date, end_date):
+def get_apod_range(start_date, end_date, api_key=None):
     """
     Fetch the Astronomy Picture of the Day for a range of dates
     
     Args:
         start_date (str): Start date in YYYY-MM-DD format
         end_date (str): End date in YYYY-MM-DD format
+        api_key (str, optional): NASA API key. If not provided, will try to get from environment.
     
     Returns:
         list: List of APOD data for the specified date range
     """
-    api_key = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
+    # If no API key provided, try to get from environment or use DEMO_KEY as last resort
+    if not api_key:
+        api_key = os.environ.get('NASA_API_KEY', 'DEMO_KEY')
     
     # Build request URL with date range
     url = f"https://api.nasa.gov/planetary/apod?api_key={api_key}&start_date={start_date}&end_date={end_date}"
@@ -100,9 +106,10 @@ if __name__ == "__main__":
         # Get optional parameters
         date = sys.argv[2] if len(sys.argv) > 2 else None
         force_refresh = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+        api_key = sys.argv[4] if len(sys.argv) > 4 else None
         
         # Fetch APOD data and print as JSON
-        data = get_apod(date, force_refresh)
+        data = get_apod(date, force_refresh, api_key)
         print(json.dumps(data))
         
     elif command == "fetch_range":
@@ -113,9 +120,10 @@ if __name__ == "__main__":
         
         start_date = sys.argv[2]
         end_date = sys.argv[3]
+        api_key = sys.argv[4] if len(sys.argv) > 4 else None
         
         # Fetch APOD range and print as JSON
-        data = get_apod_range(start_date, end_date)
+        data = get_apod_range(start_date, end_date, api_key)
         print(json.dumps(data))
         
     else:

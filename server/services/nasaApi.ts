@@ -16,10 +16,15 @@ const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
  */
 async function executePythonScript(command: string, ...args: string[]): Promise<any> {
   const scriptPath = path.join(process.cwd(), 'server', 'services', 'fetch_apod.py');
-  const cmdArgs = [command, ...args].filter(Boolean).map(arg => arg ? `"${arg}"` : '');
+  
+  // Filter out undefined arguments and add NASA_API_KEY as an additional argument
+  const filteredArgs = args.filter(Boolean).map(arg => arg ? `"${arg}"` : '');
+  
+  // Add NASA_API_KEY as the last argument
+  const cmdArgs = [command, ...filteredArgs, `"${NASA_API_KEY}"`];
   const cmd = `python3 "${scriptPath}" ${cmdArgs.join(' ')}`;
   
-  console.log(`Executing Python script: ${cmd}`);
+  console.log(`Executing Python script: ${cmd.replace(NASA_API_KEY, '[REDACTED]')}`);
   
   try {
     const { stdout, stderr } = await execPromise(cmd);
