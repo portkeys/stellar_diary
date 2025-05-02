@@ -190,8 +190,8 @@ const seedMonthlyGuides = [
   {
     month: "May",
     year: 2025,
-    headline: "Spring Nebulae and Star Clusters",
-    description: "May offers excellent opportunities to observe galaxies in the northern hemisphere, particularly in the Virgo Cluster. It's also a good time to observe Jupiter in the early morning sky.",
+    headline: "Meteor Showers, Saturn, and Deep Sky Treasures",
+    description: "May 2025 brings the beautiful Eta Aquariid meteor shower (peaking May 4-5), created from the debris of Halley's Comet. Saturn reaches opposition on May 7th, making it visible all night with its rings clearly visible in telescopes. The bright star Arcturus dominates the evening sky, while the constellation Virgo offers excellent galaxy hunting with M87, M84, and M86. In the early morning hours, spot Mars and Venus low on the eastern horizon.",
     hemisphere: "Northern"
   },
   {
