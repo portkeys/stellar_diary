@@ -209,7 +209,7 @@ const seedTelescopeTips = [
     title: "Collimating Your Apertura AD8 Dobsonian",
     content: "Good collimation is crucial for sharp views with your Apertura AD8. The included laser collimator makes this easy with just two main steps: 1) First, align the secondary mirror by adjusting the secondary mirror housing hex screws until the laser hits the center spot on the primary mirror. 2) Then, align the primary mirror by loosening the white thumb screws and adjusting the black knobs until the laser returns back to the laser collimator's 45-degree reflective surface. This process takes under 2 minutes once you've practiced a few times and will significantly improve your viewing experience.",
     category: "Maintenance",
-    imageUrl: "https://www.highpointscientific.com/media/wysiwyg/SEO_Articles/LaserCollimateAD8/Collimation_02.jpg"
+    imageUrl: "/collimate_AD8.jpg"
   },
   {
     title: "Best Eyepieces for Your Dob",
