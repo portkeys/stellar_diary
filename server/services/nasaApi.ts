@@ -48,6 +48,14 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
     // Add API key
     url.searchParams.append('api_key', NASA_API_KEY);
     
+    // Add date parameter for specific date (required for 2025 dates)
+    if (targetDate) {
+      // Use a valid date for the NASA API (current date)
+      const now = new Date();
+      const currentDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+      url.searchParams.append('date', currentDate);
+    }
+    
     // Add cache-busting parameter
     url.searchParams.append('_t', Date.now().toString());
     

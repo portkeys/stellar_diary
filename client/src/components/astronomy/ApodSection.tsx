@@ -70,9 +70,22 @@ const ApodSection = () => {
           <h2 className="text-2xl text-space font-bold">
             <i className="fas fa-camera-retro text-stellar-gold mr-2"></i> NASA Astronomy Picture of the Day
           </h2>
-          <Button variant="ghost" className="text-star-dim hover:text-star-white">
-            <i className="fas fa-calendar-alt mr-1"></i> Archive
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              className="text-star-dim hover:text-star-white"
+              disabled={true}
+            >
+              <i className="fas fa-sync-alt mr-1"></i> Refresh
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-star-dim hover:text-star-white"
+              onClick={openApodArchive}
+            >
+              <i className="fas fa-calendar-alt mr-1"></i> Archive
+            </Button>
+          </div>
         </div>
         
         <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
