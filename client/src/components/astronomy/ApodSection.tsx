@@ -12,10 +12,11 @@ const ApodSection = () => {
   // Define query options with proper typing
   const { data: apod, isLoading, isError, refetch } = useQuery<ApodResponse>({
     queryKey: ['/api/apod'],
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    // No need for refetchInterval, we'll use cached database results
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes only
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gets focus again
+    // Adding refetch interval to ensure fresh data
+    refetchInterval: 1000 * 60 * 60, // Refetch every hour
   });
   
   // Function to manually refresh APOD with force flag

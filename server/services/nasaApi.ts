@@ -7,10 +7,14 @@ const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
 // Function to get the current simulated date in YYYY-MM-DD format
 function getCurrentDate(): string {
   const today = new Date();
-  const year = 2025;
+  
+  // For a simulated date in 2025, but with current month/day
+  const year = 2025; 
   const month = today.getMonth() + 1;
   const day = today.getDate();
-  return `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`;
+  
+  // Format date properly with leading zeros
+  return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 }
 
 /**
