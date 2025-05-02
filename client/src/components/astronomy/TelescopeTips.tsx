@@ -64,49 +64,42 @@ const TelescopeTips = () => {
     );
   }
   
-  // Display at most 2 tips
-  const displayTips = tips.slice(0, 2);
+  // Only display the collimation tip
+  const collimationTip = tips.find(tip => tip.title.includes("Collimating"));
+  
+  if (!collimationTip) {
+    return null; // Skip rendering if tip not found
+  }
   
   return (
     <section className="my-16">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Tips
+          <i className="fas fa-telescope text-stellar-gold mr-2"></i> 8-inch Dobsonian Maintenance
         </h2>
-        <Button variant="ghost" className="text-star-dim hover:text-star-white">
-          View All Tips
-        </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {displayTips.map(tip => (
-          <div key={tip.id} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-            <div className="relative">
-              <img 
-                src={tip.imageUrl || ''} 
-                alt={tip.title} 
-                className="w-full h-40 object-cover"
-              />
-            </div>
-            <div className="p-4">
-              <h3 className="text-lg text-space font-semibold mb-2">{tip.title}</h3>
-              <p className="text-sm text-star-dim mb-3">
-                {tip.content}
-              </p>
-              {tip.title.includes("Collimating") ? (
-                <Link href="/collimation-guide">
-                  <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
-                    Read Guide <i className="fas fa-arrow-right ml-1"></i>
-                  </Button>
-                </Link>
-              ) : (
-                <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
-                  Read Guide <i className="fas fa-arrow-right ml-1"></i>
-                </Button>
-              )}
-            </div>
+      <div className="flex justify-center">
+        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-3xl w-full">
+          <div className="relative">
+            <img 
+              src={collimationTip.imageUrl || ''} 
+              alt={collimationTip.title} 
+              className="w-full h-48 object-cover"
+            />
           </div>
-        ))}
+          <div className="p-5">
+            <h3 className="text-lg text-space font-semibold mb-2">{collimationTip.title}</h3>
+            <p className="text-sm text-star-dim mb-3">
+              {collimationTip.content}
+            </p>
+            <Link href="/collimation-guide">
+              <Button variant="link" className="text-stellar-gold hover:underline p-0 text-sm">
+                Read Guide <i className="fas fa-arrow-right ml-1"></i>
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );
