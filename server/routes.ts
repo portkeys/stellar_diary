@@ -21,19 +21,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { date, refresh } = req.query;
       const forceRefresh = refresh === 'true';
       
+      console.log(`APOD request received - Date: ${date || 'current'}, Force refresh: ${forceRefresh}`);
+      
       // Set appropriate cache headers based on whether we want fresh data
       if (forceRefresh) {
         // If forcing refresh, prevent client-side caching
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+        console.log('APOD cache headers set for forced refresh');
       } else {
         // If using cached data, allow client-side caching for 1 hour
         // The database will still serve the latest cached entry
         res.setHeader('Cache-Control', 'public, max-age=3600');
+        console.log('APOD cache headers set for normal request');
       }
       
+      console.log('Fetching APOD data from service...');
       const apodData = await fetchApod(date as string | undefined, forceRefresh);
+      console.log(`APOD data returned: ${apodData.title} (${apodData.date})`);
+      
       res.json(apodData);
     } catch (error) {
       console.error('NASA APOD API error:', error);

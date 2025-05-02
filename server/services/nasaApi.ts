@@ -21,8 +21,20 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
   const realDate = `${year}-${month}-${day}`;  
   const targetDate = date || realDate;
   
-  // Check for cached data first, unless forceRefresh is true
-  if (!forceRefresh) {
+  // Log force refresh attempts for debugging
+  if (forceRefresh) {
+    console.log(`Force refresh requested for APOD. Clearing cache for ${targetDate}`);
+    try {
+      // First try to delete any existing cache entry for today
+      await db.delete(apodCache).where(eq(apodCache.date, targetDate));
+      console.log(`Cleared cache entries for ${targetDate}`);
+    } catch (err) {
+      console.error('Error clearing cache during force refresh:', err);
+      // Continue even if clearing fails
+    }
+  } 
+  // Check for cached data if not forcing refresh
+  else {
     try {
       const cachedData = await db.select().from(apodCache).where(eq(apodCache.date, targetDate));
       
@@ -43,18 +55,37 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
     const url = new URL('https://api.nasa.gov/planetary/apod');
     url.searchParams.append('api_key', NASA_API_KEY);
     
+    // Add a random parameter to force a fresh request each time when refresh is true
+    // This helps bypass any potential caching by CDNs or proxies
+    if (forceRefresh) {
+      url.searchParams.append('nocache', Date.now().toString());
+    }
+    
     // Only add date param if a specific date was requested
     if (date) {
       url.searchParams.append('date', date);
     }
     
-    const response = await fetch(url.toString());
+    console.log(`Making NASA API request to: ${url.toString().replace(/api_key=[^&]+/, 'api_key=HIDDEN')}`);
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        // Add headers to avoid caching when force refreshing
+        ...(forceRefresh ? { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        } : {})
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json() as ApodResponse;
+    console.log(`NASA API returned data: ${data.title} (${data.date})`);
+    
     
     // Save to cache
     try {
