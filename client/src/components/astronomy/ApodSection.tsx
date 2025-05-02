@@ -23,6 +23,7 @@ const ApodSection = () => {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
+      await queryClient.invalidateQueries({ queryKey: ['/api/apod'] });
       await queryClient.fetchQuery({
         queryKey: ['/api/apod'],
         queryFn: async () => {
@@ -38,6 +39,11 @@ const ApodSection = () => {
     } finally {
       setIsRefreshing(false);
     }
+  };
+  
+  // Function to open NASA's APOD archive in a new tab
+  const openApodArchive = () => {
+    window.open('https://apod.nasa.gov/apod/archivepix.html', '_blank');
   };
   
   // Force refetch at midnight to get the new APOD
