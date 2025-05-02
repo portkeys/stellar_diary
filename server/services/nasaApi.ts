@@ -1,8 +1,40 @@
 import { ApodResponse, InsertApodCache, apodCache } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc } from "drizzle-orm";
+import { promisify } from "util";
+import { exec } from "child_process";
+import path from "path";
 
+const execPromise = promisify(exec);
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
+
+/**
+ * Executes the Python script to fetch APOD data
+ * @param command Command to execute (fetch or fetch_range)
+ * @param args Additional arguments to pass to the Python script
+ * @returns Promise with the result
+ */
+async function executePythonScript(command: string, ...args: string[]): Promise<any> {
+  const scriptPath = path.join(process.cwd(), 'server', 'services', 'fetch_apod.py');
+  const cmdArgs = [command, ...args].filter(Boolean).map(arg => arg ? `"${arg}"` : '');
+  const cmd = `python3 "${scriptPath}" ${cmdArgs.join(' ')}`;
+  
+  console.log(`Executing Python script: ${cmd}`);
+  
+  try {
+    const { stdout, stderr } = await execPromise(cmd);
+    
+    if (stderr) {
+      console.error(`Python script error: ${stderr}`);
+    }
+    
+    const result = JSON.parse(stdout);
+    return result;
+  } catch (error) {
+    console.error("Error executing Python script:", error);
+    throw error;
+  }
+}
 
 /**
  * Fetches the Astronomy Picture of the Day from NASA's API with database caching
@@ -11,21 +43,21 @@ const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
  * @returns Promise with APOD data
  */
 export async function fetchApod(date?: string, forceRefresh = false): Promise<ApodResponse> {
-  // Get the current date, but make it compatible with the NASA API
+  // Get the current date
   const today = new Date();
   const year = today.getFullYear();
   const month = (today.getMonth() + 1).toString().padStart(2, '0');
   const day = today.getDate().toString().padStart(2, '0');
   
-  // Real date format for API requests, instead of simulated future date
-  const realDate = `${year}-${month}-${day}`;  
-  const targetDate = date || realDate;
+  // Date format for API requests
+  const todayStr = `${year}-${month}-${day}`;  
+  const targetDate = date || todayStr;
   
-  // Log force refresh attempts for debugging
+  // Check if we should force refresh
   if (forceRefresh) {
     console.log(`Force refresh requested for APOD. Clearing cache for ${targetDate}`);
     try {
-      // First try to delete any existing cache entry for today
+      // Delete any existing cache entry for the target date
       await db.delete(apodCache).where(eq(apodCache.date, targetDate));
       console.log(`Cleared cache entries for ${targetDate}`);
     } catch (err) {
@@ -49,43 +81,17 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
   }
   
   try {
-    console.log(`Fetching APOD data from NASA API...`);
+    console.log(`Fetching APOD data using Python script...`);
     
-    // Fetch actual NASA APOD data from the API
-    const url = new URL('https://api.nasa.gov/planetary/apod');
-    url.searchParams.append('api_key', NASA_API_KEY);
+    // Call the Python script to fetch the data
+    const data = await executePythonScript('fetch', date, forceRefresh.toString());
     
-    // Add a random parameter to force a fresh request each time when refresh is true
-    // This helps bypass any potential caching by CDNs or proxies
-    if (forceRefresh) {
-      url.searchParams.append('nocache', Date.now().toString());
+    // Check if there was an error
+    if (data.error) {
+      throw new Error(data.message);
     }
     
-    // Only add date param if a specific date was requested
-    if (date) {
-      url.searchParams.append('date', date);
-    }
-    
-    console.log(`Making NASA API request to: ${url.toString().replace(/api_key=[^&]+/, 'api_key=HIDDEN')}`);
-    
-    const response = await fetch(url.toString(), {
-      headers: {
-        // Add headers to avoid caching when force refreshing
-        ...(forceRefresh ? { 
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        } : {})
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json() as ApodResponse;
-    console.log(`NASA API returned data: ${data.title} (${data.date})`);
-    
+    console.log(`Python script returned APOD data: ${data.title} (${data.date})`);
     
     // Save to cache
     try {
@@ -111,7 +117,7 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       // Continue even if caching fails
     }
     
-    return data;
+    return data as ApodResponse;
   } catch (error) {
     console.error('Error handling APOD:', error);
     
@@ -131,13 +137,12 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
     // Last resort fallback
     return {
       date: targetDate,
-      explanation: "Sometimes, the sky itself seems to smile. A few days ago, visible over much of the world, an unusual superposition of our Moon with the planets Venus and Saturn created just such an iconic facial expression. Specifically, a crescent Moon appeared to make a happy face on the night sky when paired with seemingly nearby planets.",
+      explanation: "We're experiencing some difficulties loading the NASA Astronomy Picture of the Day. Please try refreshing again or check back later.",
       media_type: "image",
       service_version: "v1",
-      title: "A Happy Sky over Bufa Hill in Mexico",
-      url: "https://apod.nasa.gov/apod/image/2504/HappySkyMexico_Korona_960.jpg",
-      hdurl: "https://apod.nasa.gov/apod/image/2504/HappySkyMexico_Korona_1358.jpg",
-      copyright: "Daniel Korona"
+      title: "NASA APOD Temporarily Unavailable",
+      url: "https://apod.nasa.gov/apod/image/0612/sombrero_hst.jpg", // Fallback to a classic APOD image
+      copyright: "NASA"
     };
   }
 }
@@ -149,18 +154,20 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
  * @returns Promise with array of APOD data
  */
 export async function fetchApodRange(startDate: string, endDate: string): Promise<ApodResponse[]> {
-  const url = new URL('https://api.nasa.gov/planetary/apod');
-  
-  // Add API key and date range parameters
-  url.searchParams.append('api_key', NASA_API_KEY);
-  url.searchParams.append('start_date', startDate);
-  url.searchParams.append('end_date', endDate);
-  
-  const response = await fetch(url.toString());
-  
-  if (!response.ok) {
-    throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
+  try {
+    console.log(`Fetching APOD range using Python script...`);
+    
+    // Call the Python script to fetch the data range
+    const data = await executePythonScript('fetch_range', startDate, endDate);
+    
+    // Check if there was an error
+    if (data.error) {
+      throw new Error(data.message);
+    }
+    
+    return data as ApodResponse[];
+  } catch (error) {
+    console.error('Error fetching APOD range:', error);
+    throw error;
   }
-  
-  return await response.json() as ApodResponse[];
 }
