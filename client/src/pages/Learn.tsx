@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
+import { ExternalLink } from "lucide-react";
 
 const Learn = () => {
   // Fetch telescope tips
@@ -74,7 +75,7 @@ const Learn = () => {
                   </li>
                   <li className="flex items-start">
                     <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                    <span>Learn how to properly set up and balance your telescope</span>
+                    <span>Learn how to properly set up your Dobsonian telescope</span>
                   </li>
                   <li className="flex items-start">
                     <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
@@ -82,7 +83,7 @@ const Learn = () => {
                   </li>
                   <li className="flex items-start">
                     <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                    <span>Understand basic astronomical coordinates</span>
+                    <span>Properly align your finderscope for easy object location</span>
                   </li>
                 </ul>
                 <Button className="mt-4 bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
@@ -127,10 +128,10 @@ const Learn = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               <div className="bg-space-blue-dark bg-opacity-60 p-4 rounded-lg">
                 <h4 className="text-lg text-space font-medium text-nebula-pink mb-2">
-                  <i className="fas fa-compass mr-2"></i> Celestial Coordinates
+                  <i className="fas fa-crosshairs mr-2"></i> Finderscope Alignment
                 </h4>
                 <p className="text-sm text-star-dim">
-                  Learn right ascension and declination, the celestial equivalents of longitude and latitude, to find objects in the night sky.
+                  Learn how to properly align your finderscope to make locating celestial objects much easier with your Dobsonian telescope.
                 </p>
               </div>
               <div className="bg-space-blue-dark bg-opacity-60 p-4 rounded-lg">
@@ -279,6 +280,30 @@ const Learn = () => {
                   </ul>
                 </div>
               </div>
+              
+              <div className="mt-6 pt-6 border-t border-space-blue-dark">
+                <h4 className="text-nebula-pink font-medium mb-3">Helpful Resources</h4>
+                <div className="space-y-2">
+                  <a 
+                    href="https://telescopicwatch.com/how-to-align-finderscopes/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-stellar-gold hover:text-stellar-gold-light transition-colors"
+                  >
+                    <ExternalLink size={16} className="mr-2" /> 
+                    How to Align Finderscopes
+                  </a>
+                  <a 
+                    href="https://astrobackyard.com/buying-your-first-telescope/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-stellar-gold hover:text-stellar-gold-light transition-colors"
+                  >
+                    <ExternalLink size={16} className="mr-2" /> 
+                    Buying Your First Telescope Guide
+                  </a>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -343,9 +368,14 @@ const Learn = () => {
                 </div>
               </div>
               
-              <Button className="bg-nebula-pink hover:bg-opacity-90">
-                View Deep Sky Object Catalog <i className="fas fa-arrow-right ml-2"></i>
-              </Button>
+              <a 
+                href="https://telescopicwatch.com/top-deep-sky-objects-for-beginners/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-nebula-pink hover:bg-opacity-90 text-space text-white font-medium py-2 px-4 rounded-md"
+              >
+                Top Deep Sky Objects for Beginners <ExternalLink size={16} className="ml-2" />
+              </a>
             </div>
           </div>
           
