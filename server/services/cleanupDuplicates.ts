@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { celestialObjects } from "@shared/schema";
+import { celestialObjects, CelestialObject } from "@shared/schema";
 
 /**
  * Clean up duplicate celestial objects from the database
@@ -16,25 +16,28 @@ export async function cleanupDuplicateCelestialObjects(): Promise<void> {
     const allObjects = await storage.getAllCelestialObjects();
     
     // Group by name to find duplicates
-    const objectsByName = new Map();
+    const objectsByName = new Map<string, CelestialObject[]>();
     
     allObjects.forEach(obj => {
       if (!objectsByName.has(obj.name)) {
         objectsByName.set(obj.name, []);
       }
-      objectsByName.get(obj.name).push(obj);
+      objectsByName.get(obj.name)!.push(obj);
     });
     
     // Find and clean up duplicates
     let removedCount = 0;
     
-    for (const [name, objects] of objectsByName.entries()) {
+    // Convert Map entries to array for iteration to avoid downlevelIteration flag issue
+    const entries = Array.from(objectsByName.entries());
+    
+    for (const [name, objects] of entries) {
       if (objects.length > 1) {
         console.log(`Found ${objects.length} entries for "${name}"`);
         
         // Sort objects to prefer non-Unsplash images
         // Unsplash images contain "unsplash.com" in the URL
-        objects.sort((a, b) => {
+        objects.sort((a: CelestialObject, b: CelestialObject) => {
           const aIsUnsplash = a.imageUrl?.includes('unsplash.com') || false;
           const bIsUnsplash = b.imageUrl?.includes('unsplash.com') || false;
           

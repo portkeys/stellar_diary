@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchApod } from "./services/nasaApi";
 import { seedDatabase, getCurrentMonth, getCurrentYear, filterCelestialObjects } from "./services/celestialObjects";
+import { celestialObjectExists, cleanupDuplicateCelestialObjects } from "./services/cleanupDuplicates";
 import { 
   insertObservationSchema,
   insertCelestialObjectSchema,
@@ -13,6 +14,9 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Seed the database with initial data
   await seedDatabase();
+  
+  // Clean up any duplicate celestial objects
+  await cleanupDuplicateCelestialObjects();
 
   // NASA APOD API endpoint
   app.get("/api/apod", async (req: Request, res: Response) => {
@@ -109,6 +113,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         magnitude: req.body.magnitude || "Not specified",
         recommendedEyepiece: req.body.recommendedEyepiece || "Not specified",
       });
+      
+      // Check if a celestial object with this name already exists
+      const exists = await celestialObjectExists(validatedData.name);
+      if (exists) {
+        return res.status(409).json({ 
+          message: `A celestial object with the name "${validatedData.name}" already exists` 
+        });
+      }
       
       // Create the celestial object
       const newObject = await storage.createCelestialObject(validatedData);
