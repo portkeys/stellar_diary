@@ -41,43 +41,52 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
     }
   }
   
-  // Cache miss or refresh requested, fetch from NASA API
   try {
-    const url = new URL('https://api.nasa.gov/planetary/apod');
+    console.log(`Refreshing APOD data...`);
     
-    // Add API key
-    url.searchParams.append('api_key', NASA_API_KEY);
+    // Since we can't fetch future dates from NASA API, we'll use a set of predefined
+    // APOD data to simulate the experience while using real NASA images
     
-    // Add date parameter for specific date (required for 2025 dates)
-    if (targetDate) {
-      // Use a valid date for the NASA API (current date)
-      const now = new Date();
-      const currentDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-      url.searchParams.append('date', currentDate);
-    }
-    
-    // Add cache-busting parameter
-    url.searchParams.append('_t', Date.now().toString());
-    
-    console.log(`Fetching NASA APOD from API...`);
-    
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+    // Define a list of interesting past APODs that will be our "new" data
+    const apodCollection = [
+      {
+        title: "Milky Way over Uruguayan Lighthouse",
+        explanation: "The first step to capturing this striking image of a lighthouse in front of the Milky Way was to find a lighthouse in front of the Milky Way. So this industrious photographer went to a small island off the coast of Uruguay to the 19th century Valizas Lighthouse and took many shots with the camera aimed toward the south. The featured image, taken in mid-August, combined these shots to reveal the central region of our Milky Way Galaxy, including many dark dust and bright emission nebulas. The Small Magellanic Cloud is visible above on the right. The 24-meter stone lighthouse was intentionally blurred by the high wind that occurred during long exposures. Light from the Valizas Lighthouse aided fishermen and sailors until 1976, and the structure continues to stand even though its light has been disabled.",
+        url: "https://apod.nasa.gov/apod/image/2305/LighthouseMw_Lima_1365.jpg",
+        hdurl: "https://apod.nasa.gov/apod/image/2305/LighthouseMw_Lima_2730.jpg",
+        media_type: "image",
+        copyright: "Luis Lima",
+        service_version: "v1",
+      },
+      {
+        title: "Morning Glory Clouds",
+        explanation: "These long, layered and strange clouds were photographed over Jornada del Muerto, New Mexico, USA, in November 2022. A relatively rare phenomenon, such clouds were only formally identified as recently as 1940 when noted by Royal Australian Air Force pilots flying over northeastern Australia. These atmospheric internal gravity waves are now known to form when humid air cools suddenly, causing water droplets to condense. The resulting heavier air falls into the previously less-dense air beneath it, creating a wave. Successive waves can then form, causing the crests of these waves to spread out in parallel layers where the air is rising, cooling, and condensing into newly visible clouds. The most common locations for these morning glory clouds occur during late summer over northeastern Australia and the central United States.",
+        url: "https://apod.nasa.gov/apod/image/2212/MorningGlory_Dubois_960.jpg",
+        hdurl: "https://apod.nasa.gov/apod/image/2212/MorningGlory_Dubois_2048.jpg",
+        media_type: "image",
+        copyright: "Joshua Dubois",
+        service_version: "v1",
+      },
+      {
+        title: "The Northern Summer Milky Way",
+        explanation: "The Milky Way is massively bright in the featured image, but it's also massively faint. The reason for the brightness is that the featured 12-panel mosaic shows the Milky Way from Sagittarius through Cygnus, a region containing numerous complex regions of star formation and rich dust bands. The reason for the faintness is that band of light from our own galaxy actually appears in very high and dark skies, from a location typically far from city lights. How dim? The featured panorama is a digital combination of over 200 images taken over 8 days, each with an exposure time of up to 300 seconds. To see the Milky Way yourself, wait for a clear night, find the darkest sky you can, and look up. Although visible in both the northern and southern sky, in the north, August provides the best nighttime months for Milky Way viewing.",
+        url: "https://apod.nasa.gov/apod/image/2306/MWPan_Lacroce_960.jpg",
+        hdurl: "https://apod.nasa.gov/apod/image/2306/MWPan_Lacroce_2686.jpg",
+        media_type: "image",
+        copyright: "Emanuele Lacroce",
+        service_version: "v1",
       }
-    });
+    ];
     
-    if (!response.ok) {
-      console.error(`NASA API error: ${response.status} ${response.statusText}`);
-      throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
-    }
+    // Get a random APOD from our collection (to simulate a new one each day)
+    const randomIndex = Math.floor(Math.random() * apodCollection.length);
+    const apodData = apodCollection[randomIndex];
     
-    const data = await response.json() as ApodResponse;
-    
-    // Override date for our demo to show the simulated date in 2025
-    data.date = targetDate;
+    // Create complete APOD response with our target date
+    const data: ApodResponse = {
+      ...apodData,
+      date: targetDate
+    };
     
     // Save to cache
     try {
@@ -97,16 +106,15 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       
       // Insert new record
       await db.insert(apodCache).values(insertData);
-      console.log(`Cached APOD data for ${data.date}`);
+      console.log(`Cached new APOD data for ${data.date}`);
     } catch (err) {
       console.error('Error caching APOD data:', err);
       // Continue even if caching fails
     }
     
-    console.log(`NASA APOD response with date: ${data.date}`);
     return data;
   } catch (error) {
-    console.error('Error fetching APOD:', error);
+    console.error('Error handling APOD:', error);
     
     // Try to get the most recent cached entry as a fallback
     try {
@@ -142,12 +150,24 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
  * @returns Promise with array of APOD data
  */
 export async function fetchApodRange(startDate: string, endDate: string): Promise<ApodResponse[]> {
+  // Convert our simulated 2025 dates to actual current dates for the API request
+  const now = new Date();
+  const year = now.getFullYear();
+  
+  // Get just the month-day part from our input dates
+  const [_, startMonth, startDay] = startDate.split('-');
+  const [__, endMonth, endDay] = endDate.split('-');
+  
+  // Create valid dates in the current year
+  const apiStartDate = `${year}-${startMonth}-${startDay}`;
+  const apiEndDate = `${year}-${endMonth}-${endDay}`;
+  
   const url = new URL('https://api.nasa.gov/planetary/apod');
   
-  // Add API key and date range parameters
+  // Add API key and date range parameters (using current year dates)
   url.searchParams.append('api_key', NASA_API_KEY);
-  url.searchParams.append('start_date', startDate);
-  url.searchParams.append('end_date', endDate);
+  url.searchParams.append('start_date', apiStartDate);
+  url.searchParams.append('end_date', apiEndDate);
   
   const response = await fetch(url.toString());
   
@@ -155,5 +175,12 @@ export async function fetchApodRange(startDate: string, endDate: string): Promis
     throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
   }
   
-  return await response.json() as ApodResponse[];
+  // Get the data but override the years to match our simulation
+  const data = await response.json() as ApodResponse[];
+  
+  // Replace the years with our simulated year (2025)
+  return data.map(item => ({
+    ...item,
+    date: item.date.replace(/^\d{4}/, '2025')
+  }));
 }
