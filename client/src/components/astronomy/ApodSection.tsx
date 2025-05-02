@@ -161,7 +161,11 @@ const ApodSection = () => {
             <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'} mr-1`}></i> 
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
-          <Button variant="ghost" className="text-star-dim hover:text-star-white">
+          <Button 
+            variant="ghost" 
+            className="text-star-dim hover:text-star-white"
+            onClick={openApodArchive}
+          >
             <i className="fas fa-calendar-alt mr-1"></i> Archive
           </Button>
         </div>
