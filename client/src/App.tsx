@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import NotFound from "@/pages/not-found";
 import StarryBackground from "@/components/StarryBackground";
 import Home from "@/pages/Home";
@@ -34,6 +35,7 @@ function App() {
           <main className="flex-grow">
             <Router />
           </main>
+          <Footer />
         </div>
       </TooltipProvider>
     </QueryClientProvider>
