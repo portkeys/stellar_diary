@@ -79,7 +79,7 @@ const TelescopeTips = () => {
             <img 
               src="/assets/collimate_AD8.png" 
               alt="Collimation Guide" 
-              className="w-full object-contain"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
