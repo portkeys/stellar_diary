@@ -74,12 +74,12 @@ const TelescopeTips = () => {
   return (
     <section className="my-16">
       <div className="flex justify-center">
-        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-3xl w-full">
+        <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-md w-full">
           <div className="relative">
             <img 
               src="https://sdmntprwestus.oaiusercontent.com/files/00000000-4228-6230-8b55-3e7066606f9c/raw?se=2025-05-02T04%3A17%3A50Z&sp=r&sv=2024-08-04&sr=b&scid=f4356574-7308-5f33-9cb5-8e65ccd25315&skoid=dfdaf859-26f6-4fed-affc-1befb5ac1ac2&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-02T02%3A48%3A28Z&ske=2025-05-03T02%3A48%3A28Z&sks=b&skv=2024-08-04&sig=XwMMjTDGhY0vmGokBHDTCgWrr2SSR5ajc1nSWwjCJQU%3D" 
               alt="Collimation Guide" 
-              className="w-full h-[300px] object-contain"
+              className="w-full h-[600px] object-contain"
             />
           </div>
         </div>

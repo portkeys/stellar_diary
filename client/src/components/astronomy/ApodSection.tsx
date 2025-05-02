@@ -23,10 +23,14 @@ const ApodSection = () => {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
+      // First invalidate the cache
       await queryClient.invalidateQueries({ queryKey: ['/api/apod'] });
+      
+      // Then fetch with the refresh parameter
       await queryClient.fetchQuery({
         queryKey: ['/api/apod'],
         queryFn: async () => {
+          console.log('Refreshing APOD from server with forceRefresh flag');
           const response = await fetch('/api/apod?refresh=true');
           if (!response.ok) {
             throw new Error('Failed to refresh APOD');
@@ -34,6 +38,11 @@ const ApodSection = () => {
           return response.json();
         }
       });
+      
+      // After successful refresh, refetch the query to update UI
+      await refetch();
+      
+      console.log('APOD refreshed successfully');
     } catch (error) {
       console.error('Error refreshing APOD:', error);
     } finally {

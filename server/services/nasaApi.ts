@@ -78,8 +78,18 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       }
     ];
     
-    // Get a random APOD from our collection (to simulate a new one each day)
-    const randomIndex = Math.floor(Math.random() * apodCollection.length);
+    // If forceRefresh is true, always get a different APOD than what might be cached
+    // Otherwise, get a stable one based on the date to ensure consistency
+    let randomIndex;
+    if (forceRefresh) {
+      // When forcing refresh, use the current timestamp to create a different value
+      randomIndex = Math.floor(Date.now() % apodCollection.length);
+      console.log(`Force refreshing APOD with new random index: ${randomIndex}`);
+    } else {
+      // For regular requests, derive the index from the date string to get consistent results
+      const dateSum = targetDate.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      randomIndex = dateSum % apodCollection.length;
+    }
     const apodData = apodCollection[randomIndex];
     
     // Create complete APOD response with our target date
@@ -104,7 +114,7 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       // Delete any existing record for the same date
       await db.delete(apodCache).where(eq(apodCache.date, data.date));
       
-      // Insert new record
+      // Insert new record with fresh data
       await db.insert(apodCache).values(insertData);
       console.log(`Cached new APOD data for ${data.date}`);
     } catch (err) {
