@@ -174,6 +174,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Update monthly guide
+  app.patch("/api/monthly-guide/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Get the guide to make sure it exists
+      const guide = await storage.getMonthlyGuide(id);
+      
+      if (!guide) {
+        return res.status(404).json({ message: "Monthly guide not found" });
+      }
+      
+      // Update the guide with the provided fields
+      const updatedGuide = await storage.updateMonthlyGuide(id, req.body);
+      
+      res.json(updatedGuide);
+    } catch (error) {
+      res.status(500).json({ 
+        message: `Failed to update monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
 
   // Get user's observation list
   app.get("/api/observations", async (req: Request, res: Response) => {

@@ -5,10 +5,48 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CelestialCard from "@/components/astronomy/CelestialCard";
+import { Input } from "@/components/ui/input";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+// Extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string) => {
+  // Handle both standard URLs and URLs with additional parameters
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// Component to render a YouTube video embed
+interface YouTubeEmbedProps {
+  videoUrl: string;
+  title?: string;
+}
+
+const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) => {
+  const videoId = getYouTubeVideoId(videoUrl);
+  
+  if (!videoId) return null;
+  
+  return (
+    <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden mb-4">
+      <iframe 
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+      ></iframe>
+    </div>
+  );
+};
 
 const MonthlyGuidePage = () => {
   const [hemisphere, setHemisphere] = useState<string>("Northern");
   const [objectType, setObjectType] = useState<string | null>(null);
+  const [newVideoUrl, setNewVideoUrl] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Toggle for admin mode
+  const { toast } = useToast();
   
   // Get current month name
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
@@ -121,6 +159,152 @@ const MonthlyGuidePage = () => {
             <i className="fas fa-sync-alt mr-1"></i> Reset
           </Button>
         </div>
+      </div>
+      
+      {/* Videos Section */}
+      {guide && guide.videoUrls && guide.videoUrls.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-2xl text-space font-bold mb-6">
+            <i className="fas fa-video text-stellar-gold mr-2"></i> Featured Videos
+          </h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {guide.videoUrls.map((videoUrl, index) => (
+              <div key={index} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
+                <YouTubeEmbed 
+                  videoUrl={videoUrl} 
+                  title={`${currentMonth} ${currentYear} Sky Guide - Video ${index + 1}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Admin Controls - Only visible when admin mode is toggled */}
+      <div className="mb-10">
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            className={isAdmin ? "bg-nebula-pink text-white" : "border-nebula-pink text-nebula-pink"}
+            onClick={() => setIsAdmin(!isAdmin)}
+          >
+            {isAdmin ? "Exit Admin Mode" : "Admin Mode"}
+          </Button>
+        </div>
+        
+        {isAdmin && guide && (
+          <div className="bg-space-blue rounded-lg p-6 mb-8">
+            <h3 className="text-xl text-nebula-pink font-semibold mb-4">Manage Monthly Guide Videos</h3>
+            
+            {/* Add video URL form */}
+            <div className="flex gap-2 mb-6">
+              <Input
+                type="text"
+                placeholder="Enter YouTube URL"
+                value={newVideoUrl}
+                onChange={(e) => setNewVideoUrl(e.target.value)}
+                className="flex-1 bg-space-blue-dark border-cosmic-purple"
+              />
+              <Button
+                onClick={async () => {
+                  if (!newVideoUrl) return;
+                  
+                  // Validate URL
+                  if (!getYouTubeVideoId(newVideoUrl)) {
+                    toast({
+                      title: "Invalid YouTube URL",
+                      description: "Please enter a valid YouTube video URL",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  try {
+                    // Create a new array with existing videos plus the new one
+                    const updatedVideoUrls = [...(guide.videoUrls || []), newVideoUrl];
+                    
+                    // Update the guide with the new video list
+                    await apiRequest(`/api/monthly-guide/${guide.id}`, {
+                      method: "PATCH",
+                      body: JSON.stringify({ videoUrls: updatedVideoUrls }),
+                    });
+                    
+                    // Clear the input field
+                    setNewVideoUrl("");
+                    
+                    // Invalidate the query to refresh the data
+                    queryClient.invalidateQueries({ 
+                      queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] 
+                    });
+                    
+                    toast({
+                      title: "Video Added",
+                      description: "The video has been added to the monthly guide",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to add video. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="bg-cosmic-purple hover:bg-cosmic-purple-light"
+              >
+                Add Video
+              </Button>
+            </div>
+            
+            {/* Current videos list with remove buttons */}
+            {guide.videoUrls && guide.videoUrls.length > 0 ? (
+              <div className="space-y-3">
+                <h4 className="text-md font-medium text-star-bright mb-2">Current Videos:</h4>
+                {guide.videoUrls.map((videoUrl, index) => (
+                  <div key={index} className="flex justify-between items-center bg-space-blue-dark p-3 rounded">
+                    <div className="truncate flex-1 mr-2">{videoUrl}</div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          // Filter out the video being removed
+                          const updatedVideoUrls = guide.videoUrls?.filter((_, idx) => idx !== index);
+                          
+                          // Update the guide with the filtered video list
+                          await apiRequest(`/api/monthly-guide/${guide.id}`, {
+                            method: "PATCH",
+                            body: JSON.stringify({ videoUrls: updatedVideoUrls }),
+                          });
+                          
+                          // Invalidate the query to refresh the data
+                          queryClient.invalidateQueries({ 
+                            queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] 
+                          });
+                          
+                          toast({
+                            title: "Video Removed",
+                            description: "The video has been removed from the monthly guide",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to remove video. Please try again.",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-star-dim italic">No videos added yet. Add a YouTube URL to get started.</p>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Celestial Objects Grid */}

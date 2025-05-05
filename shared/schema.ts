@@ -73,6 +73,8 @@ export const monthlyGuides = pgTable("monthly_guides", {
   headline: text("headline").notNull(),
   description: text("description").notNull(),
   hemisphere: text("hemisphere").notNull(), // Northern, Southern, Both
+  videoUrls: text("video_urls").array(), // Array of YouTube video URLs
+  isAdmin: boolean("is_admin").default(false), // Flag to identify if content is only for admin view
 });
 
 export const insertMonthlyGuideSchema = createInsertSchema(monthlyGuides).omit({
