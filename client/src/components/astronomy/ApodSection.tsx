@@ -196,11 +196,23 @@ const ApodSection = () => {
       <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
         <div className="relative">
           {apod.media_type === 'image' ? (
-            <img 
-              src={apod.url} 
-              alt={apod.title} 
-              className="w-full h-[400px] md:h-[500px] object-cover"
-            />
+            <div className="relative w-full">
+              <img 
+                src={apod.url} 
+                alt={apod.title} 
+                className="w-full object-contain cursor-pointer"
+                onClick={() => window.open(apod.hdurl || apod.url, '_blank')}
+                style={{ maxHeight: '70vh' }}
+              />
+              <Button
+                variant="ghost"
+                className="absolute bottom-2 right-2 bg-space-blue-dark bg-opacity-70 hover:bg-opacity-90"
+                onClick={() => window.open(apod.hdurl || apod.url, '_blank')}
+              >
+                <i className="fas fa-expand mr-2"></i>
+                View Full Size
+              </Button>
+            </div>
           ) : apod.media_type === 'video' ? (
             <div className="relative w-full h-[400px] md:h-[500px]">
               <iframe 
