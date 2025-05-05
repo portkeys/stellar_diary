@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<title>404 Error: File Not Found</title>
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style type="text/css">
+<!--
+body
+{
+    margin: 50px 10px;
+    padding: 0px;
+    text-align: center;
+}
+p
+{
+    color: #404040;
+    font: bold 16px arial, sans-serif;
+    margin: 1em 0px;
+}
+td
+{
+    color: #404040;
+    font: bold 16px arial, sans-serif;
+    vertical-align: middle;
+}
+a:link, a:visited, a:hover, a:active
+{
+    color: #4080C0;
+    font: bold 16px arial, sans-serif;
+    margin: 1em 0px;
+}
+h1
+{
+    color: #004080;
+    font: bold 24px arial, sans-serif;
+    margin: 1em 0px;
+}
+h2
+{
+    color: #808080;
+    font: bold 20px arial, sans-serif;
+    margin: 1em 0px;
+}
+form
+{
+    margin: 0px;
+}
+input
+{
+    font: 16px arial, sans-serif;
+    margin: 0px;
+    padding-left: 3px;
+}
+-->
+</style>
+<!-- Type: 404 -->
+</head>
+
+<body>
+<h1>404 Error: File Not Found</h1>
+<h2>The requested file may no longer exist,<br>or it may have been moved</h2>
+<p>Please visit our site:&nbsp;&nbsp;<a href="/">www.firstlightoptics.com</a></p>
+<p>Or search:</p>
+<form method="post" action="/search"><center><table cellpadding="0" cellspacing="0"><tr><td><input type="text" name="for" style="width: 150px" autocomplete="off">&nbsp;</td><td><input type="hidden" name="dosearch" value="1"><input type="hidden" name="csrf_token" value="d41d8cd98f00b204e9800998ecf8427e"><input type="submit" value="Go"></td></tr></table></center></form>
+</body>
+
+</html>

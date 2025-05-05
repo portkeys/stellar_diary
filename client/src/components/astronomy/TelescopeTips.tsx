@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ExternalLink } from "lucide-react";
+import collimationImage from "@assets/collimate_AD8.png";
 
 const TelescopeTips = () => {
   const { data: tips, isLoading, isError } = useQuery<TelescopeTip[]>({
@@ -76,14 +77,14 @@ const TelescopeTips = () => {
     <section className="my-16">
       <div className="mb-6">
         <h2 className="text-2xl text-space font-bold text-stellar-gold">
-          <i className="fas fa-wrench text-stellar-gold mr-2"></i> Before Observe
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> Before Observe
         </h2>
       </div>
       <div className="flex flex-col items-center">
         <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-md w-full mb-4">
           <div className="relative">
             <img 
-              src="https://sdmntprwestus.oaiusercontent.com/files/00000000-4228-6230-8b55-3e7066606f9c/raw?se=2025-05-02T07%3A44%3A11Z&sp=r&sv=2024-08-04&sr=b&scid=ed4de6a6-cc7b-53a3-a2f7-224e33147661&skoid=fa7966e7-f8ea-483c-919a-13acfd61d696&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-01T09%3A09%3A50Z&ske=2025-05-02T09%3A09%3A50Z&sks=b&skv=2024-08-04&sig=cPj4hYLEqhIkY4/CuQ1ElTlG8x9mj41TyY0v2fbnXxc%3D" 
+              src={collimationImage} 
               alt="Collimation Guide" 
               className="w-full h-[600px] object-contain"
             />
