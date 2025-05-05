@@ -39,6 +39,7 @@ export interface IStorage {
   getCurrentMonthlyGuide(hemisphere: string): Promise<MonthlyGuide | undefined>;
   getAllMonthlyGuides(): Promise<MonthlyGuide[]>;
   createMonthlyGuide(guide: InsertMonthlyGuide): Promise<MonthlyGuide>;
+  updateMonthlyGuide(id: number, guide: Partial<MonthlyGuide>): Promise<MonthlyGuide | undefined>;
   
   // Telescope tips operations
   getTelescopeTip(id: number): Promise<TelescopeTip | undefined>;
@@ -184,6 +185,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertGuide)
       .returning();
     return guide;
+  }
+  
+  async updateMonthlyGuide(id: number, update: Partial<MonthlyGuide>): Promise<MonthlyGuide | undefined> {
+    const [updatedGuide] = await db
+      .update(monthlyGuides)
+      .set(update)
+      .where(eq(monthlyGuides.id, id))
+      .returning();
+    return updatedGuide || undefined;
   }
 
   async getTelescopeTip(id: number): Promise<TelescopeTip | undefined> {

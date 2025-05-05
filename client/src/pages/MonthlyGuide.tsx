@@ -225,10 +225,11 @@ const MonthlyGuidePage = () => {
                     const updatedVideoUrls = [...(guide.videoUrls || []), newVideoUrl];
                     
                     // Update the guide with the new video list
-                    await apiRequest(`/api/monthly-guide/${guide.id}`, {
-                      method: "PATCH",
-                      body: JSON.stringify({ videoUrls: updatedVideoUrls }),
-                    });
+                    await apiRequest(
+                      "PATCH",
+                      `/api/monthly-guide/${guide.id}`, 
+                      { videoUrls: updatedVideoUrls }
+                    );
                     
                     // Clear the input field
                     setNewVideoUrl("");
@@ -272,10 +273,11 @@ const MonthlyGuidePage = () => {
                           const updatedVideoUrls = guide.videoUrls?.filter((_, idx) => idx !== index);
                           
                           // Update the guide with the filtered video list
-                          await apiRequest(`/api/monthly-guide/${guide.id}`, {
-                            method: "PATCH",
-                            body: JSON.stringify({ videoUrls: updatedVideoUrls }),
-                          });
+                          await apiRequest(
+                            "PATCH",
+                            `/api/monthly-guide/${guide.id}`,
+                            { videoUrls: updatedVideoUrls }
+                          );
                           
                           // Invalidate the query to refresh the data
                           queryClient.invalidateQueries({ 
