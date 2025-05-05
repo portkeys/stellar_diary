@@ -29,13 +29,13 @@ const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) 
   if (!videoId) return null;
   
   return (
-    <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden mb-4">
+    <div className="relative w-full rounded-lg overflow-hidden mb-4" style={{ paddingBottom: '56.25%' }}> {/* 16:9 aspect ratio */}
       <iframe 
         src={`https://www.youtube.com/embed/${videoId}`}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
-        className="w-full h-full"
+        className="absolute top-0 left-0 w-full h-full"
       ></iframe>
     </div>
   );
@@ -165,7 +165,7 @@ const MonthlyGuidePage = () => {
       {guide && guide.videoUrls && guide.videoUrls.length > 0 && (
         <div className="mb-10">
           <h2 className="text-2xl text-space font-bold mb-6">
-            <i className="fas fa-video text-stellar-gold mr-2"></i> Featured Videos
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block text-stellar-gold mr-2"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg> Featured Videos
           </h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -312,7 +312,7 @@ const MonthlyGuidePage = () => {
       {/* Celestial Objects Grid */}
       <div className="mb-10">
         <h2 className="text-2xl text-space font-bold mb-6">
-          <i className="fas fa-star text-stellar-gold mr-2"></i> Objects to Observe
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block text-stellar-gold mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Objects to Observe
         </h2>
         
         {isLoading ? (
