@@ -37,7 +37,7 @@ const Home = () => {
           <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-md w-full mb-4">
             <div className="relative">
               <img 
-                src="/collimation.jpg" 
+                src="/images/collimation_ad8.png" 
                 alt="Collimation Guide" 
                 className="w-full h-[600px] object-contain"
               />
