@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ExternalLink } from "lucide-react";
-import collimationImage from "@assets/collimate_AD8.png";
+import collimationImage from "@/assets/collimation_ad8.png";
 
 const TelescopeTips = () => {
   const { data: tips, isLoading, isError } = useQuery<TelescopeTip[]>({
