@@ -46,6 +46,9 @@ const MonthlyGuidePage = () => {
   const [objectType, setObjectType] = useState<string | null>(null);
   const [newVideoUrl, setNewVideoUrl] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState<boolean>(false); // Toggle for admin mode
+  const [contentUrl, setContentUrl] = useState<string>("");
+  const [isImporting, setIsImporting] = useState<boolean>(false);
+  const [importResult, setImportResult] = useState<{success: boolean, message: string, objectsAdded: number} | null>(null);
   const { toast } = useToast();
   
   // Get current month name
@@ -77,6 +80,63 @@ const MonthlyGuidePage = () => {
   
   const isLoading = isGuideLoading || isObjectsLoading;
   const isError = isObjectsError; // Use the objects error state for the main error display
+
+  // Handle content import from URLs
+  const handleContentImport = async () => {
+    if (!contentUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    setImportResult(null);
+
+    try {
+      const response = await fetch("/api/admin/update-monthly-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: contentUrl.trim() })
+      });
+
+      const result = await response.json();
+      setImportResult(result);
+
+      if (result.success) {
+        setContentUrl("");
+        // Refresh the data
+        queryClient.invalidateQueries({ queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/celestial-objects?${queryParams.toString()}`] });
+        
+        toast({
+          title: "Content Imported!",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Import Failed",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setImportResult({
+        success: false,
+        message: "Failed to import content. Please try again.",
+        objectsAdded: 0
+      });
+      toast({
+        title: "Error",
+        description: "Failed to import content. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
   
   const handleHemisphereChange = (value: string) => {
     setHemisphere(value);
@@ -204,7 +264,48 @@ const MonthlyGuidePage = () => {
         
         {isAdmin && guide && (
           <div className="bg-space-blue rounded-lg p-6 mb-8">
-            <h3 className="text-xl text-nebula-pink font-semibold mb-4">Manage Monthly Guide Videos</h3>
+            <h3 className="text-xl text-nebula-pink font-semibold mb-6">Update Monthly Guide</h3>
+            
+            {/* Content Import Section */}
+            <div className="mb-8 p-4 bg-space-blue-dark rounded-lg">
+              <h4 className="text-lg text-stellar-gold font-medium mb-4">Import Content & Objects</h4>
+              <p className="text-star-dim text-sm mb-4">Parse astronomy articles to extract celestial objects and update guide content</p>
+              
+              <div className="flex gap-2 mb-4">
+                <Input
+                  type="text"
+                  placeholder="Enter article URL (e.g., High Point Scientific monthly guide)"
+                  value={contentUrl}
+                  onChange={(e) => setContentUrl(e.target.value)}
+                  className="flex-1 bg-space-blue border-cosmic-purple"
+                />
+                <Button
+                  onClick={handleContentImport}
+                  disabled={isImporting || !contentUrl}
+                  className="bg-nebula-pink hover:bg-nebula-pink/80"
+                >
+                  {isImporting ? "Importing..." : "Import Content"}
+                </Button>
+              </div>
+              
+              {importResult && (
+                <div className={`p-3 rounded text-sm ${
+                  importResult.success 
+                    ? 'bg-green-900/30 text-green-300 border border-green-700' 
+                    : 'bg-red-900/30 text-red-300 border border-red-700'
+                }`}>
+                  <div className="font-medium">{importResult.success ? 'Success!' : 'Error'}</div>
+                  <div>{importResult.message}</div>
+                  {importResult.objectsAdded > 0 && (
+                    <div className="mt-1">Added {importResult.objectsAdded} new celestial objects</div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Video Management Section */}
+            <div className="p-4 bg-space-blue-dark rounded-lg">
+              <h4 className="text-lg text-stellar-gold font-medium mb-4">Manage Featured Videos</h4>
             
             {/* Add video URL form */}
             <div className="flex gap-2 mb-6">
@@ -314,6 +415,7 @@ const MonthlyGuidePage = () => {
             ) : (
               <p className="text-star-dim italic">No videos added yet. Add a YouTube URL to get started.</p>
             )}
+            </div>
           </div>
         )}
       </div>
