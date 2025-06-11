@@ -153,35 +153,6 @@ const MonthlyGuidePage = () => {
         <h1 className="text-4xl text-space font-bold text-stellar-gold mb-3">
           Monthly Sky Guide: {currentMonth} {currentYear}
         </h1>
-        
-        {isGuideLoading ? (
-          <Skeleton className="h-16 w-full" />
-        ) : guide ? (
-          <div className="bg-space-blue rounded-lg p-4 shadow-md">
-            <h2 className="text-xl text-space text-nebula-pink mb-2">{guide.headline}</h2>
-            <div 
-              className="text-star-dim prose prose-invert max-w-none [&_strong]:text-stellar-gold [&_strong]:font-semibold"
-              dangerouslySetInnerHTML={{
-                __html: guide.description
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/\n\n/g, '</p><p>')
-                  .replace(/^(.*)$/gm, '<p>$1</p>')
-                  .replace(/<p><\/p>/g, '')
-              }}
-            />
-          </div>
-        ) : (
-          <div className="bg-space-blue rounded-lg p-4 shadow-md">
-            <h2 className="text-xl text-space text-nebula-pink mb-2">
-              {hemisphere === "Northern" 
-                ? "Northern Hemisphere Viewing Guide" 
-                : "Southern Hemisphere Viewing Guide"}
-            </h2>
-            <p className="text-star-dim">
-              Discover the best celestial objects to observe this month with your 8-inch Dobsonian telescope.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* June 2025 Astronomy Highlights Summary */}
