@@ -135,7 +135,7 @@ const MonthlyGuideSection = () => {
                       <p key={index}>{paragraph}</p>
                     ))}
                   </div>
-                  {monthlyGuide.video_urls && monthlyGuide.video_urls.length > 0 && (
+                  {monthlyGuide.videoUrls && monthlyGuide.videoUrls.length > 0 && (
                     <div className="mt-4">
                       <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 text-sm">
                         <i className="fas fa-play mr-2"></i>

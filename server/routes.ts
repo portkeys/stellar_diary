@@ -328,6 +328,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for monthly guide management
+  app.post("/api/admin/update-monthly-guide", async (req: Request, res: Response) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+
+      // Import the update function
+      const { updateMonthlyGuideFromUrl } = await import('./scripts/updateMonthlyGuide');
+      const result = await updateMonthlyGuideFromUrl(url);
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Failed to update monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        objectsAdded: 0,
+        guideUpdated: false
+      });
+    }
+  });
+
+  app.post("/api/admin/manual-monthly-guide", async (req: Request, res: Response) => {
+    try {
+      const { month, year, hemisphere, headline, description, videoUrls } = req.body;
+      
+      if (!month || !year || !headline || !description) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Month, year, headline, and description are required",
+          objectsAdded: 0,
+          guideUpdated: false
+        });
+      }
+
+      const monthlyGuide = {
+        month,
+        year: parseInt(year),
+        hemisphere: hemisphere || 'Northern',
+        headline,
+        description,
+        videoUrls: videoUrls || [],
+        isAdmin: true
+      };
+
+      await storage.createMonthlyGuide(monthlyGuide);
+
+      res.json({
+        success: true,
+        message: `Successfully created ${month} ${year} guide`,
+        objectsAdded: 0,
+        guideUpdated: true
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Failed to create manual guide: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        objectsAdded: 0,
+        guideUpdated: false
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
