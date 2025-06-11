@@ -129,83 +129,162 @@ const ObservationList = () => {
               <div className="mb-4">
                 <div className="flex items-center space-x-3">
                   <span className="text-star-white font-medium">{observations.length} objects in your journal</span>
-                  <div className="flex items-center text-xs text-green-500">
-                    <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span> 
-                    Observed: {observations.filter(obs => obs.isObserved).length}
+                  <div className="flex items-center text-xs text-blue-400">
+                    <span className="inline-block w-3 h-3 rounded-full bg-blue-400 mr-1"></span> 
+                    To Observe: {observations.filter(obs => !obs.isObserved).length}
                   </div>
-                  <div className="flex items-center text-xs text-amber-500">
-                    <span className="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1"></span> 
-                    Planned: {observations.filter(obs => !obs.isObserved).length}
+                  <div className="flex items-center text-xs text-gray-400">
+                    <span className="inline-block w-3 h-3 rounded-full bg-gray-400 mr-1"></span> 
+                    Observed: {observations.filter(obs => obs.isObserved).length}
                   </div>
                 </div>
               </div>
               
-              <div className="space-y-3">
-                {observations.slice(0, 3).map(observation => (
-                  <div key={observation.id} className="bg-space-blue-light rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex flex-col w-full">
-                      <div className="flex items-center">
-                        <img 
-                          src={observation.celestialObject?.imageUrl} 
-                          alt={observation.celestialObject?.name} 
-                          className="w-12 h-12 rounded-md object-cover mr-3" 
-                        />
-                        <div>
-                          <h4 className="text-space font-medium">{observation.celestialObject?.name}</h4>
-                          <div className="flex flex-wrap items-center text-xs text-star-dim">
-                            <span className="mr-3">
-                              <i className={`fas fa-${
-                                observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
-                                observation.celestialObject?.type === 'nebula' ? 'meteor' : 
-                                observation.celestialObject?.type === 'planet' ? 'globe' : 
-                                'star'
-                              } mr-1`}></i> 
-                              {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                            </span>
-                            <span className={`mr-3 ${observation.isObserved ? 'text-green-500' : 'text-amber-500'}`}>
-                              <i className={`${observation.isObserved ? 'fas fa-check-circle' : 'fas fa-hourglass'} mr-1`}></i> 
-                              {observation.isObserved ? 'Observed: ' : 'Planned: '}
-                              {observation.plannedDate ? 
-                                (() => {
-                                  const date = new Date(observation.plannedDate);
-                                  // Adjust for PST timezone (UTC-8)
-                                  const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
-                                  return userTimezoneDate.toLocaleDateString();
-                                })() : 
-                                (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Not set')}
-                            </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column - To Observe (Blue) */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-blue-400 mb-3 flex items-center">
+                    <i className="fas fa-hourglass mr-2"></i>
+                    To Observe
+                  </h3>
+                  {observations.filter(obs => !obs.isObserved).slice(0, 3).map(observation => (
+                    <div key={observation.id} className="bg-blue-900 bg-opacity-30 border border-blue-400 border-opacity-30 rounded-lg p-3">
+                      <div className="flex flex-col w-full">
+                        <div className="flex items-center">
+                          <img 
+                            src={observation.celestialObject?.imageUrl} 
+                            alt={observation.celestialObject?.name} 
+                            className="w-10 h-10 rounded-md object-cover mr-3" 
+                          />
+                          <div className="flex-1">
+                            <h4 className="text-blue-100 font-medium">{observation.celestialObject?.name}</h4>
+                            <div className="flex flex-wrap items-center text-xs text-blue-300">
+                              <span className="mr-3">
+                                <i className={`fas fa-${
+                                  observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
+                                  observation.celestialObject?.type === 'nebula' ? 'meteor' : 
+                                  observation.celestialObject?.type === 'planet' ? 'globe' : 
+                                  'star'
+                                } mr-1`}></i> 
+                                {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </span>
+                              <span className="text-blue-400">
+                                <i className="fas fa-calendar mr-1"></i> 
+                                {observation.plannedDate ? 
+                                  (() => {
+                                    const date = new Date(observation.plannedDate);
+                                    const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                    return userTimezoneDate.toLocaleDateString();
+                                  })() : 
+                                  'Planned'}
+                              </span>
+                            </div>
                           </div>
+                          <button 
+                            className="text-blue-400 hover:text-blue-300"
+                            onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
+                            title="Mark as observed"
+                          >
+                            <i className="far fa-check-circle text-lg"></i>
+                          </button>
                         </div>
+                        
+                        {observation.observationNotes && (
+                          <div className="mt-2 ml-13 bg-blue-800 bg-opacity-30 p-2 rounded text-sm text-blue-100">
+                            <p className="flex items-start">
+                              <span className="text-blue-400 mr-2 mt-1"><i className="fas fa-sticky-note"></i></span>
+                              <span className="flex-1">
+                                {observation.observationNotes.length > 80 ? 
+                                  `${observation.observationNotes.substring(0, 80)}...` : 
+                                  observation.observationNotes}
+                              </span>
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* Journal-style notes preview */}
-                      {observation.observationNotes && (
-                        <div className="mt-2 ml-15 bg-space-blue-dark p-2 rounded text-sm text-star-white">
-                          <p className="flex items-start">
-                            <span className="text-nebula-pink mr-2 mt-1"><i className="fas fa-sticky-note"></i></span>
-                            <span className="flex-1">
-                              {observation.observationNotes.length > 120 ? 
-                                `${observation.observationNotes.substring(0, 120)}...` : 
-                                observation.observationNotes}
-                            </span>
-                          </p>
+                    </div>
+                  ))}
+                  {observations.filter(obs => !obs.isObserved).length === 0 && (
+                    <div className="text-center py-8 text-blue-400 opacity-60">
+                      <i className="fas fa-check-double text-2xl mb-2"></i>
+                      <p>All objects observed!</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column - Observed (Gray) */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-gray-400 mb-3 flex items-center">
+                    <i className="fas fa-check-circle mr-2"></i>
+                    Observed
+                  </h3>
+                  {observations.filter(obs => obs.isObserved).slice(0, 3).map(observation => (
+                    <div key={observation.id} className="bg-gray-800 bg-opacity-30 border border-gray-500 border-opacity-30 rounded-lg p-3">
+                      <div className="flex flex-col w-full">
+                        <div className="flex items-center">
+                          <img 
+                            src={observation.celestialObject?.imageUrl} 
+                            alt={observation.celestialObject?.name} 
+                            className="w-10 h-10 rounded-md object-cover mr-3 opacity-80" 
+                          />
+                          <div className="flex-1">
+                            <h4 className="text-gray-200 font-medium">{observation.celestialObject?.name}</h4>
+                            <div className="flex flex-wrap items-center text-xs text-gray-400">
+                              <span className="mr-3">
+                                <i className={`fas fa-${
+                                  observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
+                                  observation.celestialObject?.type === 'nebula' ? 'meteor' : 
+                                  observation.celestialObject?.type === 'planet' ? 'globe' : 
+                                  'star'
+                                } mr-1`}></i> 
+                                {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </span>
+                              <span className="text-gray-300">
+                                <i className="fas fa-check mr-1"></i> 
+                                {observation.plannedDate ? 
+                                  (() => {
+                                    const date = new Date(observation.plannedDate);
+                                    const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
+                                    return userTimezoneDate.toLocaleDateString();
+                                  })() : 
+                                  'Observed'}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            className="text-gray-400 hover:text-gray-300"
+                            onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
+                            title="Mark as not observed"
+                          >
+                            <i className="fas fa-check-circle text-lg"></i>
+                          </button>
                         </div>
-                      )}
+                        
+                        {observation.observationNotes && (
+                          <div className="mt-2 ml-13 bg-gray-700 bg-opacity-30 p-2 rounded text-sm text-gray-200">
+                            <p className="flex items-start">
+                              <span className="text-gray-400 mr-2 mt-1"><i className="fas fa-sticky-note"></i></span>
+                              <span className="flex-1">
+                                {observation.observationNotes.length > 80 ? 
+                                  `${observation.observationNotes.substring(0, 80)}...` : 
+                                  observation.observationNotes}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        className={`${observation.isObserved ? 'text-green-500 hover:text-green-400' : 'text-star-dim hover:text-green-500'}`}
-                        onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
-                        title={observation.isObserved ? "Mark as not observed" : "Mark as observed"}
-                      >
-                        <i className={`${observation.isObserved ? 'fas' : 'far'} fa-check-circle text-xl`}></i>
-                      </button>
+                  ))}
+                  {observations.filter(obs => obs.isObserved).length === 0 && (
+                    <div className="text-center py-8 text-gray-500 opacity-60">
+                      <i className="fas fa-eye text-2xl mb-2"></i>
+                      <p>No observations yet</p>
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
               
-              {observations.length > 3 && (
+              {observations.length > 6 && (
                 <div className="mt-5 text-center">
                   <Link href="/my-observations">
                     <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 px-4 py-2 rounded-lg">
