@@ -6,8 +6,9 @@ import CelestialCard from "./CelestialCard";
 import { Link } from "wouter";
 
 const MonthlyGuideSection = () => {
-  // Get current month name
+  // Get current month name and year
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+  const currentYear = new Date().getFullYear();
   
   // Construct query string for featured objects only
   const queryParams = new URLSearchParams();
@@ -50,7 +51,7 @@ const MonthlyGuideSection = () => {
     <section className="my-16">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl text-space font-bold">
-          <i className="fas fa-moon text-stellar-gold mr-2"></i> Featured Objects This Month
+          <i className="fas fa-moon text-stellar-gold mr-2"></i> {currentMonth} {currentYear}: Objects to Observe
         </h2>
       </div>
       
