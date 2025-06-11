@@ -2,6 +2,7 @@ import ApodSection from "@/components/astronomy/ApodSection";
 import MonthlyGuideSection from "@/components/astronomy/MonthlyGuideSection";
 import ObservationList from "@/components/astronomy/ObservationList";
 import { ExternalLink } from "lucide-react";
+import collimationImage from "@/assets/collimation_ad8.png";
 
 const Home = () => {
   return (
@@ -37,7 +38,7 @@ const Home = () => {
           <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden max-w-md w-full mb-4">
             <div className="relative">
               <img 
-                src="/images/collimation_ad8.png" 
+                src={collimationImage} 
                 alt="Collimation Guide" 
                 className="w-full h-[600px] object-contain"
               />
