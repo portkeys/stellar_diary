@@ -183,6 +183,105 @@ const MonthlyGuidePage = () => {
           </div>
         )}
       </div>
+
+      {/* June 2025 Astronomy Highlights Summary */}
+      {currentMonth === "June" && currentYear === 2025 && (
+        <div className="mb-10">
+          <h2 className="text-2xl text-space font-bold text-stellar-gold mb-6">
+            <i className="fas fa-star text-stellar-gold mr-2"></i>
+            June 2025: Astronomy Highlights
+          </h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Mars, Regulus, and the Moon */}
+            <div className="bg-space-blue rounded-xl shadow-xl p-6">
+              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
+                Mars, Regulus, and the Moon
+              </h3>
+              <p className="text-star-dim mb-4">
+                Although Mars is slowly losing ground to the approaching Sun, it's still reasonably well placed for telescopic observation in the evening sky. The planet's disc has shrunk to 5 arcseconds in diameter and dimmed to magnitude 1.3, almost matching Regulus at magnitude 1.4.
+              </p>
+              <div className="bg-space-blue-dark p-3 rounded-lg">
+                <p className="text-sm text-stellar-gold font-medium">Key Dates:</p>
+                <ul className="text-sm text-star-dim mt-2 space-y-1">
+                  <li>• June 1st: Crescent Moon beside Regulus</li>
+                  <li>• June 5th-27th: Mars and Regulus in same binocular field</li>
+                  <li>• June 16th-17th: Closest approach (0.8 degrees apart)</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Planetary Highlights */}
+            <div className="bg-space-blue rounded-xl shadow-xl p-6">
+              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
+                Our Nearest Neighbors
+              </h3>
+              <p className="text-star-dim mb-4">
+                Jupiter may be visible very low over the west-northwest horizon during the first few days of June, about 15 minutes after sunset. Mercury appears two degrees to Jupiter's right on the 7th, then climbs further from the Sun to become an easy target during the last ten days of the month.
+              </p>
+              <div className="bg-space-blue-dark p-3 rounded-lg">
+                <p className="text-sm text-stellar-gold font-medium">Visibility:</p>
+                <ul className="text-sm text-star-dim mt-2 space-y-1">
+                  <li>• Jupiter: First few days, very low horizon</li>
+                  <li>• Mercury: Easy target last 10 days of month</li>
+                  <li>• Uranus: Lost in Sun's glare</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Featured Deep Sky Objects */}
+            <div className="bg-space-blue rounded-xl shadow-xl p-6">
+              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
+                Deep Sky Highlights
+              </h3>
+              <p className="text-star-dim mb-4">
+                Summer favorites begin to take center stage. The Great Hercules Cluster (M13) is detectable in binoculars and stunning through telescopes. Galaxy season winds down with M102, the Spindle Galaxy, still visible in darker skies.
+              </p>
+              <div className="bg-space-blue-dark p-3 rounded-lg">
+                <p className="text-sm text-stellar-gold font-medium">Must-See Objects:</p>
+                <ul className="text-sm text-star-dim mt-2 space-y-1">
+                  <li>• M13: Great Hercules Cluster - summer favorite</li>
+                  <li>• M102: Spindle Galaxy with dark dust lane</li>
+                  <li>• IC 4665: Summer Beehive cluster</li>
+                  <li>• Graffias: Beautiful triple star system</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Observing Tips */}
+            <div className="bg-space-blue rounded-xl shadow-xl p-6">
+              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
+                Observing Tips for June
+              </h3>
+              <p className="text-star-dim mb-4">
+                This month offers excellent opportunities for both planetary and deep-sky observation. The color contrast between Mars and Regulus provides a great photo opportunity and visual comparison.
+              </p>
+              <div className="bg-space-blue-dark p-3 rounded-lg">
+                <p className="text-sm text-stellar-gold font-medium">Best Practices:</p>
+                <ul className="text-sm text-star-dim mt-2 space-y-1">
+                  <li>• Use 10x50 binoculars for Mars-Regulus pairing</li>
+                  <li>• 100x magnification resolves M13 individual stars</li>
+                  <li>• Dark skies needed for M102's dust lane</li>
+                  <li>• Low power telescope ideal for IC 4665</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 bg-space-blue-dark rounded-lg p-4">
+            <p className="text-star-dim text-sm">
+              <strong className="text-stellar-gold">Source:</strong> Content summarized from High Point Scientific's "What's in the Sky This Month? June 2025" 
+              <br />
+              <a href="https://www.highpointscientific.com/astronomy-hub/post/night-sky-news/whats-in-the-sky-this-month-june-2025" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 className="text-nebula-pink hover:underline text-xs">
+                View Original Article →
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Filter Controls */}
       <div className="mb-8 flex flex-wrap gap-4 items-center justify-between bg-space-blue-dark p-4 rounded-lg">
