@@ -107,7 +107,7 @@ const CelestialCard = ({
                     onClick={handleAddToObservationList}
                     disabled={isAdding}
                   >
-                    <i className="far fa-bookmark"></i>
+                    <i className="fas fa-plus"></i>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
