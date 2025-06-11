@@ -2,6 +2,8 @@
 
 import { storage } from '../storage';
 import { InsertCelestialObject, InsertMonthlyGuide } from '../../shared/schema';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 interface ParsedObject {
   name: string;
@@ -30,27 +32,217 @@ interface ParsedGuide {
 async function parseAstronomicalContent(url: string): Promise<ParsedGuide> {
   console.log(`Parsing content from: ${url}`);
   
-  // For now, we'll implement a basic parser that can be extended
-  // In a full implementation, this would use web scraping or content APIs
+  try {
+    // Fetch the content from the URL
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 10000
+    });
+    
+    const $ = cheerio.load(response.data);
+    
+    // Extract title and date information
+    const title = $('h1').first().text().trim();
+    const monthMatch = title.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
+    
+    let month = 'June';
+    let year = 2025;
+    
+    if (monthMatch) {
+      month = monthMatch[1];
+      year = parseInt(monthMatch[2]);
+    }
+    
+    // Extract YouTube video URLs
+    const videoUrls: string[] = [];
+    $('iframe[src*="youtube.com"], iframe[src*="youtu.be"]').each((_, element) => {
+      const src = $(element).attr('src');
+      if (src) {
+        videoUrls.push(src.replace('/embed/', '/watch?v=').split('?')[0] + '?v=' + src.split('/').pop()?.split('?')[0]);
+      }
+    });
+    
+    // Extract content sections and celestial objects
+    const objects: ParsedObject[] = [];
+    const contentSections: string[] = [];
+    
+    // Look for celestial object sections (headings followed by descriptions)
+    $('h3, h4').each((_, element) => {
+      const heading = $(element).text().trim();
+      const nextElements = $(element).nextUntil('h1, h2, h3, h4');
+      const description = nextElements.text().trim();
+      
+      if (heading && description) {
+        contentSections.push(`${heading}\n\n${description}`);
+        
+        // Extract celestial objects from headings
+        const objectName = extractObjectName(heading);
+        if (objectName) {
+          const objectType = determineObjectType(heading, description);
+          
+          objects.push({
+            name: objectName,
+            type: objectType,
+            description: description.substring(0, 500) + (description.length > 500 ? '...' : ''),
+            visibility: extractVisibilityInfo(description),
+            tips: extractObservingTips(description)
+          });
+        }
+      }
+    });
+    
+    // Extract main description from the content
+    const mainDescription = extractMainDescription($, contentSections);
+    
+    const parsedContent: ParsedGuide = {
+      month,
+      year,
+      headline: title || `${month} ${year}: Sky Highlights`,
+      description: mainDescription,
+      hemisphere: 'Northern',
+      videoUrls,
+      objects
+    };
+    
+    console.log(`Successfully parsed content for ${month} ${year} with ${objects.length} objects`);
+    return parsedContent;
+    
+  } catch (error) {
+    console.error('Error parsing content:', error);
+    
+    // Fallback to basic parsing
+    const currentDate = new Date();
+    const month = currentDate.toLocaleString('default', { month: 'long' });
+    const year = currentDate.getFullYear();
+    
+    return {
+      month,
+      year,
+      headline: `${month} ${year}: Sky Highlights`,
+      description: `Astronomical highlights for ${month} ${year}. Content parsing encountered an issue - please manually update this guide.`,
+      hemisphere: 'Northern',
+      videoUrls: [],
+      objects: []
+    };
+  }
+}
+
+/**
+ * Extracts object name from heading text
+ */
+function extractObjectName(heading: string): string | null {
+  // Remove common prefixes and clean up the name
+  const cleanHeading = heading
+    .replace(/^(Messier|M)\s*/i, 'M')
+    .replace(/^(NGC|IC)\s*/i, '')
+    .replace(/\s*-\s*.*$/, '') // Remove everything after dash
+    .trim();
   
-  // Extract month/year from URL or content
-  const currentDate = new Date();
-  const month = currentDate.toLocaleString('default', { month: 'long' });
-  const year = currentDate.getFullYear();
+  // Look for common object patterns
+  if (cleanHeading.match(/^M\s*\d+/i)) {
+    return cleanHeading.replace(/\s+/g, ' ');
+  }
   
-  // This is a template that should be customized based on the source
-  const parsedContent: ParsedGuide = {
-    month,
-    year,
-    headline: `${month} ${year}: Sky Highlights`,
-    description: `Astronomical highlights for ${month} ${year}. Please manually update this content with the actual guide information.`,
-    hemisphere: 'Northern',
-    videoUrls: [],
-    objects: []
-  };
+  if (cleanHeading.match(/^(NGC|IC)\s*\d+/i)) {
+    return cleanHeading;
+  }
   
-  console.log(`Parsed content for ${month} ${year}`);
-  return parsedContent;
+  // For named objects (e.g., "Graffias", "Regulus")
+  if (cleanHeading.match(/^[A-Za-z\s]+$/)) {
+    return cleanHeading.split(' ')[0]; // Take first word as name
+  }
+  
+  return null;
+}
+
+/**
+ * Determines object type based on heading and description
+ */
+function determineObjectType(heading: string, description: string): string {
+  const text = (heading + ' ' + description).toLowerCase();
+  
+  if (text.includes('cluster') && (text.includes('globular') || text.includes('hercules'))) {
+    return 'star_cluster';
+  }
+  if (text.includes('galaxy') || text.includes('spiral') || text.includes('spindle')) {
+    return 'galaxy';
+  }
+  if (text.includes('nebula')) {
+    return 'nebula';
+  }
+  if (text.includes('double') && text.includes('star')) {
+    return 'double_star';
+  }
+  if (text.includes('planet') || text.includes('mars') || text.includes('jupiter') || text.includes('saturn')) {
+    return 'planet';
+  }
+  if (text.includes('cluster') || text.includes('beehive')) {
+    return 'star_cluster';
+  }
+  
+  return 'other';
+}
+
+/**
+ * Extracts visibility information from description
+ */
+function extractVisibilityInfo(description: string): string | undefined {
+  const visibilityPatterns = [
+    /visible.*?(\d+x?\s*magnification|binoculars?|telescope)/i,
+    /best.*?seen.*?(binoculars?|telescope|naked eye)/i,
+    /(magnitude|mag)\s*[\d.]+/i
+  ];
+  
+  for (const pattern of visibilityPatterns) {
+    const match = description.match(pattern);
+    if (match) {
+      return match[0];
+    }
+  }
+  
+  return undefined;
+}
+
+/**
+ * Extracts observing tips from description
+ */
+function extractObservingTips(description: string): string | undefined {
+  const sentences = description.split(/[.!?]+/);
+  const tipSentences = sentences.filter(sentence => {
+    const lower = sentence.toLowerCase();
+    return lower.includes('magnification') || 
+           lower.includes('telescope') || 
+           lower.includes('binoculars') ||
+           lower.includes('look for') ||
+           lower.includes('observe') ||
+           lower.includes('viewing');
+  });
+  
+  return tipSentences.length > 0 ? tipSentences.join('. ').trim() + '.' : undefined;
+}
+
+/**
+ * Extracts main description from content
+ */
+function extractMainDescription($: cheerio.CheerioAPI, contentSections: string[]): string {
+  // Try to find main content paragraphs
+  const mainParagraphs: string[] = [];
+  
+  $('p').each((_, element) => {
+    const text = $(element).text().trim();
+    if (text.length > 100 && !text.includes('©') && !text.includes('Image credit')) {
+      mainParagraphs.push(text);
+    }
+  });
+  
+  if (mainParagraphs.length > 0) {
+    return mainParagraphs.slice(0, 3).join('\n\n');
+  }
+  
+  // Fallback to content sections
+  return contentSections.slice(0, 2).join('\n\n');
 }
 
 /**
