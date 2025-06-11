@@ -8,6 +8,7 @@ import CelestialCard from "@/components/astronomy/CelestialCard";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Extract YouTube video ID from URL
 const getYouTubeVideoId = (url: string) => {
@@ -49,6 +50,9 @@ const MonthlyGuidePage = () => {
   const [contentUrl, setContentUrl] = useState<string>("");
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [importResult, setImportResult] = useState<{success: boolean, message: string, objectsAdded: number} | null>(null);
+  const [showPasscodeDialog, setShowPasscodeDialog] = useState<boolean>(false);
+  const [passcode, setPasscode] = useState<string>("");
+  const [passcodeError, setPasscodeError] = useState<string>("");
   const { toast } = useToast();
   
   // Get current month name
@@ -80,6 +84,38 @@ const MonthlyGuidePage = () => {
   
   const isLoading = isGuideLoading || isObjectsLoading;
   const isError = isObjectsError; // Use the objects error state for the main error display
+
+  // Handle admin mode toggle with passcode verification
+  const handleAdminModeToggle = () => {
+    if (isAdmin) {
+      // Exit admin mode
+      setIsAdmin(false);
+    } else {
+      // Enter admin mode - show passcode dialog
+      setShowPasscodeDialog(true);
+      setPasscode("");
+      setPasscodeError("");
+    }
+  };
+
+  // Handle passcode verification
+  const handlePasscodeSubmit = () => {
+    const correctPasscode = "tutulemma";
+    
+    if (passcode === correctPasscode) {
+      setIsAdmin(true);
+      setShowPasscodeDialog(false);
+      setPasscode("");
+      setPasscodeError("");
+      toast({
+        title: "Admin Access Granted",
+        description: "You now have access to admin functionality",
+      });
+    } else {
+      setPasscodeError("Sorry, you don't have access to admin role. Incorrect passcode.");
+      setPasscode("");
+    }
+  };
 
   // Handle content import from URLs
   const handleContentImport = async () => {
@@ -326,7 +362,7 @@ const MonthlyGuidePage = () => {
           <Button
             variant="outline"
             className={isAdmin ? "bg-nebula-pink text-white" : "border-nebula-pink text-nebula-pink"}
-            onClick={() => setIsAdmin(!isAdmin)}
+            onClick={handleAdminModeToggle}
           >
             {isAdmin ? "Exit Admin Mode" : "Admin Mode"}
           </Button>
@@ -562,6 +598,62 @@ const MonthlyGuidePage = () => {
           </div>
         )}
       </div>
+
+      {/* Admin Passcode Verification Dialog */}
+      <Dialog open={showPasscodeDialog} onOpenChange={setShowPasscodeDialog}>
+        <DialogContent className="bg-space-blue border-cosmic-purple">
+          <DialogHeader>
+            <DialogTitle className="text-stellar-gold">
+              Admin Access Required
+            </DialogTitle>
+            <DialogDescription className="text-star-dim">
+              Enter the admin passcode to access administrative features.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-4">
+            <Input
+              type="password"
+              placeholder="Enter passcode"
+              value={passcode}
+              onChange={(e) => {
+                setPasscode(e.target.value);
+                setPasscodeError(""); // Clear error when typing
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handlePasscodeSubmit();
+                }
+              }}
+              className="bg-space-blue-dark border-cosmic-purple text-star-white"
+            />
+            {passcodeError && (
+              <p className="mt-2 text-sm text-red-400">{passcodeError}</p>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="border-cosmic-purple text-star-dim"
+              onClick={() => {
+                setShowPasscodeDialog(false);
+                setPasscode("");
+                setPasscodeError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-nebula-pink hover:bg-nebula-pink/80"
+              onClick={handlePasscodeSubmit}
+              disabled={!passcode.trim()}
+            >
+              Verify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
