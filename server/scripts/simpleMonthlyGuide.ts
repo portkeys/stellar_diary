@@ -84,8 +84,7 @@ function getFeaturedObjectsForMonth(month: string): InsertCelestialObject[] {
       coordinates: "RA 21h 15m, Dec -16° 30'",
       constellation: "Aquarius",
       hemisphere: "Both",
-      bestMonth: month,
-      observingTips: "Use at least 25x magnification to see the rings. Best viewed when highest in the sky."
+      month: month
     },
     {
       name: "Jupiter",
@@ -96,8 +95,7 @@ function getFeaturedObjectsForMonth(month: string): InsertCelestialObject[] {
       coordinates: "RA 22h 45m, Dec -12° 15'", 
       constellation: "Pisces",
       hemisphere: "Both",
-      bestMonth: month,
-      observingTips: "Look for the four Galilean moons and cloud bands. Best viewed with 50x+ magnification."
+      month: month
     }
   ];
 
@@ -113,8 +111,7 @@ function getFeaturedObjectsForMonth(month: string): InsertCelestialObject[] {
         coordinates: "RA 16h 41m, Dec +36° 28'",
         constellation: "Hercules", 
         hemisphere: "Northern",
-        bestMonth: "June",
-        observingTips: "Visible in binoculars as a fuzzy star. Telescopes resolve individual stars at 100x+"
+        month: "June"
       });
       break;
     case 'july':
@@ -127,8 +124,7 @@ function getFeaturedObjectsForMonth(month: string): InsertCelestialObject[] {
         coordinates: "RA 18h 53m, Dec +33° 02'",
         constellation: "Lyra",
         hemisphere: "Northern", 
-        bestMonth: "July",
-        observingTips: "Requires telescope to see the ring shape. Use OIII filter for better contrast."
+        month: "July"
       });
       break;
     default:
@@ -141,8 +137,7 @@ function getFeaturedObjectsForMonth(month: string): InsertCelestialObject[] {
         coordinates: "RA 00h 42m, Dec +41° 16'",
         constellation: "Andromeda",
         hemisphere: "Northern",
-        bestMonth: month,
-        observingTips: "Best viewed with low magnification and wide field. Look for dark lanes in larger telescopes."
+        month: month
       });
   }
 
