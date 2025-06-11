@@ -11,6 +11,7 @@ import MonthlyGuide from "@/pages/MonthlyGuide";
 import MyObservations from "@/pages/MyObservations";
 import Learn from "@/pages/Learn";
 import CollimationGuide from "@/pages/CollimationGuide";
+import Admin from "@/pages/Admin";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/my-observations" component={MyObservations} />
       <Route path="/learn" component={Learn} />
       <Route path="/collimation-guide" component={CollimationGuide} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

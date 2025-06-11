@@ -29,12 +29,13 @@ const Admin = () => {
   const queryClient = useQueryClient();
 
   const updateFromUrlMutation = useMutation({
-    mutationFn: async (data: { url: string }) => {
-      return apiRequest("/api/admin/update-monthly-guide", {
+    mutationFn: async (data: { url: string }): Promise<UpdateResult> => {
+      const response = await fetch("/api/admin/update-monthly-guide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return response.json();
     },
     onSuccess: (result: UpdateResult) => {
       toast({
@@ -58,12 +59,13 @@ const Admin = () => {
   });
 
   const manualUpdateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return apiRequest("/api/admin/manual-monthly-guide", {
+    mutationFn: async (data: any): Promise<UpdateResult> => {
+      const response = await fetch("/api/admin/manual-monthly-guide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return response.json();
     },
     onSuccess: (result: UpdateResult) => {
       toast({
