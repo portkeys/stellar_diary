@@ -381,7 +381,9 @@ export async function updateMonthlyGuideFromUrl(url: string): Promise<{
 /**
  * Command line interface
  */
-if (require.main === module) {
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+
+if (isMainModule) {
   const url = process.argv[2];
   
   if (!url) {

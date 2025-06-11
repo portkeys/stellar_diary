@@ -337,9 +337,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      // Import the update function
-      const { updateMonthlyGuideFromUrl } = await import('./scripts/updateMonthlyGuide');
-      const result = await updateMonthlyGuideFromUrl(url);
+      // For now, create a template guide that can be manually updated
+      const currentDate = new Date();
+      const month = currentDate.toLocaleString('default', { month: 'long' });
+      const year = currentDate.getFullYear();
+      
+      const { createSimpleMonthlyGuide } = await import('./scripts/simpleMonthlyGuide');
+      const result = await createSimpleMonthlyGuide(
+        month,
+        year,
+        'Northern',
+        `${month} ${year}: Astronomy Highlights`,
+        `Featured celestial objects and viewing opportunities for ${month} ${year}. Content imported from: ${url}`,
+        []
+      );
       
       res.json(result);
     } catch (error) {
