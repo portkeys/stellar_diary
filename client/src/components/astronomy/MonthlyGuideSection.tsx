@@ -24,6 +24,11 @@ const MonthlyGuideSection = () => {
     queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
   });
   
+  // Query for monthly guide content
+  const { data: monthlyGuide } = useQuery<MonthlyGuide>({
+    queryKey: [`/api/monthly-guide?hemisphere=${hemisphere}`],
+  });
+  
   // Query for celestial object types (for filter dropdown)
   const { data: objectTypes } = useQuery<string[]>({
     queryKey: ['/api/celestial-object-types'],
@@ -116,11 +121,47 @@ const MonthlyGuideSection = () => {
         </div>
       ) : (
         <>
+          {/* Monthly Guide Description */}
+          {monthlyGuide && (
+            <div className="bg-gradient-to-r from-cosmic-purple to-nebula-pink rounded-xl shadow-xl p-6 mb-8">
+              <div className="flex items-start space-x-4">
+                <div className="bg-stellar-gold bg-opacity-20 p-3 rounded-lg">
+                  <i className="fas fa-calendar-alt text-2xl text-stellar-gold"></i>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-star-white mb-3">{monthlyGuide.headline}</h3>
+                  <div className="text-star-white text-sm leading-relaxed space-y-3">
+                    {monthlyGuide.description.split('\n\n').slice(0, 3).map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                  </div>
+                  {monthlyGuide.video_urls && monthlyGuide.video_urls.length > 0 && (
+                    <div className="mt-4">
+                      <Button className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90 text-sm">
+                        <i className="fas fa-play mr-2"></i>
+                        Watch Guide Video
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Featured Objects Grid */}
           {celestialObjects && celestialObjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {celestialObjects.map(object => (
-                <CelestialCard key={object.id} celestialObject={object} />
-              ))}
+            <div>
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-stellar-gold mb-2">Featured Objects This Month</h3>
+                <p className="text-star-dim text-sm">
+                  Click on any object to add it to your observation list and start planning your viewing session.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {celestialObjects.map(object => (
+                  <CelestialCard key={object.id} celestialObject={object} />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="bg-space-blue rounded-xl shadow-xl p-6 text-center">
