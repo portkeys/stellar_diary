@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CelestialObject } from "@shared/schema";
+import { CelestialObject, MonthlyGuide } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import CelestialCard from "./CelestialCard";
@@ -17,6 +17,11 @@ const MonthlyGuideSection = () => {
   
   const { data: celestialObjects, isLoading, isError } = useQuery<CelestialObject[]>({
     queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
+  });
+
+  // Query for monthly guide content
+  const { data: monthlyGuide, isLoading: guideLoading } = useQuery<MonthlyGuide>({
+    queryKey: [`/api/monthly-guide?hemisphere=Northern`],
   });
 
   // Limit to 3 featured objects for the home page
@@ -74,36 +79,58 @@ const MonthlyGuideSection = () => {
         </div>
       ) : (
         <>
-          {/* Featured Objects Grid */}
-          {featuredObjects.length > 0 ? (
-            <div>
-              <div className="mb-6">
-                <p className="text-star-dim text-sm">
-                  Discover the best celestial objects to observe this month. Click on any object to add it to your observation list.
+          {/* Monthly Guide Summary */}
+          {monthlyGuide && !guideLoading ? (
+            <div className="bg-space-blue rounded-xl shadow-xl p-6 mb-8">
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-stellar-gold mb-2">
+                  {monthlyGuide.headline}
+                </h3>
+                <p className="text-star-dim text-sm mb-4">
+                  Featured celestial objects and viewing opportunities for {currentMonth} {currentYear}. Content imported from: 
+                  <br />
+                  <span className="text-xs opacity-75">
+                    https://www.highpointscientific.com/astronomy-hub/post/night-sky-news/whats-in-the-sky-this-month-
+                  </span>
                 </p>
+                <div className="text-gray-300 leading-relaxed">
+                  {monthlyGuide.description && monthlyGuide.description.split('\n').slice(0, 3).map((paragraph, index) => (
+                    <p key={index} className="mb-3 text-sm">
+                      {paragraph.trim()}
+                    </p>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredObjects.map(object => (
-                  <CelestialCard key={object.id} celestialObject={object} />
-                ))}
-              </div>
+              
+              {/* Featured Objects Preview */}
+              {featuredObjects.length > 0 && (
+                <div className="border-t border-cosmic-purple pt-4">
+                  <h4 className="text-lg font-medium text-stellar-gold mb-3">Featured Objects</h4>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {featuredObjects.map(object => (
+                      <span key={object.id} className="bg-cosmic-purple px-3 py-1 rounded-full text-sm">
+                        {object.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="bg-space-blue rounded-xl shadow-xl p-6 text-center">
-              <div className="flex flex-col items-center">
-                <i className="fas fa-search text-4xl text-nebula-pink mb-4"></i>
-                <h3 className="text-xl font-semibold mb-2">No featured objects this month</h3>
-                <p className="text-star-dim mb-4">
-                  Check back soon for new celestial objects to observe this month!
-                </p>
+            <div className="bg-space-blue rounded-xl shadow-xl p-6 mb-8">
+              <div className="animate-pulse">
+                <div className="h-6 bg-cosmic-purple rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-cosmic-purple rounded w-full mb-2"></div>
+                <div className="h-4 bg-cosmic-purple rounded w-5/6 mb-2"></div>
+                <div className="h-4 bg-cosmic-purple rounded w-4/5"></div>
               </div>
             </div>
           )}
           
-          <div className="mt-8 text-center">
+          <div className="text-center">
             <Link href="/monthly-guide">
               <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light px-6 py-3 rounded-lg font-medium">
-                View More <i className="fas fa-arrow-right ml-2"></i>
+                View Full Guide <i className="fas fa-arrow-right ml-2"></i>
               </Button>
             </Link>
           </div>
