@@ -99,7 +99,16 @@ const MonthlyGuidePage = () => {
         ) : guide ? (
           <div className="bg-space-blue rounded-lg p-4 shadow-md">
             <h2 className="text-xl text-space text-nebula-pink mb-2">{guide.headline}</h2>
-            <p className="text-star-dim">{guide.description}</p>
+            <div 
+              className="text-star-dim prose prose-invert max-w-none [&_strong]:text-stellar-gold [&_strong]:font-semibold"
+              dangerouslySetInnerHTML={{
+                __html: guide.description
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\n\n/g, '</p><p>')
+                  .replace(/^(.*)$/gm, '<p>$1</p>')
+                  .replace(/<p><\/p>/g, '')
+              }}
+            />
           </div>
         ) : (
           <div className="bg-space-blue rounded-lg p-4 shadow-md">
