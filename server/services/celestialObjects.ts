@@ -331,7 +331,11 @@ export async function filterCelestialObjects(
   }
   
   if (hemisphere) {
-    objects = objects.filter(obj => obj.hemisphere === hemisphere || obj.hemisphere === 'both');
+    objects = objects.filter(obj => 
+      obj.hemisphere === hemisphere || 
+      obj.hemisphere?.toLowerCase() === 'both' ||
+      obj.hemisphere === 'Both'
+    );
   }
   
   return objects;
