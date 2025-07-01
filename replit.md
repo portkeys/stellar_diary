@@ -59,6 +59,7 @@ This is a comprehensive astronomy companion application called "StellarDiary" bu
 
 ### APIs and Services
 - **NASA APOD API**: Daily astronomy pictures and descriptions
+- **NASA Image and Video Library API**: Authentic celestial object images for database updates
 - **High Point Scientific**: Content source for monthly guides (via web scraping)
 
 ### Key Libraries
