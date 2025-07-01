@@ -167,6 +167,11 @@ const Admin = () => {
     });
   };
 
+  const handleUpdateAllImages = (forceUpdate: boolean = false) => {
+    setImageUpdateResults(null);
+    updateAllImagesMutation.mutate({ forceUpdate });
+  };
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -375,6 +380,114 @@ const Admin = () => {
           </Card>
         )}
 
+        {/* NASA Image Update Section */}
+        <Card className="bg-space-blue border-cosmic-purple p-6">
+          <h2 className="text-xl font-semibold text-stellar-gold mb-4">
+            <i className="fas fa-image mr-2"></i>
+            NASA Image Update
+          </h2>
+          <p className="text-star-dim text-sm mb-4">
+            Update celestial object images with authentic NASA images from their Image and Video Library API.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={() => handleUpdateAllImages(false)}
+                disabled={updateAllImagesMutation.isPending}
+                className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90"
+              >
+                {updateAllImagesMutation.isPending ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Updating Images...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-sync mr-2"></i>
+                    Update Inaccurate Images
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => handleUpdateAllImages(true)}
+                disabled={updateAllImagesMutation.isPending}
+                className="bg-cosmic-purple hover:bg-opacity-90"
+              >
+                {updateAllImagesMutation.isPending ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    Force Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-redo mr-2"></i>
+                    Update All Images
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {updateAllImagesMutation.isPending && (
+              <div className="mt-4 p-4 bg-cosmic-purple bg-opacity-30 rounded-lg">
+                <div className="flex items-center text-stellar-gold">
+                  <i className="fas fa-satellite-dish fa-spin mr-3"></i>
+                  <div>
+                    <p className="font-medium">Searching NASA Image Library...</p>
+                    <p className="text-sm text-star-dim">Finding authentic images for celestial objects</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {imageUpdateResults && (
+              <div className="mt-4 p-4 bg-space-blue-dark border border-cosmic-purple rounded-lg">
+                <h3 className="text-lg font-semibold text-stellar-gold mb-2">
+                  Update Results
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <p className="text-star-white">
+                    <strong>Total Processed:</strong> {imageUpdateResults.totalProcessed || 0}
+                  </p>
+                  <p className="text-green-400">
+                    <strong>Successful:</strong> {imageUpdateResults.successCount || 0}
+                  </p>
+                  <p className="text-red-400">
+                    <strong>Failed:</strong> {imageUpdateResults.failureCount || 0}
+                  </p>
+                  
+                  {imageUpdateResults.results && imageUpdateResults.results.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-stellar-gold font-medium mb-2">Detailed Results:</h4>
+                      <div className="max-h-60 overflow-y-auto space-y-1">
+                        {imageUpdateResults.results.map((result, index) => (
+                          <div key={index} className={`p-2 rounded text-xs ${
+                            result.success 
+                              ? 'bg-green-900 bg-opacity-30 text-green-300' 
+                              : 'bg-red-900 bg-opacity-30 text-red-300'
+                          }`}>
+                            <div className="flex items-center">
+                              <i className={`fas ${result.success ? 'fa-check' : 'fa-times'} mr-2`}></i>
+                              <strong>{result.objectName}</strong>
+                            </div>
+                            <p className="ml-4 opacity-75">{result.message}</p>
+                            {result.newImageUrl && (
+                              <p className="ml-4 text-blue-300 text-xs truncate">
+                                New: {result.newImageUrl}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* Instructions */}
         <Card className="bg-cosmic-purple bg-opacity-30 border-cosmic-purple p-6">
           <h3 className="text-lg font-semibold text-stellar-gold mb-3">
@@ -390,6 +503,9 @@ const Admin = () => {
             </div>
             <div>
               <strong>Automatic Processing:</strong> Both methods will update the monthly guide display and add featured objects to the celestial database with "Add to Observe" functionality.
+            </div>
+            <div>
+              <strong>NASA Image Updates:</strong> Use "Update Inaccurate Images" to replace poor-quality or incorrect images with authentic NASA images, or "Update All Images" to force-update all celestial object images from NASA's Image Library.
             </div>
           </div>
         </Card>

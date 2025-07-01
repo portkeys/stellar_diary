@@ -46,6 +46,7 @@ This is a comprehensive astronomy companion application called "StellarDiary" bu
 - Content extraction from High Point Scientific articles
 - Manual content entry for monthly guides
 - Celestial object management with duplicate cleanup
+- **NASA Image Update System**: Automatic replacement of inaccurate images with authentic NASA images from their Image and Video Library API
 
 ## Data Flow
 
