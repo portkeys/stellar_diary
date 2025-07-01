@@ -244,21 +244,3 @@ function getRecommendedEyepiece(type: string): string {
   return eyepieceMap[type] || 'Medium power recommended';
 }
 
-// CLI interface
-if (require.main === module) {
-  createJuly2025GuideFromVideo()
-    .then(result => {
-      console.log('\n' + '='.repeat(50));
-      console.log('JULY 2025 GUIDE CREATION COMPLETE');
-      console.log('='.repeat(50));
-      console.log(`Status: ${result.success ? 'SUCCESS' : 'FAILED'}`);
-      console.log(`Message: ${result.message}`);
-      console.log(`Objects Added: ${result.objectsAdded}`);
-      console.log(`Guide Updated: ${result.guideUpdated ? 'Yes' : 'No'}`);
-      process.exit(result.success ? 0 : 1);
-    })
-    .catch(error => {
-      console.error('Script failed:', error);
-      process.exit(1);
-    });
-}
