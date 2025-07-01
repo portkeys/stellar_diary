@@ -135,6 +135,34 @@ const Admin = () => {
     },
   });
 
+  const createJulyGuideMutation = useMutation({
+    mutationFn: async (): Promise<UpdateResult> => {
+      const response = await fetch("/api/admin/create-july-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.json();
+    },
+    onSuccess: (result: UpdateResult) => {
+      toast({
+        title: result.success ? "July Guide Created!" : "Error",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['/api/monthly-guide'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/celestial-objects'] });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create July guide. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUrlSubmit = () => {
     if (!url.trim()) {
       toast({
@@ -380,6 +408,58 @@ const Admin = () => {
           </Card>
         )}
 
+        {/* July 2025 Guide Creation */}
+        <Card className="bg-space-blue border-cosmic-purple p-6">
+          <h2 className="text-xl font-semibold text-stellar-gold mb-4">
+            <i className="fas fa-video mr-2"></i>
+            July 2025 Guide from YouTube
+          </h2>
+          <p className="text-star-dim text-sm mb-4">
+            Create the July 2025 monthly guide with featured objects extracted from the High Point Scientific YouTube video.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="bg-space-blue-dark border border-cosmic-purple rounded-lg p-4">
+              <p className="text-star-white text-sm mb-2">
+                <strong>Source:</strong> High Point Scientific - July 2025 Monthly Guide
+              </p>
+              <p className="text-star-dim text-xs">
+                https://www.youtube.com/watch?v=CStPEwfoP8c&ab_channel=HighPointScientific
+              </p>
+            </div>
+            
+            <Button
+              onClick={() => createJulyGuideMutation.mutate()}
+              disabled={createJulyGuideMutation.isPending}
+              className="bg-stellar-gold text-space-blue-dark hover:bg-opacity-90"
+            >
+              {createJulyGuideMutation.isPending ? (
+                <>
+                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                  Creating July Guide...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-star mr-2"></i>
+                  Create July 2025 Guide
+                </>
+              )}
+            </Button>
+
+            {createJulyGuideMutation.isPending && (
+              <div className="mt-4 p-4 bg-cosmic-purple bg-opacity-30 rounded-lg">
+                <div className="flex items-center text-stellar-gold">
+                  <i className="fas fa-magic fa-spin mr-3"></i>
+                  <div>
+                    <p className="font-medium">Creating July guide...</p>
+                    <p className="text-sm text-star-dim">Extracting featured objects from High Point Scientific video</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* NASA Image Update Section */}
         <Card className="bg-space-blue border-cosmic-purple p-6">
           <h2 className="text-xl font-semibold text-stellar-gold mb-4">
@@ -503,6 +583,9 @@ const Admin = () => {
             </div>
             <div>
               <strong>Automatic Processing:</strong> Both methods will update the monthly guide display and add featured objects to the celestial database with "Add to Observe" functionality.
+            </div>
+            <div>
+              <strong>July 2025 Guide:</strong> Create authentic monthly guide content based on the High Point Scientific YouTube video, extracting actual featured objects mentioned in their July guide.
             </div>
             <div>
               <strong>NASA Image Updates:</strong> Use "Update Inaccurate Images" to replace poor-quality or incorrect images with authentic NASA images, or "Update All Images" to force-update all celestial object images from NASA's Image Library.

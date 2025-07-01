@@ -404,6 +404,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/create-july-guide", async (req: Request, res: Response) => {
+    try {
+      const { createJuly2025GuideFromVideo } = await import("./scripts/parseYouTubeGuide");
+      const result = await createJuly2025GuideFromVideo();
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating July 2025 guide:", error);
+      res.status(500).json({
+        success: false,
+        message: `Failed to create July guide: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        objectsAdded: 0,
+        guideUpdated: false
+      });
+    }
+  });
+
   // NASA Image Update Routes
   app.post("/api/admin/update-object-image/:id", async (req: Request, res: Response) => {
     try {
