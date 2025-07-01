@@ -15,6 +15,22 @@ interface UpdateResult {
   guideUpdated: boolean;
 }
 
+interface ImageUpdateResult {
+  success: boolean;
+  message: string;
+  totalProcessed?: number;
+  successCount?: number;
+  failureCount?: number;
+  objectName?: string;
+  newImageUrl?: string;
+  results?: Array<{
+    objectName: string;
+    success: boolean;
+    message: string;
+    newImageUrl?: string;
+  }>;
+}
+
 const Admin = () => {
   const [url, setUrl] = useState("");
   const [manualContent, setManualContent] = useState("");
@@ -24,6 +40,7 @@ const Admin = () => {
   const [headline, setHeadline] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
+  const [imageUpdateResults, setImageUpdateResults] = useState<ImageUpdateResult | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -84,6 +101,35 @@ const Admin = () => {
       toast({
         title: "Error",
         description: "Failed to create manual guide. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAllImagesMutation = useMutation({
+    mutationFn: async (data: { forceUpdate: boolean }): Promise<ImageUpdateResult> => {
+      const response = await fetch("/api/admin/update-all-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+    onSuccess: (result: ImageUpdateResult) => {
+      setImageUpdateResults(result);
+      toast({
+        title: result.success ? "Image Update Complete" : "Image Update Failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['/api/celestial-objects'] });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update celestial object images. Please try again.",
         variant: "destructive",
       });
     },

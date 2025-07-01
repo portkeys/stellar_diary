@@ -404,6 +404,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NASA Image Update Routes
+  app.post("/api/admin/update-object-image/:id", async (req: Request, res: Response) => {
+    try {
+      const objectId = parseInt(req.params.id);
+      if (isNaN(objectId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid object ID" 
+        });
+      }
+
+      const { updateCelestialObjectImage } = await import("./services/nasaImages");
+      const result = await updateCelestialObjectImage(objectId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(404).json(result);
+      }
+    } catch (error) {
+      console.error("Error updating celestial object image:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to update image: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+
+  app.post("/api/admin/update-all-images", async (req: Request, res: Response) => {
+    try {
+      const { forceUpdate } = req.body;
+      const { updateAllCelestialObjectImages } = await import("./services/nasaImages");
+      const result = await updateAllCelestialObjectImages(forceUpdate || false);
+      res.json(result);
+    } catch (error) {
+      console.error("Error updating all celestial object images:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to update images: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+
+  app.get("/api/admin/preview-nasa-image/:objectName", async (req: Request, res: Response) => {
+    try {
+      const objectName = decodeURIComponent(req.params.objectName);
+      const { previewNasaImageSearch } = await import("./services/nasaImages");
+      const result = await previewNasaImageSearch(objectName);
+      res.json(result);
+    } catch (error) {
+      console.error("Error previewing NASA image search:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to preview image search: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
