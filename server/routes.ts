@@ -409,64 +409,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create July 2025 guide with authentic objects from High Point Scientific video
       const featuredObjects = [
         {
-          name: "Jupiter",
-          type: "planet",
-          description: "The largest planet in our solar system, Jupiter is prominently visible in the summer sky. Observable throughout the night with its four largest moons: Io, Europa, Ganymede, and Callisto.",
-          constellation: "Gemini",
-          magnitude: "-2.5",
-          coordinates: "RA: Variable | Dec: Variable",
-          visibility: "Excellent visibility all night",
-          tips: "Use medium magnification to see the Great Red Spot and cloud bands. Look for the four Galilean moons changing positions nightly."
-        },
-        {
-          name: "Saturn",
-          type: "planet", 
-          description: "The ringed planet Saturn reaches opposition in July, making it the perfect time for observation. The rings are beautifully tilted, showing their structure clearly.",
-          constellation: "Aquarius",
-          magnitude: "0.1",
-          coordinates: "RA: Variable | Dec: Variable",
-          visibility: "Best viewing after 10 PM",
-          tips: "Even small telescopes will show Saturn's rings. Look for the Cassini Division in the rings and the moon Titan."
-        },
-        {
-          name: "Ring Nebula (M57)",
-          type: "nebula",
-          description: "A classic planetary nebula in Lyra, often called the 'donut in the sky.' This is one of the most famous deep-sky objects for summer observing.",
-          constellation: "Lyra",
-          magnitude: "8.8",
-          coordinates: "RA: 18h 53m 35s | Dec: +33° 01′ 45″",
-          visibility: "Visible with binoculars, spectacular in telescopes",
-          tips: "Use medium to high magnification to see the ring structure. A nebula filter can enhance the view significantly."
-        },
-        {
-          name: "Great Globular Cluster in Hercules (M13)",
+          name: "Messier 4",
           type: "star_cluster",
-          description: "The finest globular cluster visible from northern latitudes. Contains over 300,000 stars packed into a sphere about 145 light-years across.",
-          constellation: "Hercules",
-          magnitude: "5.8",
-          coordinates: "RA: 16h 41m 42s | Dec: +36° 27′ 37″",
-          visibility: "Visible to naked eye in dark skies, magnificent in telescopes",
-          tips: "Start with low magnification to see the full cluster, then zoom in to resolve individual stars at the edges."
+          description: "One of the closest globular clusters to Earth at just 7,200 light-years away. M4 is located in the constellation Scorpius and offers spectacular views of individual stars even in modest telescopes.",
+          constellation: "Scorpius",
+          magnitude: "5.9",
+          coordinates: "RA: 16h 23m 35s | Dec: -26° 31′ 32″",
+          visibility: "Best viewing in southern sky after 10 PM",
+          tips: "Use medium magnification to resolve individual stars. The cluster has a distinctive bar-like feature across its center that's visible in larger telescopes."
         },
         {
-          name: "Double-Double Star (ε Lyrae)",
-          type: "double_star",
-          description: "A famous multiple star system in Lyra. What appears as a double star to the naked eye resolves into four stars with a telescope - a double-double.",
-          constellation: "Lyra",
-          magnitude: "5.0",
-          coordinates: "RA: 18h 44m 20s | Dec: +39° 40′ 12″",
-          visibility: "Easy target for all telescope sizes",
-          tips: "Use high magnification to split each pair. Good test of telescope optics and atmospheric seeing."
+          name: "Lagoon Nebula (M8)",
+          type: "nebula",
+          description: "A stunning emission nebula in Sagittarius, the Lagoon Nebula is one of the most spectacular deep-sky objects visible from Earth. This star-forming region glows beautifully in telescopes.",
+          constellation: "Sagittarius",
+          magnitude: "6.0",
+          coordinates: "RA: 18h 03m 37s | Dec: -24° 23′ 12″",
+          visibility: "Excellent visibility in dark skies, visible to naked eye",
+          tips: "Use a nebula filter to enhance contrast. Low to medium magnification reveals the dark lane that gives it the 'lagoon' appearance."
         },
         {
-          name: "Albireo (β Cygni)",
-          type: "double_star",
-          description: "One of the most beautiful double stars in the sky, showing striking color contrast between a golden-yellow primary and blue-green secondary star.",
-          constellation: "Cygnus",
-          magnitude: "3.1",
-          coordinates: "RA: 19h 30m 43s | Dec: +27° 57′ 35″",
-          visibility: "Easy target, beautiful in any telescope",
-          tips: "Any magnification will split this pair. The color contrast is stunning and makes this a crowd favorite."
+          name: "Eagle Nebula (M16)",
+          type: "nebula",
+          description: "Famous for the Hubble Space Telescope's 'Pillars of Creation' image, the Eagle Nebula is an active star-forming region in Serpens constellation with incredible detail visible in telescopes.",
+          constellation: "Serpens",
+          magnitude: "6.4",
+          coordinates: "RA: 18h 18m 48s | Dec: -13° 49′ 00″",
+          visibility: "Best viewed in dark skies with telescopes",
+          tips: "Use nebula filter and medium magnification. Look for the dark pillars and bright star cluster embedded within the nebula."
+        },
+        {
+          name: "Saturn and Neptune Conjunction",
+          type: "planet",
+          description: "In July 2025, Saturn and Neptune appear remarkably close together in the sky, offering a rare opportunity to observe both planets in the same telescopic field of view.",
+          constellation: "Aquarius",
+          magnitude: "0.1 (Saturn), 7.8 (Neptune)",
+          coordinates: "RA: Variable | Dec: Variable (Close conjunction)",
+          visibility: "Best viewing after 11 PM, look for Saturn first",
+          tips: "Start with Saturn to locate the pair, then use high magnification to spot Neptune nearby. Saturn's rings and Neptune's blue disk make a stunning contrast."
         }
       ];
 
