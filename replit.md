@@ -92,7 +92,19 @@ This is a comprehensive astronomy companion application called "StellarDiary" bu
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **July 03, 2025**: Enhanced Add Entry functionality with comprehensive search and autocomplete
+  - Implemented smart object search with autocomplete dropdown
+  - Added duplicate prevention system - filters out objects already in observation list
+  - Created seamless toggle between search mode and manual entry mode
+  - Added type-specific fallback images for all celestial object categories
+  - Fixed image display issues across all components (CelestialCard, ObservationList, MyObservations)
+  - Integrated NASA Image and Video Library API for authentic astronomical imagery
+  - Added delete functionality for observation records
+
 ## Changelog
 
 Changelog:
 - July 01, 2025. Initial setup
+- July 03, 2025. Search functionality and image system improvements
