@@ -41,6 +41,25 @@ const CelestialCard = ({
   const formatType = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
+
+  const getTypeSpecificFallbackImage = (type: string) => {
+    switch (type) {
+      case 'galaxy':
+        return 'https://images.unsplash.com/photo-1544207240-3e0e0c1a8f34?w=800&h=500&fit=crop&auto=format'; // Galaxy image
+      case 'nebula':
+        return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format'; // Nebula image
+      case 'planet':
+        return 'https://images.unsplash.com/photo-1614314107768-6018061b5b72?w=800&h=500&fit=crop&auto=format'; // Planet image
+      case 'star_cluster':
+        return 'https://images.unsplash.com/photo-1593331292296-1bb2644113cb?w=800&h=500&fit=crop&auto=format'; // Star cluster image
+      case 'double_star':
+        return 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800&h=500&fit=crop&auto=format'; // Double star image
+      case 'moon':
+        return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format'; // Moon image
+      default:
+        return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format'; // Generic space image
+    }
+  };
   
   const handleAddToObservationList = async () => {
     if (isAdding) return;
@@ -81,14 +100,14 @@ const CelestialCard = ({
     <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden transition-transform duration-300 hover:transform hover:scale-[1.02] hover:shadow-2xl">
       <div className="relative">
         <img 
-          src={celestialObject.imageUrl ? celestialObject.imageUrl : `/images/${celestialObject.type}.jpg`}
+          src={celestialObject.imageUrl ? celestialObject.imageUrl : getTypeSpecificFallbackImage(celestialObject.type)}
           alt={celestialObject.name} 
           className="w-full h-48 object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            // Fall back to a default image based on object type
+            // Fall back to a type-specific image
             target.onerror = null; // Prevent infinite loop
-            target.src = `https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format`;
+            target.src = getTypeSpecificFallbackImage(celestialObject.type);
           }}
         />
         <div className="absolute top-2 right-2 bg-space-blue-dark bg-opacity-75 backdrop-blur-sm px-2 py-1 rounded-full text-xs">
