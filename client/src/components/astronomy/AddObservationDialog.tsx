@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { celestialObjectTypes } from '@shared/schema';
+import { celestialObjectTypes, CelestialObject } from '@shared/schema';
 
 import {
   Dialog,
@@ -35,9 +35,14 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Create a schema for the form
 const formSchema = z.object({
+  selectedObjectId: z.number().optional(),
   objectName: z.string().min(2, { message: "Object name must be at least 2 characters." }),
   objectType: z.string().min(1, { message: "Please select an object type." }),
   coordinates: z.string().optional(),
@@ -57,11 +62,26 @@ interface AddObservationDialogProps {
 const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const [showDateField, setShowDateField] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  
+  // Fetch existing celestial objects for autocomplete
+  const { data: celestialObjects = [] } = useQuery<CelestialObject[]>({
+    queryKey: ['/api/celestial-objects'],
+    enabled: open, // Only fetch when dialog is open
+  });
+  
+  // Get existing observations to check for duplicates
+  const { data: observations = [] } = useQuery<any[]>({
+    queryKey: ['/api/observations'],
+    enabled: open,
+  });
 
   // Initialize the form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      selectedObjectId: undefined,
       objectName: '',
       objectType: '',
       coordinates: '',
@@ -71,39 +91,88 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
       observationNotes: '',
     },
   });
+  
+  // Filter out objects that are already in the observation list
+  const availableObjects = (celestialObjects as CelestialObject[]).filter((obj: CelestialObject) => 
+    !(observations as any[]).some((obs: any) => obs.objectId === obj.id)
+  );
+  
+  // Handle object selection from search
+  const handleObjectSelect = (objectId: number) => {
+    const selectedObject = (celestialObjects as CelestialObject[]).find((obj: CelestialObject) => obj.id === objectId);
+    if (selectedObject) {
+      form.setValue('selectedObjectId', objectId);
+      form.setValue('objectName', selectedObject.name);
+      form.setValue('objectType', selectedObject.type);
+      form.setValue('coordinates', selectedObject.coordinates || '');
+      form.setValue('description', selectedObject.description || '');
+      setIsCreatingNew(false);
+    }
+    setSearchOpen(false);
+  };
+  
+  // Handle creating a new custom object
+  const handleCreateNew = () => {
+    form.setValue('selectedObjectId', undefined);
+    form.setValue('objectName', '');
+    form.setValue('objectType', '');
+    form.setValue('coordinates', '');
+    form.setValue('description', '');
+    setIsCreatingNew(true);
+    setSearchOpen(false);
+  };
+  
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setIsCreatingNew(false);
+      setShowDateField(false);
+    }
+  }, [open, form]);
 
-  // Create mutation for adding a custom observation
+  // Create mutation for adding an observation
   const addObservationMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // First create a custom celestial object
-      const response = await apiRequest('POST', '/api/celestial-objects', {
-        name: values.objectName,
-        type: values.objectType,
-        coordinates: values.coordinates || 'Not specified',
-        description: values.description || `Custom observation of ${values.objectName}`,
-        month: new Date().toLocaleString('default', { month: 'long' }),
-        hemisphere: 'Both',
-      });
+      let objectId: number;
       
-      // Parse the response to get the celestial object with id
-      const celestialObject = await response.json();
+      if (values.selectedObjectId) {
+        // Use existing object
+        objectId = values.selectedObjectId;
+      } else {
+        // Create new custom celestial object
+        const response = await apiRequest('POST', '/api/celestial-objects', {
+          name: values.objectName,
+          type: values.objectType,
+          coordinates: values.coordinates || 'Not specified',
+          description: values.description || `Custom observation of ${values.objectName}`,
+          month: new Date().toLocaleString('default', { month: 'long' }),
+          hemisphere: 'Both',
+        });
+        
+        const celestialObject = await response.json();
+        objectId = celestialObject.id;
+      }
 
-      // Then create an observation for this object
+      // Create an observation for this object
       await apiRequest('POST', '/api/observations', {
-        objectId: celestialObject.id,
+        objectId,
         isObserved: values.isObserved,
         observationNotes: values.observationNotes,
-        plannedDate: values.observationDate, // Always save the observation date
+        plannedDate: values.observationDate,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/celestial-objects'] });
+      const objectName = form.getValues('objectName');
       toast({
         title: 'Observation added',
-        description: 'Your custom observation has been added to your list.',
+        description: `${objectName} has been added to your observation list.`,
       });
       onOpenChange(false);
       form.reset();
+      setIsCreatingNew(false);
     },
     onError: (error) => {
       toast({
@@ -115,6 +184,19 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
   });
 
   const onSubmit = (values: FormValues) => {
+    // Check for duplicate if selecting existing object
+    if (values.selectedObjectId) {
+      const isDuplicate = (observations as any[]).some((obs: any) => obs.objectId === values.selectedObjectId);
+      if (isDuplicate) {
+        toast({
+          title: 'Object already in list',
+          description: 'This object is already in your observation list.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
     addObservationMutation.mutate(values);
   };
 
@@ -138,81 +220,149 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-star-white">Object Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Leo Triplet, M51, Jupiter"
-                      className="bg-space-blue-dark border-cosmic-purple"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={searchOpen}
+                          className="w-full justify-between bg-space-blue-dark border-cosmic-purple hover:bg-space-blue-light"
+                        >
+                          {field.value || "Search existing objects or create new..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-space-blue border-cosmic-purple">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search celestial objects..." 
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            <div className="p-2 text-center">
+                              <p className="text-star-dim mb-2">No objects found</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCreateNew}
+                                className="bg-nebula-pink text-space-blue-dark hover:bg-opacity-90"
+                              >
+                                <i className="fas fa-plus mr-1"></i> Create new object
+                              </Button>
+                            </div>
+                          </CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              onSelect={handleCreateNew}
+                              className="cursor-pointer"
+                            >
+                              <i className="fas fa-plus mr-2"></i>
+                              Create new object
+                            </CommandItem>
+                            {availableObjects.map((obj) => (
+                              <CommandItem
+                                key={obj.id}
+                                onSelect={() => handleObjectSelect(obj.id)}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    form.getValues('selectedObjectId') === obj.id
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{obj.name}</span>
+                                  <span className="text-xs text-star-dim">
+                                    {obj.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="objectType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-star-white">Object Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="bg-space-blue-dark border-cosmic-purple">
-                        <SelectValue placeholder="Select object type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-space-blue border-cosmic-purple">
-                      {celestialObjectTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {(isCreatingNew || !form.getValues('selectedObjectId')) && (
+              <FormField
+                control={form.control}
+                name="objectType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-star-white">Object Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-space-blue-dark border-cosmic-purple">
+                          <SelectValue placeholder="Select object type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-space-blue border-cosmic-purple">
+                        {celestialObjectTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <FormField
-              control={form.control}
-              name="coordinates"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-star-white">Coordinates (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., RA: 13h 29m | Dec: +47° 11′"
-                      className="bg-space-blue-dark border-cosmic-purple"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {(isCreatingNew || !form.getValues('selectedObjectId')) && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="coordinates"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-star-white">Coordinates (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., RA: 13h 29m | Dec: +47° 11′"
+                          className="bg-space-blue-dark border-cosmic-purple"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-star-white">Description (optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Brief description of the celestial object"
-                      className="bg-space-blue-dark border-cosmic-purple resize-none h-20"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-star-white">Description (optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Brief description of the celestial object"
+                          className="bg-space-blue-dark border-cosmic-purple resize-none h-20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             <FormField
               control={form.control}
