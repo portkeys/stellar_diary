@@ -13,6 +13,25 @@ interface EnhancedObservation extends Observation {
 
 const ObservationList = () => {
   const { toast } = useToast();
+
+  const getTypeSpecificFallbackImage = (type: string) => {
+    switch (type) {
+      case 'galaxy':
+        return 'https://images.unsplash.com/photo-1544207240-3e0e0c1a8f34?w=800&h=500&fit=crop&auto=format';
+      case 'nebula':
+        return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format';
+      case 'planet':
+        return 'https://images.unsplash.com/photo-1614314107768-6018061b5b72?w=800&h=500&fit=crop&auto=format';
+      case 'star_cluster':
+        return 'https://images.unsplash.com/photo-1593331292296-1bb2644113cb?w=800&h=500&fit=crop&auto=format';
+      case 'double_star':
+        return 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800&h=500&fit=crop&auto=format';
+      case 'moon':
+        return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format';
+      default:
+        return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format';
+    }
+  };
   
   const { data: observations, isLoading, isError } = useQuery<EnhancedObservation[]>({
     queryKey: ['/api/observations'],
@@ -152,9 +171,14 @@ const ObservationList = () => {
                       <div className="flex flex-col w-full">
                         <div className="flex items-center">
                           <img 
-                            src={observation.celestialObject?.imageUrl} 
+                            src={observation.celestialObject?.imageUrl || getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other')} 
                             alt={observation.celestialObject?.name} 
                             className="w-10 h-10 rounded-md object-cover mr-3" 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other');
+                            }}
                           />
                           <div className="flex-1">
                             <h4 className="text-blue-100 font-medium">{observation.celestialObject?.name}</h4>
@@ -223,9 +247,14 @@ const ObservationList = () => {
                       <div className="flex flex-col w-full">
                         <div className="flex items-center">
                           <img 
-                            src={observation.celestialObject?.imageUrl} 
+                            src={observation.celestialObject?.imageUrl || getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other')} 
                             alt={observation.celestialObject?.name} 
                             className="w-10 h-10 rounded-md object-cover mr-3 opacity-80" 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other');
+                            }}
                           />
                           <div className="flex-1">
                             <h4 className="text-gray-200 font-medium">{observation.celestialObject?.name}</h4>
