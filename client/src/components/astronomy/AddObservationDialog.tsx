@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils';
 const formSchema = z.object({
   selectedObjectId: z.number().optional(),
   objectName: z.string().min(2, { message: "Object name must be at least 2 characters." }),
-  objectType: z.string().min(1, { message: "Please select an object type." }),
+  objectType: z.string().optional(),
   coordinates: z.string().optional(),
   description: z.string().optional(),
   isObserved: z.boolean().default(false),
@@ -195,6 +195,16 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
         });
         return;
       }
+    } else {
+      // When creating new object, validate object type is provided
+      if (!values.objectType) {
+        toast({
+          title: 'Object type required',
+          description: 'Please select an object type when creating a new object.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
     
     addObservationMutation.mutate(values);
@@ -208,7 +218,14 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
             Add Observation Entry
           </DialogTitle>
           <DialogDescription>
-            Add a new observation entry to your list.
+            {isCreatingNew ? (
+              <span className="text-nebula-pink">
+                <i className="fas fa-plus mr-1"></i>
+                Creating new custom object
+              </span>
+            ) : (
+              "Search for existing objects or create new ones."
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -220,75 +237,100 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-star-white">Object Name</FormLabel>
-                  <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={searchOpen}
-                          className="w-full justify-between bg-space-blue-dark border-cosmic-purple hover:bg-space-blue-light"
-                        >
-                          {field.value || "Search existing objects or create new..."}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-space-blue border-cosmic-purple">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search celestial objects..." 
-                          className="h-9"
+                  {isCreatingNew ? (
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="Enter object name (e.g., M13, Jupiter, Leo Triplet)"
+                          className="bg-space-blue-dark border-cosmic-purple pr-10"
+                          {...field}
                         />
-                        <CommandList>
-                          <CommandEmpty>
-                            <div className="p-2 text-center">
-                              <p className="text-star-dim mb-2">No objects found</p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleCreateNew}
-                                className="bg-nebula-pink text-space-blue-dark hover:bg-opacity-90"
-                              >
-                                <i className="fas fa-plus mr-1"></i> Create new object
-                              </Button>
-                            </div>
-                          </CommandEmpty>
-                          <CommandGroup>
-                            <CommandItem
-                              onSelect={handleCreateNew}
-                              className="cursor-pointer"
-                            >
-                              <i className="fas fa-plus mr-2"></i>
-                              Create new object
-                            </CommandItem>
-                            {availableObjects.map((obj) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0 text-star-dim hover:text-stellar-gold"
+                          onClick={() => {
+                            setIsCreatingNew(false);
+                            form.setValue('objectName', '');
+                          }}
+                          title="Switch back to search"
+                        >
+                          <i className="fas fa-search text-sm"></i>
+                        </Button>
+                      </div>
+                    </FormControl>
+                  ) : (
+                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={searchOpen}
+                            className="w-full justify-between bg-space-blue-dark border-cosmic-purple hover:bg-space-blue-light"
+                          >
+                            {field.value || "Search existing objects or create new..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-space-blue border-cosmic-purple">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Search celestial objects..." 
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              <div className="p-2 text-center">
+                                <p className="text-star-dim mb-2">No objects found</p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCreateNew}
+                                  className="bg-nebula-pink text-space-blue-dark hover:bg-opacity-90"
+                                >
+                                  <i className="fas fa-plus mr-1"></i> Create new object
+                                </Button>
+                              </div>
+                            </CommandEmpty>
+                            <CommandGroup>
                               <CommandItem
-                                key={obj.id}
-                                onSelect={() => handleObjectSelect(obj.id)}
+                                onSelect={handleCreateNew}
                                 className="cursor-pointer"
                               >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    form.getValues('selectedObjectId') === obj.id
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{obj.name}</span>
-                                  <span className="text-xs text-star-dim">
-                                    {obj.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                  </span>
-                                </div>
+                                <i className="fas fa-plus mr-2"></i>
+                                Create new object
                               </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                              {availableObjects.map((obj) => (
+                                <CommandItem
+                                  key={obj.id}
+                                  onSelect={() => handleObjectSelect(obj.id)}
+                                  className="cursor-pointer"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      form.getValues('selectedObjectId') === obj.id
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{obj.name}</span>
+                                    <span className="text-xs text-star-dim">
+                                      {obj.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
