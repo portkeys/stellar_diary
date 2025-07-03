@@ -336,7 +336,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
               )}
             />
 
-            {(isCreatingNew || !form.getValues('selectedObjectId')) && (
+            {isCreatingNew && (
               <FormField
                 control={form.control}
                 name="objectType"
@@ -345,7 +345,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
                     <FormLabel className="text-star-white">Object Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-space-blue-dark border-cosmic-purple">
@@ -366,7 +366,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
               />
             )}
 
-            {(isCreatingNew || !form.getValues('selectedObjectId')) && (
+            {isCreatingNew && (
               <>
                 <FormField
                   control={form.control}
