@@ -326,6 +326,14 @@ const MyObservations = () => {
                           >
                             <i className="fas fa-edit text-xl"></i>
                           </Button>
+                          <Button 
+                            variant="ghost"
+                            className="text-star-dim hover:text-red-500"
+                            onClick={() => handleRemove(observation.id)}
+                            title="Remove from observation list"
+                          >
+                            <i className="fas fa-trash text-xl"></i>
+                          </Button>
 
                         </div>
                       </div>
@@ -374,6 +382,14 @@ const MyObservations = () => {
                                   title="Edit notes"
                                 >
                                   <i className="fas fa-edit text-xl"></i>
+                                </Button>
+                                <Button 
+                                  variant="ghost"
+                                  className="text-star-dim hover:text-red-500"
+                                  onClick={() => handleRemove(observation.id)}
+                                  title="Remove from observation list"
+                                >
+                                  <i className="fas fa-trash text-xl"></i>
                                 </Button>
 
                               </div>
