@@ -398,9 +398,6 @@ const Learn = () => {
                     For most deep sky objects, use lower power (25mm eyepiece). For planets and double stars, use higher magnification.
                   </p>
                 </div>
-                <Button className="w-full bg-cosmic-purple hover:bg-cosmic-purple-light">
-                  Learn Advanced Techniques
-                </Button>
               </CardContent>
             </Card>
             
@@ -419,9 +416,6 @@ const Learn = () => {
                     March and early April provide the best opportunity for a Messier Marathon, when all objects can potentially be viewed in one night.
                   </p>
                 </div>
-                <Button className="w-full bg-cosmic-purple hover:bg-cosmic-purple-light">
-                  Get Messier Marathon Guide
-                </Button>
               </CardContent>
             </Card>
           </div>
