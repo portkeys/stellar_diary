@@ -26,7 +26,7 @@ interface YouTubeEmbedProps {
 
 const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) => {
   const videoId = getYouTubeVideoId(videoUrl);
-  
+
   if (!videoId) {
     return (
       <div className="relative w-full rounded-lg overflow-hidden mb-4 bg-space-blue-dark border border-cosmic-purple" style={{ paddingBottom: '56.25%' }}>
@@ -41,10 +41,10 @@ const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) 
       </div>
     );
   }
-  
+
   return (
     <div className="relative w-full rounded-lg overflow-hidden mb-4" style={{ paddingBottom: '56.25%' }}> {/* 16:9 aspect ratio */}
-      <iframe 
+      <iframe
         src={`https://www.youtube.com/embed/${videoId}`}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -67,34 +67,36 @@ const MonthlyGuidePage = () => {
   const [passcode, setPasscode] = useState<string>("");
   const [passcodeError, setPasscodeError] = useState<string>("");
   const { toast } = useToast();
-  
+
   // Get current month name
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const currentYear = new Date().getFullYear();
-  
+
   // Fetch monthly guide info
   const { data: guide, isLoading: isGuideLoading, isError: isGuideError } = useQuery<MonthlyGuide>({
     queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`],
     // Continue even if the monthly guide is not found
-    retry: false
+    retry: false,
+    // Don't treat 404 as an error for admin purposes
+    throwOnError: false
   });
-  
+
   // Construct query string for celestial objects
   const queryParams = new URLSearchParams();
   if (hemisphere) queryParams.append('hemisphere', hemisphere);
   if (objectType) queryParams.append('type', objectType);
   queryParams.append('month', currentMonth);
-  
+
   // Fetch celestial objects
   const { data: celestialObjects, isLoading: isObjectsLoading, isError: isObjectsError } = useQuery<CelestialObject[]>({
     queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
   });
-  
+
   // Query for celestial object types (for filter dropdown)
   const { data: objectTypes } = useQuery<string[]>({
     queryKey: ['/api/celestial-object-types'],
   });
-  
+
   const isLoading = isGuideLoading || isObjectsLoading;
   const isError = isObjectsError; // Use the objects error state for the main error display
 
@@ -114,12 +116,13 @@ const MonthlyGuidePage = () => {
   // Handle passcode verification
   const handlePasscodeSubmit = () => {
     const correctPasscode = "tutulemma";
-    
+
     if (passcode === correctPasscode) {
       setIsAdmin(true);
       setShowPasscodeDialog(false);
       setPasscode("");
       setPasscodeError("");
+      console.log("Admin access granted. Guide data:", guide);
       toast({
         title: "Admin Access Granted",
         description: "You now have access to admin functionality",
@@ -159,7 +162,7 @@ const MonthlyGuidePage = () => {
         // Refresh the data
         queryClient.invalidateQueries({ queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] });
         queryClient.invalidateQueries({ queryKey: [`/api/celestial-objects?${queryParams.toString()}`] });
-        
+
         toast({
           title: "Content Imported!",
           description: result.message,
@@ -186,15 +189,15 @@ const MonthlyGuidePage = () => {
       setIsImporting(false);
     }
   };
-  
+
   const handleHemisphereChange = (value: string) => {
     setHemisphere(value);
   };
-  
+
   const handleFilterChange = (value: string) => {
     setObjectType(value === 'all' ? null : value);
   };
-  
+
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
       {/* Page Header */}
@@ -211,7 +214,7 @@ const MonthlyGuidePage = () => {
             <i className="fas fa-star text-stellar-gold mr-2"></i>
             June 2025: Astronomy Highlights
           </h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Mars, Regulus, and the Moon */}
             <div className="bg-space-blue rounded-xl shadow-xl p-6">
@@ -287,14 +290,14 @@ const MonthlyGuidePage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 bg-space-blue-dark rounded-lg p-4">
             <p className="text-star-dim text-sm">
-              <strong className="text-stellar-gold">Source:</strong> Content summarized from High Point Scientific's "What's in the Sky This Month? June 2025" 
+              <strong className="text-stellar-gold">Source:</strong> Content summarized from High Point Scientific's "What's in the Sky This Month? June 2025"
               <br />
-              <a href="https://www.highpointscientific.com/astronomy-hub/post/night-sky-news/whats-in-the-sky-this-month-june-2025" 
-                 target="_blank" 
-                 rel="noopener noreferrer" 
+              <a href="https://www.highpointscientific.com/astronomy-hub/post/night-sky-news/whats-in-the-sky-this-month-june-2025"
+                 target="_blank"
+                 rel="noopener noreferrer"
                  className="text-nebula-pink hover:underline text-xs">
                 View Original Article →
               </a>
@@ -302,13 +305,13 @@ const MonthlyGuidePage = () => {
           </div>
         </div>
       )}
-      
+
       {/* Filter Controls */}
       <div className="mb-8 flex flex-wrap gap-4 items-center justify-between bg-space-blue-dark p-4 rounded-lg">
         <div className="text-lg text-space font-medium">
           Filter Objects
         </div>
-        
+
         <div className="flex flex-wrap gap-3">
           <Select onValueChange={handleFilterChange} defaultValue="all">
             <SelectTrigger className="bg-cosmic-purple hover:bg-cosmic-purple-light px-4 py-2 rounded-md text-sm w-[180px]">
@@ -324,7 +327,7 @@ const MonthlyGuidePage = () => {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select onValueChange={handleHemisphereChange} defaultValue={hemisphere}>
             <SelectTrigger className="bg-space-blue border border-cosmic-purple rounded-md py-2 pl-3 pr-8 text-sm w-[180px]">
               <SelectValue placeholder="Hemisphere" />
@@ -335,9 +338,9 @@ const MonthlyGuidePage = () => {
               <SelectItem value="Both">Both Hemispheres</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button 
-            variant="outline" 
+
+          <Button
+            variant="outline"
             className="border-nebula-pink text-nebula-pink hover:bg-nebula-pink hover:bg-opacity-10"
             onClick={() => {
               setObjectType(null);
@@ -348,19 +351,19 @@ const MonthlyGuidePage = () => {
           </Button>
         </div>
       </div>
-      
+
       {/* Videos Section */}
       {guide && guide.videoUrls && guide.videoUrls.length > 0 && (
         <div className="mb-10">
           <h2 className="text-2xl text-space font-bold mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block text-stellar-gold mr-2"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg> Featured Videos
           </h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {guide.videoUrls.map((videoUrl, index) => (
               <div key={index} className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
-                <YouTubeEmbed 
-                  videoUrl={videoUrl} 
+                <YouTubeEmbed
+                  videoUrl={videoUrl}
                   title={`${currentMonth} ${currentYear} Sky Guide - Video ${index + 1}`}
                 />
               </div>
@@ -368,7 +371,7 @@ const MonthlyGuidePage = () => {
           </div>
         </div>
       )}
-      
+
       {/* Admin Controls - Only visible when admin mode is toggled */}
       <div className="mb-10">
         <div className="flex justify-end mb-4">
@@ -380,16 +383,30 @@ const MonthlyGuidePage = () => {
             {isAdmin ? "Exit Admin Mode" : "Admin Mode"}
           </Button>
         </div>
-        
-        {isAdmin && guide && (
+
+        {isAdmin && (
           <div className="bg-space-blue rounded-lg p-6 mb-8">
             <h3 className="text-xl text-nebula-pink font-semibold mb-6">Update Monthly Guide</h3>
-            
+
+            {/* Status Info */}
+            {!guide && !isGuideLoading && (
+              <div className="mb-4 p-3 bg-yellow-900/30 text-yellow-300 border border-yellow-700 rounded">
+                <div className="font-medium">No Guide Found</div>
+                <div className="text-sm">No monthly guide exists for {currentMonth} {currentYear}. You can still import content to create one.</div>
+              </div>
+            )}
+
+            {isGuideLoading && (
+              <div className="mb-4 p-3 bg-blue-900/30 text-blue-300 border border-blue-700 rounded">
+                Loading monthly guide...
+              </div>
+            )}
+
             {/* Content Import Section */}
             <div className="mb-8 p-4 bg-space-blue-dark rounded-lg">
               <h4 className="text-lg text-stellar-gold font-medium mb-4">Import Content & Objects</h4>
               <p className="text-star-dim text-sm mb-4">Parse astronomy articles to extract celestial objects and update guide content</p>
-              
+
               <div className="flex gap-2 mb-4">
                 <Input
                   type="text"
@@ -406,7 +423,7 @@ const MonthlyGuidePage = () => {
                   {isImporting ? "Importing..." : "Import Content"}
                 </Button>
               </div>
-              
+
               {importResult && (
                 <div className={`p-3 rounded text-sm ${
                   importResult.success 
@@ -421,11 +438,17 @@ const MonthlyGuidePage = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Video Management Section */}
             <div className="p-4 bg-space-blue-dark rounded-lg">
               <h4 className="text-lg text-stellar-gold font-medium mb-4">Manage Featured Videos</h4>
-            
+
+              {!guide && (
+                <div className="mb-4 p-3 bg-orange-900/30 text-orange-300 border border-orange-700 rounded text-sm">
+                  Note: Adding videos will require a monthly guide. Import content first or create one automatically.
+                </div>
+              )}
+
             {/* Add video URL form */}
             <div className="flex gap-2 mb-6">
               <Input
@@ -438,7 +461,7 @@ const MonthlyGuidePage = () => {
               <Button
                 onClick={async () => {
                   if (!newVideoUrl) return;
-                  
+
                   // Validate URL
                   if (!getYouTubeVideoId(newVideoUrl)) {
                     toast({
@@ -448,26 +471,35 @@ const MonthlyGuidePage = () => {
                     });
                     return;
                   }
-                  
+
+                  if (!guide) {
+                    toast({
+                      title: "No Monthly Guide",
+                      description: "Please import content or create a monthly guide first",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+
                   try {
                     // Create a new array with existing videos plus the new one
                     const updatedVideoUrls = [...(guide.videoUrls || []), newVideoUrl];
-                    
+
                     // Update the guide with the new video list
                     await apiRequest(
                       "PATCH",
-                      `/api/monthly-guide/${guide.id}`, 
+                      `/api/monthly-guide/${guide.id}`,
                       { videoUrls: updatedVideoUrls }
                     );
-                    
+
                     // Clear the input field
                     setNewVideoUrl("");
-                    
+
                     // Invalidate the query to refresh the data
-                    queryClient.invalidateQueries({ 
-                      queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] 
+                    queryClient.invalidateQueries({
+                      queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`]
                     });
-                    
+
                     toast({
                       title: "Video Added",
                       description: "The video has been added to the monthly guide",
@@ -485,9 +517,9 @@ const MonthlyGuidePage = () => {
                 Add Video
               </Button>
             </div>
-            
+
             {/* Current videos list with remove buttons */}
-            {guide.videoUrls && guide.videoUrls.length > 0 ? (
+            {guide && guide.videoUrls && guide.videoUrls.length > 0 ? (
               <div className="space-y-3">
                 <h4 className="text-md font-medium text-star-bright mb-2">Current Videos:</h4>
                 {guide.videoUrls.map((videoUrl, index) => (
@@ -500,19 +532,19 @@ const MonthlyGuidePage = () => {
                         try {
                           // Filter out the video being removed
                           const updatedVideoUrls = guide.videoUrls?.filter((_, idx) => idx !== index);
-                          
+
                           // Update the guide with the filtered video list
                           await apiRequest(
                             "PATCH",
                             `/api/monthly-guide/${guide.id}`,
                             { videoUrls: updatedVideoUrls }
                           );
-                          
+
                           // Invalidate the query to refresh the data
-                          queryClient.invalidateQueries({ 
-                            queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] 
+                          queryClient.invalidateQueries({
+                            queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`]
                           });
-                          
+
                           toast({
                             title: "Video Removed",
                             description: "The video has been removed from the monthly guide",
@@ -538,13 +570,13 @@ const MonthlyGuidePage = () => {
           </div>
         )}
       </div>
-      
+
       {/* Celestial Objects Grid */}
       <div className="mb-10">
         <h2 className="text-2xl text-space font-bold mb-6">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block text-stellar-gold mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Objects to Observe
         </h2>
-        
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((_, index) => (
@@ -574,8 +606,8 @@ const MonthlyGuidePage = () => {
               <i className="fas fa-satellite-dish text-4xl text-nebula-pink mb-4"></i>
               <h3 className="text-xl font-semibold mb-2">Unable to load celestial objects</h3>
               <p className="text-star-dim mb-4">There was an error fetching the monthly guide data. Please try again later.</p>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 className="bg-cosmic-purple hover:bg-cosmic-purple-light"
                 onClick={() => window.location.reload()}
               >
@@ -597,8 +629,8 @@ const MonthlyGuidePage = () => {
               <p className="text-star-dim mb-4">
                 There are no objects matching your current filters. Try changing the filters or check back next month!
               </p>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 className="bg-cosmic-purple hover:bg-cosmic-purple-light"
                 onClick={() => {
                   setObjectType(null);
@@ -623,7 +655,7 @@ const MonthlyGuidePage = () => {
               Enter the admin passcode to access administrative features.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="my-4">
             <Input
               type="password"
@@ -644,7 +676,7 @@ const MonthlyGuidePage = () => {
               <p className="mt-2 text-sm text-red-400">{passcodeError}</p>
             )}
           </div>
-          
+
           <DialogFooter>
             <Button
               variant="outline"

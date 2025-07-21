@@ -12,7 +12,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = getApiUrl(url);
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -24,6 +25,16 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+// Get the correct API base URL based on environment
+const getApiUrl = (path: string): string => {
+  // In development, if we're on port 3000, redirect API calls to port 5000
+  if (typeof window !== 'undefined' && window.location.port === '3000') {
+    return `http://localhost:5000${path}`;
+  }
+  // In production or same-port development, use relative URLs
+  return path;
+};
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -34,6 +45,11 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null;
+    }
+
+    // For monthly guide endpoints, return null on 404 instead of throwing
+    if (res.status === 404 && (queryKey[0] as string).includes('monthly-guide')) {
       return null;
     }
 

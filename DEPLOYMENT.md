@@ -102,7 +102,7 @@ Your app includes a health check endpoint at `/api/health`. Render will automati
 npm install
 
 # Set up environment
-cp .env.example .env
+cp .env .env
 # Edit .env with your local database URL
 
 # Run database migrations

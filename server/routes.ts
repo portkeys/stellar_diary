@@ -3,9 +3,10 @@ import { z } from "zod";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchApod } from "./services/nasaApi";
+import { searchCelestialObjectImage, updateCelestialObjectImage, updateAllCelestialObjectImages } from "./services/nasaImages";
 import { seedDatabase, getCurrentMonth, getCurrentYear, filterCelestialObjects } from "./services/celestialObjects";
 import { celestialObjectExists, cleanupDuplicateCelestialObjects } from "./services/cleanupDuplicates";
-import { 
+import {
   insertObservationSchema,
   insertCelestialObjectSchema,
   celestialObjectTypes
@@ -14,7 +15,7 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Seed the database with initial data
   await seedDatabase();
-  
+
   // Clean up any duplicate celestial objects
   await cleanupDuplicateCelestialObjects();
 
@@ -24,9 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract query parameters
       const { date, refresh } = req.query;
       const forceRefresh = refresh === 'true';
-      
+
       console.log(`APOD request received - Date: ${date || 'current'}, Force refresh: ${forceRefresh}`);
-      
+
       // Set appropriate cache headers based on whether we want fresh data
       if (forceRefresh) {
         // If forcing refresh, prevent client-side caching
@@ -40,16 +41,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Cache-Control', 'public, max-age=3600');
         console.log('APOD cache headers set for normal request');
       }
-      
+
       console.log('Fetching APOD data from service...');
       const apodData = await fetchApod(date as string | undefined, forceRefresh);
       console.log(`APOD data returned: ${apodData.title} (${apodData.date})`);
-      
+
       res.json(apodData);
     } catch (error) {
       console.error('NASA APOD API error:', error);
-      res.status(500).json({ 
-        message: `Failed to fetch APOD: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to fetch APOD: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -58,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/celestial-objects", async (req: Request, res: Response) => {
     try {
       const { type, month, hemisphere } = req.query;
-      
+
       // If any filters are provided, use the filter function
       if (type || month || hemisphere) {
         const objects = await filterCelestialObjects(
@@ -68,13 +69,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         return res.json(objects);
       }
-      
+
       // Otherwise return all objects
       const objects = await storage.getAllCelestialObjects();
       res.json(objects);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get celestial objects: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get celestial objects: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -84,55 +85,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const object = await storage.getCelestialObject(id);
-      
+
       if (!object) {
         return res.status(404).json({ message: "Celestial object not found" });
       }
-      
+
       res.json(object);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get celestial object: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get celestial object: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
-  
+
   // Create a new celestial object (for custom observations)
   app.post("/api/celestial-objects", async (req: Request, res: Response) => {
     try {
+      // Search for NASA image if name is provided and no image URL given
+      let imageUrl = req.body.imageUrl;
+      if (!imageUrl && req.body.name) {
+        try {
+          const nasaResult = await searchCelestialObjectImage(req.body.name);
+          if (nasaResult.success && nasaResult.image_url) {
+            imageUrl = nasaResult.image_url;
+            console.log(`✓ Found NASA image for ${req.body.name}: ${imageUrl}`);
+          }
+        } catch (error) {
+          console.log(`⚠ NASA image search failed for ${req.body.name}, using fallback`);
+        }
+      }
+
       // Validate request body
       const validatedData = insertCelestialObjectSchema.parse({
         ...req.body,
         // Set default values for required fields if they're not provided
         visibilityRating: req.body.visibilityRating || "Custom",
         information: req.body.information || "Custom celestial object",
-        // Generate a placeholder image if none is provided
-        imageUrl: req.body.imageUrl || "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500",
+        // Use NASA image or fallback
+        imageUrl: imageUrl || "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500",
         // Other fields
         constellation: req.body.constellation || "Not specified",
         magnitude: req.body.magnitude || "Not specified",
         recommendedEyepiece: req.body.recommendedEyepiece || "Not specified",
       });
-      
+
       // Check if a celestial object with this name already exists
       const exists = await celestialObjectExists(validatedData.name);
       if (exists) {
-        return res.status(409).json({ 
-          message: `A celestial object with the name "${validatedData.name}" already exists` 
+        return res.status(409).json({
+          message: `A celestial object with the name "${validatedData.name}" already exists`
         });
       }
-      
+
       // Create the celestial object
       const newObject = await storage.createCelestialObject(validatedData);
-      
+
       res.status(201).json(newObject);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
       }
-      
-      res.status(500).json({ 
-        message: `Failed to create celestial object: ${error instanceof Error ? error.message : 'Unknown error'}` 
+
+      res.status(500).json({
+        message: `Failed to create celestial object: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -142,8 +157,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       res.json(celestialObjectTypes);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get celestial object types: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get celestial object types: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Update celestial object image with NASA image
+  app.patch("/api/celestial-objects/:id/update-image", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const result = await updateCelestialObjectImage(id);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(404).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to update celestial object image: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Update all celestial object images with NASA images
+  app.post("/api/celestial-objects/update-all-images", async (req: Request, res: Response) => {
+    try {
+      const { forceUpdate } = req.body;
+      const result = await updateAllCelestialObjectImages(forceUpdate || false);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to update all celestial object images: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -154,50 +205,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const month = (req.query.month as string) || getCurrentMonth();
       const year = parseInt((req.query.year as string) || getCurrentYear().toString());
       const hemisphere = (req.query.hemisphere as string) || "Northern";
-      
+
       // Find a matching guide
       const guides = await storage.getAllMonthlyGuides();
-      const guide = guides.find(g => 
-        g.month === month && 
-        g.year === year && 
+      const guide = guides.find(g =>
+        g.month === month &&
+        g.year === year &&
         (g.hemisphere === hemisphere || g.hemisphere === "both")
       );
-      
+
       if (!guide) {
         return res.status(404).json({ message: "Monthly guide not found" });
       }
-      
+
       res.json(guide);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
-  
+
   // Update monthly guide
   app.patch("/api/monthly-guide/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid ID format" });
       }
-      
+
       // Get the guide to make sure it exists
       const guide = await storage.getMonthlyGuide(id);
-      
+
       if (!guide) {
         return res.status(404).json({ message: "Monthly guide not found" });
       }
-      
+
       // Update the guide with the provided fields
       const updatedGuide = await storage.updateMonthlyGuide(id, req.body);
-      
+
       res.json(updatedGuide);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to update monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to update monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -208,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For demo purposes, we'll use a fixed user ID of 1
       const userId = 1;
       const observations = await storage.getUserObservations(userId);
-      
+
       // Enhance with celestial object details
       const enhancedObservations = await Promise.all(
         observations.map(async (obs) => {
@@ -219,11 +270,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
       );
-      
+
       res.json(enhancedObservations);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get observations: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get observations: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -233,28 +284,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Validate request body
       const validatedData = insertObservationSchema.parse(req.body);
-      
+
       // Check if celestial object exists
       const object = await storage.getCelestialObject(validatedData.objectId!);
       if (!object) {
         return res.status(404).json({ message: "Celestial object not found" });
       }
-      
+
       // For demo purposes, we'll use a fixed user ID of 1
       const userId = 1;
       validatedData.userId = userId;
-      
+
       // Create new observation
       const newObservation = await storage.createObservation(validatedData);
-      
+
       res.status(201).json(newObservation);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
       }
-      
-      res.status(500).json({ 
-        message: `Failed to create observation: ${error instanceof Error ? error.message : 'Unknown error'}` 
+
+      res.status(500).json({
+        message: `Failed to create observation: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -264,22 +315,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const observation = await storage.getObservation(id);
-      
+
       if (!observation) {
         return res.status(404).json({ message: "Observation not found" });
       }
-      
+
       // For demo purposes, we'll use a fixed user ID of 1
       const userId = 1;
       if (observation.userId !== userId) {
         return res.status(403).json({ message: "Not authorized to update this observation" });
       }
-      
+
       const updatedObservation = await storage.updateObservation(id, req.body);
       res.json(updatedObservation);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to update observation: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to update observation: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -289,22 +340,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const observation = await storage.getObservation(id);
-      
+
       if (!observation) {
         return res.status(404).json({ message: "Observation not found" });
       }
-      
+
       // For demo purposes, we'll use a fixed user ID of 1
       const userId = 1;
       if (observation.userId !== userId) {
         return res.status(403).json({ message: "Not authorized to delete this observation" });
       }
-      
+
       await storage.deleteObservation(id);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to delete observation: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to delete observation: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -313,17 +364,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/telescope-tips", async (req: Request, res: Response) => {
     try {
       const { category } = req.query;
-      
+
       if (category) {
         const tips = await storage.getTelescopeTipsByCategory(category as string);
         return res.json(tips);
       }
-      
+
       const tips = await storage.getAllTelescopeTips();
       res.json(tips);
     } catch (error) {
-      res.status(500).json({ 
-        message: `Failed to get telescope tips: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        message: `Failed to get telescope tips: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -332,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/update-monthly-guide", async (req: Request, res: Response) => {
     try {
       const { url } = req.body;
-      
+
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
@@ -341,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentDate = new Date();
       const month = currentDate.toLocaleString('default', { month: 'long' });
       const year = currentDate.getFullYear();
-      
+
       const { createSimpleMonthlyGuide } = await import('./scripts/simpleMonthlyGuide');
       const result = await createSimpleMonthlyGuide(
         month,
@@ -351,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Featured celestial objects and viewing opportunities for ${month} ${year}. Content imported from: ${url}`,
         []
       );
-      
+
       res.json(result);
     } catch (error) {
       res.status(500).json({
@@ -366,10 +417,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/manual-monthly-guide", async (req: Request, res: Response) => {
     try {
       const { month, year, hemisphere, headline, description, videoUrls } = req.body;
-      
+
       if (!month || !year || !headline || !description) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "Month, year, headline, and description are required",
           objectsAdded: 0,
           guideUpdated: false
@@ -451,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
 
       let objectsAdded = 0;
-      
+
       // Helper function to map types
       const mapObjectType = (type: string): string => {
         const typeMap: { [key: string]: string } = {
@@ -497,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recommendedEyepiece: getRecommendedEyepiece(obj.type),
           month: 'July'
         };
-        
+
         try {
           const existingObject = await storage.getCelestialObjectByName(obj.name);
           if (!existingObject) {
@@ -518,7 +569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         objectsAdded,
         guideUpdated: true
       });
-      
+
     } catch (error) {
       console.error("Error creating July 2025 guide:", error);
       res.status(500).json({
@@ -535,15 +586,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const objectId = parseInt(req.params.id);
       if (isNaN(objectId)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Invalid object ID" 
+        return res.status(400).json({
+          success: false,
+          message: "Invalid object ID"
         });
       }
 
       const { updateCelestialObjectImage } = await import("./services/nasaImages");
       const result = await updateCelestialObjectImage(objectId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -551,9 +602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error updating celestial object image:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: `Failed to update image: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        success: false,
+        message: `Failed to update image: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -566,9 +617,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error updating all celestial object images:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: `Failed to update images: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        success: false,
+        message: `Failed to update images: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -581,9 +632,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error previewing NASA image search:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: `Failed to preview image search: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      res.status(500).json({
+        success: false,
+        message: `Failed to preview image search: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });

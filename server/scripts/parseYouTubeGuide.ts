@@ -2,6 +2,7 @@
 
 import { storage } from '../storage';
 import { InsertCelestialObject, InsertMonthlyGuide } from '../../shared/schema';
+import { searchCelestialObjectImage } from '../services/nasaImages';
 
 interface ParsedObject {
   name: string;
@@ -26,7 +27,7 @@ export async function createJuly2025GuideFromVideo(): Promise<{
 }> {
   try {
     console.log('Creating July 2025 monthly guide from High Point Scientific video...');
-    
+
     // Objects mentioned in the July 2025 High Point Scientific video
     const featuredObjects: ParsedObject[] = [
       {
@@ -41,7 +42,7 @@ export async function createJuly2025GuideFromVideo(): Promise<{
       },
       {
         name: "Saturn",
-        type: "planet", 
+        type: "planet",
         description: "The ringed planet Saturn reaches opposition in July, making it the perfect time for observation. The rings are beautifully tilted, showing their structure clearly.",
         constellation: "Aquarius",
         magnitude: "0.1",
@@ -100,7 +101,7 @@ export async function createJuly2025GuideFromVideo(): Promise<{
         description: obj.description,
         coordinates: obj.coordinates || 'Coordinates to be determined',
         bestViewingTime: obj.visibility || 'Evening hours',
-        imageUrl: getImageUrlForType(mapObjectType(obj.type), obj.name),
+        imageUrl: await getImageUrlForObject(mapObjectType(obj.type), obj.name),
         visibilityRating: obj.visibility || 'Good Visibility',
         information: obj.tips || '',
         constellation: obj.constellation || 'Various',
@@ -109,7 +110,7 @@ export async function createJuly2025GuideFromVideo(): Promise<{
         recommendedEyepiece: getRecommendedEyepiece(obj.type),
         month: 'July'
       };
-      
+
       try {
         // Check if object already exists
         const existingObject = await storage.getCelestialObjectByName(obj.name);
@@ -153,7 +154,7 @@ Video guide: https://www.youtube.com/watch?v=CStPEwfoP8c`,
     try {
       await storage.createMonthlyGuide(monthlyGuide);
       console.log('✓ Created July 2025 monthly guide');
-      
+
       return {
         success: true,
         message: `Successfully created July 2025 guide with ${objectsAdded} featured objects from High Point Scientific video`,
@@ -162,7 +163,7 @@ Video guide: https://www.youtube.com/watch?v=CStPEwfoP8c`,
       };
     } catch (error) {
       console.log('⚠ Monthly guide may already exist, continuing...');
-      
+
       return {
         success: true,
         message: `Added ${objectsAdded} featured objects from July 2025 High Point Scientific video`,
@@ -197,26 +198,25 @@ function mapObjectType(type: string): string {
     'meteor_shower': 'other',
     'comet': 'other'
   };
-  
+
   return typeMap[type.toLowerCase()] || 'other';
 }
 
 /**
  * Generates appropriate image URL for celestial object type
  */
-function getImageUrlForType(type: string, name: string): string {
-  // Use NASA images for known objects, fallback to type-based images
-  const nasaImages: { [key: string]: string } = {
-    'Ring Nebula (M57)': 'https://science.nasa.gov/wp-content/uploads/2023/04/ring-nebula-m57-hst.jpg',
-    'Jupiter': 'https://science.nasa.gov/wp-content/uploads/2024/03/jupiter-marble.jpg',
-    'Saturn': 'https://science.nasa.gov/wp-content/uploads/2024/03/saturn-cassini.jpg',
-    'Great Globular Cluster in Hercules (M13)': 'https://science.nasa.gov/wp-content/uploads/2023/04/m13-hercules-cluster.jpg'
-  };
-  
-  if (nasaImages[name]) {
-    return nasaImages[name];
+async function getImageUrlForObject(type: string, name: string): Promise<string> {
+  // First try to search for NASA image
+  try {
+    const nasaResult = await searchCelestialObjectImage(name);
+    if (nasaResult.success && nasaResult.image_url) {
+      console.log(`✓ Found NASA image for ${name}: ${nasaResult.image_url}`);
+      return nasaResult.image_url;
+    }
+  } catch (error) {
+    console.log(`⚠ NASA image search failed for ${name}, using fallback`);
   }
-  
+
   // Fallback to type-based images
   const typeImages: { [key: string]: string } = {
     'planet': 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500',
@@ -225,7 +225,7 @@ function getImageUrlForType(type: string, name: string): string {
     'double_star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
     'galaxy': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500'
   };
-  
+
   return typeImages[type] || 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
 }
 
@@ -240,7 +240,7 @@ function getRecommendedEyepiece(type: string): string {
     'double_star': 'High power (6-12mm) to split close pairs',
     'galaxy': 'Low to medium power (20-40mm) for extended objects'
   };
-  
+
   return eyepieceMap[type] || 'Medium power recommended';
 }
 

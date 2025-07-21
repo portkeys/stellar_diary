@@ -36,7 +36,7 @@ Your Astronomy Companion App is ready for download and deployment! Here's everyt
 ```bash
 cd astronomy-companion-app
 npm install
-cp .env.example .env
+cp .env .env
 # Edit .env with your database URL
 npm run db:push
 npm run dev  # Test locally

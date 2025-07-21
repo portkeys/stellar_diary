@@ -33,7 +33,7 @@ cd astronomy-app
 npm install
 
 # Copy environment template
-cp .env.example .env
+cp .env .env
 
 # Edit .env with your database URL
 # DATABASE_URL=postgresql://username:password@host:port/database_name

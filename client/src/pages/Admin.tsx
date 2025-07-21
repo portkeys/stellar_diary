@@ -41,7 +41,7 @@ const Admin = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [isManualMode, setIsManualMode] = useState(false);
   const [imageUpdateResults, setImageUpdateResults] = useState<ImageUpdateResult | null>(null);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -108,7 +108,7 @@ const Admin = () => {
 
   const updateAllImagesMutation = useMutation({
     mutationFn: async (data: { forceUpdate: boolean }): Promise<ImageUpdateResult> => {
-      const response = await fetch("/api/admin/update-all-images", {
+      const response = await fetch("/api/celestial-objects/update-all-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -248,7 +248,7 @@ const Admin = () => {
             <p className="text-star-dim text-sm mb-4">
               Paste a URL from High Point Scientific or similar astronomy sources to automatically extract celestial objects and guide content.
             </p>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-star-white mb-2">
@@ -262,7 +262,7 @@ const Admin = () => {
                   className="bg-space-blue-dark border-cosmic-purple text-star-white"
                 />
               </div>
-              
+
               <Button
                 onClick={handleUrlSubmit}
                 disabled={updateFromUrlMutation.isPending}
@@ -301,7 +301,7 @@ const Admin = () => {
               <i className="fas fa-pencil-alt mr-2"></i>
               Manual Guide Entry
             </h2>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -319,7 +319,7 @@ const Admin = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-star-white mb-2">
                     Year *
@@ -331,7 +331,7 @@ const Admin = () => {
                     className="bg-space-blue-dark border-cosmic-purple text-star-white"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-star-white mb-2">
                     Hemisphere
@@ -417,7 +417,7 @@ const Admin = () => {
           <p className="text-star-dim text-sm mb-4">
             Create the July 2025 monthly guide with featured objects extracted from the High Point Scientific YouTube video.
           </p>
-          
+
           <div className="space-y-4">
             <div className="bg-space-blue-dark border border-cosmic-purple rounded-lg p-4">
               <p className="text-star-white text-sm mb-2">
@@ -427,7 +427,7 @@ const Admin = () => {
                 https://www.youtube.com/watch?v=CStPEwfoP8c&ab_channel=HighPointScientific
               </p>
             </div>
-            
+
             <Button
               onClick={() => createJulyGuideMutation.mutate()}
               disabled={createJulyGuideMutation.isPending}
@@ -469,7 +469,7 @@ const Admin = () => {
           <p className="text-star-dim text-sm mb-4">
             Update celestial object images with authentic NASA images from their Image and Video Library API.
           </p>
-          
+
           <div className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <Button
@@ -489,7 +489,7 @@ const Admin = () => {
                   </>
                 )}
               </Button>
-              
+
               <Button
                 onClick={() => handleUpdateAllImages(true)}
                 disabled={updateAllImagesMutation.isPending}
@@ -536,7 +536,7 @@ const Admin = () => {
                   <p className="text-red-400">
                     <strong>Failed:</strong> {imageUpdateResults.failureCount || 0}
                   </p>
-                  
+
                   {imageUpdateResults.results && imageUpdateResults.results.length > 0 && (
                     <div className="mt-4">
                       <h4 className="text-stellar-gold font-medium mb-2">Detailed Results:</h4>

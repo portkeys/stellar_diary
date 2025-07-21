@@ -63,11 +63,10 @@ app.get('/api/health', (_req, res) => {
 
   // Use PORT from environment (for deployment) or default to 5000
   const port = process.env.PORT || 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  // Use localhost for development, 0.0.0.0 for production
+  const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+
+  server.listen(Number(port), host, () => {
+    log(`serving on port ${port} (${host})`);
   });
 })();

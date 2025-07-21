@@ -20,10 +20,12 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Allow all hosts for development
+  const allowedHosts = true;
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts,
   };
 
   const vite = await createViteServer({

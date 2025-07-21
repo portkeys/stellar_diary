@@ -214,3 +214,12 @@ export async function updateAllCelestialObjectImages(forceUpdate: boolean = fals
 export async function previewNasaImageSearch(objectName: string): Promise<NasaImageSearchResult> {
   return await searchNasaImage(objectName);
 }
+
+/**
+ * Search for a celestial object image using NASA API
+ * @param objectName Name of the celestial object to search for
+ * @returns Promise with search result data
+ */
+export async function searchCelestialObjectImage(objectName: string): Promise<NasaImageSearchResult> {
+  return await searchNasaImage(objectName);
+}
