@@ -1,18 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { TelescopeTip } from "@shared/schema";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ExternalLink } from "lucide-react";
 
 const Learn = () => {
-  // Fetch telescope tips
-  const { data: tips, isLoading: tipsLoading } = useQuery<TelescopeTip[]>({
-    queryKey: ['/api/telescope-tips'],
-  });
-  
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
       {/* Hero section */}
@@ -44,14 +36,10 @@ const Learn = () => {
       
       {/* Main content tabs */}
       <Tabs defaultValue="beginner" className="w-full">
-        <TabsList className="grid grid-cols-3 gap-4 bg-space-blue-dark p-1 rounded-xl mb-8">
+        <TabsList className="grid grid-cols-2 gap-4 bg-space-blue-dark p-1 rounded-xl mb-8">
           <TabsTrigger value="beginner" className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white">
             <i className="fas fa-rocket mr-2"></i>
             Beginner's Guide
-          </TabsTrigger>
-          <TabsTrigger value="telescope" className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white">
-            <i className="fas fa-telescope mr-2"></i>
-            Telescope Tips
           </TabsTrigger>
           <TabsTrigger value="deep-sky" className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white">
             <i className="fas fa-star mr-2"></i>
@@ -147,160 +135,7 @@ const Learn = () => {
             </div>
           </div>
         </TabsContent>
-        
-        {/* Telescope Tips Tab */}
-        <TabsContent value="telescope" className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {tipsLoading ? (
-              <>
-                <Card className="bg-space-blue border-cosmic-purple">
-                  <CardHeader>
-                    <Skeleton className="h-6 w-3/4 mb-2" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-32 w-full mb-4" />
-                    <Skeleton className="h-10 w-full" />
-                  </CardContent>
-                </Card>
-                <Card className="bg-space-blue border-cosmic-purple">
-                  <CardHeader>
-                    <Skeleton className="h-6 w-3/4 mb-2" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-32 w-full mb-4" />
-                    <Skeleton className="h-10 w-full" />
-                  </CardContent>
-                </Card>
-              </>
-            ) : tips && tips.length > 0 ? (
-              tips.map(tip => (
-                <Card key={tip.id} className="bg-space-blue border-cosmic-purple">
-                  <div className="w-full h-48 overflow-hidden">
-                    <img 
-                      src={tip.imageUrl || ''} 
-                      alt={tip.title} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-space text-nebula-pink">{tip.title}</CardTitle>
-                    <CardDescription>Category: {tip.category}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-star-dim mb-4">{tip.content}</p>
-                    {tip.title.includes("Collimating") ? (
-                      <Link href="/collimation-guide">
-                        <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
-                          Read Full Guide
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Button className="bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
-                        Read Full Guide
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-8">
-                <i className="fas fa-exclamation-triangle text-4xl text-nebula-pink mb-4"></i>
-                <h3 className="text-xl font-semibold mb-2">No telescope tips available</h3>
-                <p className="text-star-dim mb-4">
-                  We're currently working on adding more telescope tips and guides.
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <Card className="bg-space-blue border-cosmic-purple">
-            <CardHeader>
-              <CardTitle className="text-space text-stellar-gold">Maintaining Your 8-inch Dobsonian</CardTitle>
-              <CardDescription>Keep your telescope in optimal condition</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-3">
-                  <h4 className="text-nebula-pink font-medium">Regular Maintenance</h4>
-                  <ul className="space-y-2 text-sm text-star-dim">
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Keep mirrors covered when not in use</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Check collimation before each observing session</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Keep eyepieces in a padded case</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="space-y-3">
-                  <h4 className="text-nebula-pink font-medium">Cleaning Optics</h4>
-                  <ul className="space-y-2 text-sm text-star-dim">
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Only clean mirrors when necessary</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Use proper optical cleaning solutions</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Clean eyepieces gently with lens tissue</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="space-y-3">
-                  <h4 className="text-nebula-pink font-medium">Storage</h4>
-                  <ul className="space-y-2 text-sm text-star-dim">
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Store in a dry, temperature-stable location</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Use a dust cover for the optical tube</span>
-                    </li>
-                    <li className="flex items-start">
-                      <i className="fas fa-check-circle text-stellar-gold mt-1 mr-2"></i>
-                      <span>Keep base away from moisture and direct sunlight</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="mt-6 pt-6 border-t border-space-blue-dark">
-                <h4 className="text-nebula-pink font-medium mb-3">Helpful Resources</h4>
-                <div className="space-y-2">
-                  <a 
-                    href="https://telescopicwatch.com/how-to-align-finderscopes/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center text-stellar-gold hover:text-stellar-gold-light transition-colors"
-                  >
-                    <ExternalLink size={16} className="mr-2" /> 
-                    How to Align Finderscopes
-                  </a>
-                  <a 
-                    href="https://astrobackyard.com/buying-your-first-telescope/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center text-stellar-gold hover:text-stellar-gold-light transition-colors"
-                  >
-                    <ExternalLink size={16} className="mr-2" /> 
-                    Buying Your First Telescope Guide
-                  </a>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
         
         {/* Deep Sky Objects Tab */}
         <TabsContent value="deep-sky" className="space-y-8">
