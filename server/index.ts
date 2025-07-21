@@ -36,6 +36,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint for deployment platforms
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -56,10 +61,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Use PORT from environment (for deployment) or default to 5000
+  const port = process.env.PORT || 5000;
   server.listen({
     port,
     host: "0.0.0.0",

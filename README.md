@@ -62,8 +62,8 @@ An advanced astronomy companion app empowering telescope enthusiasts with compre
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd astronomy-app
+git clone https://github.com/yourusername/astronomy-companion-app.git
+cd astronomy-companion-app
 ```
 
 2. Install dependencies:
@@ -73,9 +73,8 @@ npm install
 
 3. Set up environment variables:
 ```bash
-# Create a .env file with:
-DATABASE_URL=your_postgresql_connection_string
-NODE_ENV=development
+cp .env.example .env
+# Edit .env with your database connection string
 ```
 
 4. Set up the database:
@@ -89,6 +88,23 @@ npm run dev
 ```
 
 The app will be available at `http://localhost:5000`
+
+## Deployment
+
+This project is ready for deployment on various platforms:
+
+### Quick Deploy to Render
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+### Manual Deployment
+See detailed deployment guides:
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Complete deployment guide for Render, Railway, and other platforms
+- [GITHUB_SETUP.md](./GITHUB_SETUP.md) - Setting up the project on GitHub and local development
+
+### Environment Variables Required for Production
+- `DATABASE_URL` - PostgreSQL connection string
+- `NODE_ENV` - Set to "production"
+- `PORT` - Automatically set by most platforms (defaults to 5000)
 
 ## Database Schema
 
