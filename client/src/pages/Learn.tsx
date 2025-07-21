@@ -86,9 +86,6 @@ const Learn = () => {
                     <span>Properly align your finderscope for easy object location</span>
                   </li>
                 </ul>
-                <Button className="mt-4 bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
-                  Read Complete Guide
-                </Button>
               </CardContent>
             </Card>
             
@@ -116,9 +113,6 @@ const Learn = () => {
                     <span>Bright nebulae - Orion Nebula (M42) when visible</span>
                   </li>
                 </ul>
-                <Button className="mt-4 bg-cosmic-purple hover:bg-cosmic-purple-light w-full">
-                  View First Night Guide
-                </Button>
               </CardContent>
             </Card>
           </div>
