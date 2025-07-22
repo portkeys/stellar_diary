@@ -98,21 +98,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new celestial object (for custom observations)
+    // Create a new celestial object (for custom observations)
   app.post("/api/celestial-objects", async (req: Request, res: Response) => {
     try {
-      // Search for NASA image if name is provided and no image URL given
+      // Search for NASA image if name is provided
       let imageUrl = req.body.imageUrl;
-      if (!imageUrl && req.body.name) {
+      let nasaImageFound = false;
+
+      if (req.body.name) {
         try {
+          console.log(`🔍 Searching NASA images for: ${req.body.name}`);
           const nasaResult = await searchCelestialObjectImage(req.body.name);
           if (nasaResult.success && nasaResult.image_url) {
             imageUrl = nasaResult.image_url;
+            nasaImageFound = true;
             console.log(`✓ Found NASA image for ${req.body.name}: ${imageUrl}`);
+          } else {
+            console.log(`⚠ No NASA image found for ${req.body.name}: ${nasaResult.error || 'No image available'}`);
           }
         } catch (error) {
-          console.log(`⚠ NASA image search failed for ${req.body.name}, using fallback`);
+          console.error(`❌ NASA image search failed for ${req.body.name}:`, error);
         }
+      }
+
+      // If no NASA image was found, use type-specific fallback
+      if (!imageUrl) {
+        const objectType = req.body.type || 'galaxy';
+        const fallbackImages = {
+          'galaxy': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+          'nebula': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+          'star cluster': 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=800&h=500',
+          'planet': 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=800&h=500',
+          'star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+          'double star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+          'variable star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500'
+        };
+        imageUrl = fallbackImages[objectType.toLowerCase()] || fallbackImages['galaxy'];
+        console.log(`📸 Using fallback image for type "${objectType}": ${imageUrl}`);
       }
 
       // Validate request body
@@ -122,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visibilityRating: req.body.visibilityRating || "Custom",
         information: req.body.information || "Custom celestial object",
         // Use NASA image or fallback
-        imageUrl: imageUrl || "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500",
+        imageUrl: imageUrl,
         // Other fields
         constellation: req.body.constellation || "Not specified",
         magnitude: req.body.magnitude || "Not specified",
@@ -140,7 +162,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the celestial object
       const newObject = await storage.createCelestialObject(validatedData);
 
-      res.status(201).json(newObject);
+      // Include information about image source in response
+      const response = {
+        ...newObject,
+        _debug: {
+          nasaImageFound,
+          imageSource: nasaImageFound ? 'NASA' : 'fallback'
+        }
+      };
+
+      res.status(201).json(response);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid request data", errors: error.errors });
