@@ -101,27 +101,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Create a new celestial object (for custom observations)
   app.post("/api/celestial-objects", async (req: Request, res: Response) => {
     try {
-      // Search for NASA image if name is provided
+      // Search for NASA or Wikipedia image if name is provided
       let imageUrl = req.body.imageUrl;
-      let nasaImageFound = false;
+      let imageSource = 'fallback';
 
       if (req.body.name) {
         try {
-          console.log(`🔍 Searching NASA images for: ${req.body.name}`);
-          const nasaResult = await searchCelestialObjectImage(req.body.name);
-          if (nasaResult.success && nasaResult.image_url) {
-            imageUrl = nasaResult.image_url;
-            nasaImageFound = true;
-            console.log(`✓ Found NASA image for ${req.body.name}: ${imageUrl}`);
+          console.log(`🔍 Searching for image (NASA/Wikipedia) for: ${req.body.name}`);
+          const result = await searchCelestialObjectImage(req.body.name) as any;
+          if (result.success && result.image_url) {
+            imageUrl = result.image_url;
+            imageSource = result.source || 'unknown';
+            console.log(`✓ Found image for ${req.body.name} [${imageSource}]: ${imageUrl}`);
           } else {
-            console.log(`⚠ No NASA image found for ${req.body.name}: ${nasaResult.error || 'No image available'}`);
+            console.log(`⚠ No image found for ${req.body.name}: ${result.error || 'No image available'}`);
           }
         } catch (error) {
-          console.error(`❌ NASA image search failed for ${req.body.name}:`, error);
+          console.error(`❌ Image search failed for ${req.body.name}:`, error);
         }
       }
 
-      // If no NASA image was found, use type-specific fallback
+      // If no image was found, use type-specific fallback
       if (!imageUrl) {
         const objectType = req.body.type || 'galaxy';
         const fallbackImages = {
@@ -133,7 +133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'double star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
           'variable star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500'
         };
-        imageUrl = fallbackImages[objectType.toLowerCase()] || fallbackImages['galaxy'];
+        const key = (objectType.toLowerCase() as keyof typeof fallbackImages);
+        imageUrl = fallbackImages[key] || fallbackImages['galaxy'];
+        imageSource = 'fallback';
         console.log(`📸 Using fallback image for type "${objectType}": ${imageUrl}`);
       }
 
@@ -143,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set default values for required fields if they're not provided
         visibilityRating: req.body.visibilityRating || "Custom",
         information: req.body.information || "Custom celestial object",
-        // Use NASA image or fallback
+        // Use best image found
         imageUrl: imageUrl,
         // Other fields
         constellation: req.body.constellation || "Not specified",
@@ -166,8 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = {
         ...newObject,
         _debug: {
-          nasaImageFound,
-          imageSource: nasaImageFound ? 'NASA' : 'fallback'
+          imageSource
         }
       };
 
@@ -658,8 +659,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/preview-nasa-image/:objectName", async (req: Request, res: Response) => {
     try {
       const objectName = decodeURIComponent(req.params.objectName);
-      const { previewNasaImageSearch } = await import("./services/nasaImages");
-      const result = await previewNasaImageSearch(objectName);
+      const { previewCelestialObjectImageSearch } = await import("./services/nasaImages");
+      const result = await previewCelestialObjectImageSearch(objectName);
       res.json(result);
     } catch (error) {
       console.error("Error previewing NASA image search:", error);
