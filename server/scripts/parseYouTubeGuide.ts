@@ -206,15 +206,16 @@ function mapObjectType(type: string): string {
  * Generates appropriate image URL for celestial object type
  */
 async function getImageUrlForObject(type: string, name: string): Promise<string> {
-  // First try to search for NASA image
+  // First try to search for NASA or Wikipedia image
   try {
-    const nasaResult = await searchCelestialObjectImage(name);
-    if (nasaResult.success && nasaResult.image_url) {
-      console.log(`✓ Found NASA image for ${name}: ${nasaResult.image_url}`);
-      return nasaResult.image_url;
+    const result = await searchCelestialObjectImage(name) as any;
+    if (result.success && result.image_url) {
+      // 'source' is always present in the Python result
+      console.log(`✓ Found image for ${name} [${result.source}]: ${result.image_url}`);
+      return result.image_url;
     }
   } catch (error) {
-    console.log(`⚠ NASA image search failed for ${name}, using fallback`);
+    console.log(`⚠ Image search failed for ${name}, using fallback`);
   }
 
   // Fallback to type-based images

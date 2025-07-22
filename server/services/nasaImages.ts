@@ -22,32 +22,32 @@ interface NasaImageSearchResult {
 }
 
 /**
- * Search for NASA images for a celestial object using the Python script
+ * Search for an image for a celestial object using the Python script (NASA or Wikipedia)
  * @param objectName Name of the celestial object to search for
  * @returns Promise with search result data
  */
-async function searchNasaImage(objectName: string): Promise<NasaImageSearchResult> {
+async function searchCelestialObjectImageWithFallback(objectName: string): Promise<NasaImageSearchResult> {
   const scriptPath = path.join(process.cwd(), 'server', 'services', 'nasa_images.py');
   const cmd = `python3 "${scriptPath}" "${objectName}"`;
   
-  console.log(`Searching NASA images for: ${objectName}`);
+  console.log(`Searching for image (NASA/Wikipedia) for: ${objectName}`);
   
   try {
     const { stdout, stderr } = await execPromise(cmd);
     
     if (stderr) {
-      console.error(`NASA image search warning: ${stderr}`);
+      console.error(`Image search warning: ${stderr}`);
     }
     
     const result = JSON.parse(stdout);
     return result;
   } catch (error) {
-    console.error(`Error searching NASA images for ${objectName}:`, error);
+    console.error(`Error searching for image for ${objectName}:`, error);
     return {
       success: false,
       object_name: objectName,
       image_url: null,
-      error: `Failed to search NASA images: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Failed to search for image: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }
@@ -77,13 +77,13 @@ export async function updateCelestialObjectImage(objectId: number): Promise<{
     const object = celestialObject[0];
     const objectName = object.name;
     
-    // Search for NASA image
-    const searchResult = await searchNasaImage(objectName);
+    // Search for image (NASA or Wikipedia)
+    const searchResult = await searchCelestialObjectImageWithFallback(objectName);
     
     if (!searchResult.success || !searchResult.image_url) {
       return {
         success: false,
-        message: `No NASA image found for ${objectName}: ${searchResult.error || 'Unknown error'}`,
+        message: `No image found for ${objectName}: ${searchResult.error || 'Unknown error'}`,
         objectName
       };
     }
@@ -177,27 +177,23 @@ export async function updateAllCelestialObjectImages(forceUpdate: boolean = fals
         failureCount++;
       }
       
-      // Small delay between requests to be respectful to NASA API
+      // Small delay between requests to be respectful to NASA/Wikipedia API
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    const summary = `Processed ${objectsToUpdate.length} objects: ${successCount} successful, ${failureCount} failed`;
-    console.log(summary);
-    
     return {
       success: true,
-      message: summary,
+      message: `Processed ${objectsToUpdate.length} objects`,
       totalProcessed: objectsToUpdate.length,
       successCount,
       failureCount,
       results
     };
-    
   } catch (error) {
-    console.error(`Error in batch image update:`, error);
+    console.error(`Error updating all celestial object images:`, error);
     return {
       success: false,
-      message: `Batch update failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Failed to update all images: ${error instanceof Error ? error.message : 'Unknown error'}`,
       totalProcessed: 0,
       successCount: 0,
       failureCount: 0,
@@ -211,8 +207,8 @@ export async function updateAllCelestialObjectImages(forceUpdate: boolean = fals
  * @param objectName Name of the celestial object to search for
  * @returns Promise with search preview data
  */
-export async function previewNasaImageSearch(objectName: string): Promise<NasaImageSearchResult> {
-  return await searchNasaImage(objectName);
+export async function previewCelestialObjectImageSearch(objectName: string): Promise<NasaImageSearchResult> {
+  return await searchCelestialObjectImageWithFallback(objectName);
 }
 
 /**
@@ -221,5 +217,5 @@ export async function previewNasaImageSearch(objectName: string): Promise<NasaIm
  * @returns Promise with search result data
  */
 export async function searchCelestialObjectImage(objectName: string): Promise<NasaImageSearchResult> {
-  return await searchNasaImage(objectName);
+  return await searchCelestialObjectImageWithFallback(objectName);
 }

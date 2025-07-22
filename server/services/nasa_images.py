@@ -115,59 +115,93 @@ def extract_best_image_url(api_response: Dict, query: str) -> Optional[str]:
         print(f"Error extracting image URL: {e}", file=sys.stderr)
         return None
 
+def search_wikipedia_image(object_name: str) -> Optional[Dict]:
+    """
+    Search Wikipedia for a page matching the object name and return the thumbnail image URL if available.
+    Args:
+        object_name (str): Name of the celestial object
+    Returns:
+        dict: { 'success': bool, 'image_url': str or None, 'source': 'wikipedia', 'title': str }
+    """
+    try:
+        endpoint = "https://en.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "format": "json",
+            "prop": "pageimages",
+            "piprop": "thumbnail",
+            "pithumbsize": 800,
+            "titles": object_name,
+            "redirects": 1
+        }
+        resp = requests.get(endpoint, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        pages = data.get("query", {}).get("pages", {})
+        for page_id, page in pages.items():
+            if "thumbnail" in page and "source" in page["thumbnail"]:
+                return {
+                    "success": True,
+                    "image_url": page["thumbnail"]["source"],
+                    "source": "wikipedia",
+                    "title": page.get("title", object_name)
+                }
+        return {"success": False, "image_url": None, "source": "wikipedia", "title": object_name}
+    except Exception as e:
+        print(f"Wikipedia image search failed for {object_name}: {e}", file=sys.stderr)
+        return {"success": False, "image_url": None, "source": "wikipedia", "title": object_name}
+
+
 def search_celestial_object_image(object_name: str) -> Dict:
     """
     Search for a celestial object image and return structured data
-    
     Args:
         object_name (str): Name of the celestial object (e.g., "M57", "Andromeda Galaxy")
-        
     Returns:
         dict: Result with success status, image URL, and metadata
     """
     try:
-        # Search for the object
+        # Search for the object in NASA first
         search_result = search_nasa_images_data(object_name, size=3)  # Get a few options
-        
-        if not search_result:
-            return {
-                "success": False,
-                "error": "Failed to fetch data from NASA API",
-                "object_name": object_name,
-                "image_url": None
-            }
-            
-        # Extract the best image URL
-        image_url = extract_best_image_url(search_result, object_name)
-        
-        if not image_url:
-            return {
-                "success": False,
-                "error": "No suitable image found in NASA database",
-                "object_name": object_name,
-                "image_url": None
-            }
-            
-        # Get additional metadata from the first result
-        items = search_result['collection'].get('items', [])
+        image_url = None
         metadata = {}
-        if items:
-            data = items[0]['data'][0]
-            metadata = {
-                "title": data.get('title', ''),
-                "description": data.get('description', ''),
-                "date_created": data.get('date_created', ''),
-                "center": data.get('center', ''),
-                "nasa_id": data.get('nasa_id', '')
+        if search_result:
+            image_url = extract_best_image_url(search_result, object_name)
+            items = search_result['collection'].get('items', [])
+            if items:
+                data = items[0]['data'][0]
+                metadata = {
+                    "title": data.get('title', ''),
+                    "description": data.get('description', ''),
+                    "date_created": data.get('date_created', ''),
+                    "center": data.get('center', ''),
+                    "nasa_id": data.get('nasa_id', '')
+                }
+        if image_url:
+            return {
+                "success": True,
+                "object_name": object_name,
+                "image_url": image_url,
+                "metadata": metadata,
+                "source": "nasa"
             }
-            
+        # If NASA fails, try Wikipedia
+        wiki_result = search_wikipedia_image(object_name)
+        if wiki_result["success"] and wiki_result["image_url"]:
+            return {
+                "success": True,
+                "object_name": object_name,
+                "image_url": wiki_result["image_url"],
+                "metadata": {"source": "wikipedia", "title": wiki_result["title"]},
+                "source": "wikipedia"
+            }
+        # If both fail, return failure
         return {
-            "success": True,
+            "success": False,
+            "error": "No suitable image found in NASA or Wikipedia database",
             "object_name": object_name,
-            "image_url": image_url,
-            "metadata": metadata
+            "image_url": None
         }
-        
     except Exception as e:
         return {
             "success": False,
