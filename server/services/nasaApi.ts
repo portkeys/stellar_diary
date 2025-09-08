@@ -9,6 +9,45 @@ const execPromise = promisify(exec);
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
 
 /**
+ * Fetch APOD from NASA's official API using Node (no Python dependency)
+ */
+async function fetchApodFromNasaApi(date?: string): Promise<ApodResponse> {
+  const baseUrl = 'https://api.nasa.gov/planetary/apod';
+  const params = new URLSearchParams({ api_key: NASA_API_KEY });
+  if (date) params.set('date', date);
+
+  const url = `${baseUrl}?${params.toString()}`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'StellarDiary/1.0 (+https://stellar-diary)' as any
+    } as any
+  } as any);
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`NASA APOD API error ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+
+  // Normalize to ApodResponse shape
+  const normalized: ApodResponse = {
+    date: data.date,
+    title: data.title,
+    explanation: data.explanation,
+    url: data.url,
+    hdurl: data.hdurl,
+    media_type: data.media_type,
+    service_version: data.service_version || 'v1',
+    copyright: data.copyright
+  };
+
+  return normalized;
+}
+
+/**
  * Executes the Python script to fetch APOD data
  * @param command Command to execute (fetch or fetch_range)
  * @param args Additional arguments to pass to the Python script
@@ -86,15 +125,12 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
   }
   
   try {
-    console.log(`Fetching APOD data using Python script...`);
-    
-    // Call the Python script to fetch the data
-    const data = await executePythonScript('fetch', date, forceRefresh.toString());
+    console.log(`Fetching APOD data from NASA API for ${targetDate}...`);
+    // First try the official NASA API via Node fetch
+    const data = await fetchApodFromNasaApi(targetDate);
     
     // Check if there was an error
-    if (data.error) {
-      throw new Error(data.message);
-    }
+    // (NASA API returns non-error payloads with 200 OK only)
     
     console.log(`Python script returned APOD data: ${data.title} (${data.date})`);
     
@@ -116,7 +152,7 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       
       // Insert new record with fresh data
       await db.insert(apodCache).values(insertData);
-      console.log(`Cached new APOD data for ${data.date}`);
+      console.log(`Cached new APOD data (NASA API) for ${data.date}`);
     } catch (err) {
       console.error('Error caching APOD data:', err);
       // Continue even if caching fails
@@ -124,7 +160,36 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
     
     return data as ApodResponse;
   } catch (error) {
-    console.error('Error handling APOD:', error);
+    console.error('NASA API fetch failed, attempting Python scraper fallback:', error);
+    // Python fallback (scraper)
+    try {
+      console.log(`Fetching APOD data using Python scraper for ${targetDate}...`);
+      const data = await executePythonScript('fetch', targetDate, forceRefresh.toString());
+      if (data.error) {
+        throw new Error(data.message);
+      }
+      console.log(`Python scraper returned APOD data: ${data.title} (${data.date})`);
+      try {
+        const insertData: InsertApodCache = {
+          date: data.date,
+          title: data.title,
+          explanation: data.explanation,
+          url: data.url,
+          hdurl: data.hdurl || null,
+          media_type: data.media_type,
+          copyright: data.copyright || null,
+          service_version: data.service_version || null
+        };
+        await db.delete(apodCache).where(eq(apodCache.date, data.date));
+        await db.insert(apodCache).values(insertData);
+        console.log(`Cached new APOD data (Python) for ${data.date}`);
+      } catch (err) {
+        console.error('Error caching APOD data (Python):', err);
+      }
+      return data as ApodResponse;
+    } catch (fallbackError) {
+      console.error('Python fallback failed:', fallbackError);
+    }
     
     // Try to get the most recent cached entry as a fallback
     try {

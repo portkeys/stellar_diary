@@ -180,6 +180,18 @@ const MyObservations = () => {
     }
   };
 
+  // Compute observed entries sorted from newest to oldest
+  const getObservationSortDate = (obs: EnhancedObservation) => {
+    // Prefer plannedDate (when the observation actually happened), fallback to dateAdded
+    const dateStr = (obs.plannedDate as unknown as string) || (obs.dateAdded as unknown as string);
+    // Ensure valid date fallback
+    return dateStr ? new Date(dateStr).getTime() : 0;
+  };
+
+  const observedSorted = (observations || [])
+    .filter(obs => obs.isObserved)
+    .sort((a, b) => getObservationSortDate(b) - getObservationSortDate(a));
+
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
       {/* Page header */}
@@ -343,14 +355,14 @@ const MyObservations = () => {
               )}
 
               {/* Observed Entries Section */}
-              {observations.filter(obs => obs.isObserved).length > 0 && (
+              {observedSorted.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl text-space font-bold mb-4 flex items-center">
                     <span className="inline-block w-3 h-3 rounded-full bg-green-300 mr-2"></span>
                     Observed Entries
                   </h3>
                   <div className="space-y-6">
-                    {observations.filter(obs => obs.isObserved).map(observation => (
+                    {observedSorted.map(observation => (
                       <div key={observation.id} className="bg-space-blue-light rounded-lg p-6 flex flex-col gap-4">
                         <div className="flex flex-col md:flex-row gap-4">
                           <img 

@@ -87,6 +87,15 @@ const ObservationList = () => {
     markAsObservedMutation.mutate({ id, isObserved: !currentStatus });
   };
   
+  // Sort observed entries by newest first (plannedDate fallback to dateAdded)
+  const getObservationSortTime = (obs: EnhancedObservation) => {
+    const dateStr = (obs.plannedDate as unknown as string) || (obs.dateAdded as unknown as string);
+    return dateStr ? new Date(dateStr).getTime() : 0;
+  };
+  const observedSorted = (observations || [])
+    .filter(obs => obs.isObserved)
+    .sort((a, b) => getObservationSortTime(b) - getObservationSortTime(a));
+  
   return (
     <section className="my-16">
       <div className="flex items-center justify-between mb-6">
@@ -242,7 +251,7 @@ const ObservationList = () => {
                     <i className="fas fa-check-circle mr-2"></i>
                     Observed
                   </h3>
-                  {observations.filter(obs => obs.isObserved).slice(0, 3).map(observation => (
+                  {observedSorted.slice(0, 3).map(observation => (
                     <div key={observation.id} className="bg-gray-800 bg-opacity-30 border border-gray-500 border-opacity-30 rounded-lg p-3">
                       <div className="flex flex-col w-full">
                         <div className="flex items-center">
