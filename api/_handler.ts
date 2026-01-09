@@ -1,28 +1,29 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import serverless from 'serverless-http';
+import { registerRoutes } from '../server/routes';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check
+// Health check (defined before dynamic routes for quick response)
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Test endpoint
-app.get('/api/test', (_req, res) => {
-  res.json({ test: 'express with serverless-http works' });
-});
-
-// Catch all for debugging
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'Not found', path: req.path });
-});
+// Register all API routes
+let routesRegistered = false;
+const registerRoutesOnce = async () => {
+  if (!routesRegistered) {
+    await registerRoutes(app, { skipSeeding: true });
+    routesRegistered = true;
+  }
+};
 
 const handler = serverless(app);
 
 export default async function (req: VercelRequest, res: VercelResponse) {
+  await registerRoutesOnce();
   return handler(req, res);
 }
