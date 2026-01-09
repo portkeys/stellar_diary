@@ -1,4 +1,19 @@
-// Minimal test - no imports initially
+import express from 'express';
+import serverless from 'serverless-http';
+
+const app = express();
+app.use(express.json());
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/test', (_req, res) => {
+  res.json({ test: 'express works' });
+});
+
+const handler = serverless(app);
+
 export default async (req: any, res: any) => {
-  res.status(200).json({ test: 'minimal function works', path: req.url });
+  return handler(req, res);
 };
