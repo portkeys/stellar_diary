@@ -117,46 +117,37 @@ The project includes a `vercel.json` configuration:
 
 ```json
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "dist/public",
-  "framework": "vite",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/(.*)", "destination": "/" }
-  ],
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@3"
-    }
-  }
+    { "source": "/api/:path*", "destination": "/api" }
+  ]
 }
 ```
 
-### API Routes Structure
+### API Architecture
 
-Vercel serverless functions are in the `/api` directory:
+The API uses a single Express-based serverless function (`api/index.ts`) that handles all routes:
 
 ```
 api/
-├── health.ts                 # GET /api/health
-├── apod.ts                   # GET /api/apod
-├── celestial-object-types.ts # GET /api/celestial-object-types
-├── telescope-tips.ts         # GET /api/telescope-tips
-├── celestial-objects/
-│   ├── index.ts              # GET/POST /api/celestial-objects
-│   ├── [id].ts               # GET/PATCH/DELETE /api/celestial-objects/:id
-│   └── update-all-images.ts  # POST /api/celestial-objects/update-all-images
-├── observations/
-│   ├── index.ts              # GET/POST /api/observations
-│   └── [id].ts               # PATCH/DELETE /api/observations/:id
-├── monthly-guide/
-│   ├── index.ts              # GET /api/monthly-guide
-│   └── [id].ts               # PATCH /api/monthly-guide/:id
-└── admin/
-    ├── manual-monthly-guide.ts
-    ├── update-all-images.ts
-    └── update-object-image/[id].ts
+└── index.ts    # Single Express app handling all /api/* routes
 ```
+
+**Key Implementation Details:**
+
+1. **Express without serverless-http** - Vercel's native handler works directly with Express
+2. **Inlined schema definitions** - Vercel compiles `/api` in isolation, so schemas are defined inline
+3. **Neon HTTP driver** - Uses `@neondatabase/serverless` with `drizzle-orm/neon-http` for serverless compatibility
+4. **Lazy database initialization** - Connection is established on first request
+
+**Supported API Routes:**
+- `GET /api/health` - Health check
+- `GET /api/celestial-objects` - List all celestial objects
+- `GET /api/observations` - List user observations with object details
+- `GET /api/apod` - Get cached NASA Astronomy Picture of the Day
 
 ---
 
