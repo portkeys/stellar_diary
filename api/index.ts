@@ -107,17 +107,8 @@ app.get('/api/observations', async (_req, res) => {
   }
 });
 
-// Helper to get today's date in YYYY-MM-DD format
-function getTodayDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// Helper to fetch APOD from NASA API
-async function fetchApodFromNasa(date: string): Promise<{
+// Helper to fetch today's APOD from NASA API (no date param = today)
+async function fetchApodFromNasa(): Promise<{
   date: string;
   title: string;
   explanation: string;
@@ -128,12 +119,8 @@ async function fetchApodFromNasa(date: string): Promise<{
   service_version?: string;
 }> {
   const apiKey = process.env.NASA_API_KEY || 'DEMO_KEY';
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    date: date
-  });
 
-  const response = await fetch(`https://api.nasa.gov/planetary/apod?${params.toString()}`, {
+  const response = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${apiKey}`, {
     headers: {
       'Accept': 'application/json',
       'User-Agent': 'StellarDiary/1.0'
@@ -147,59 +134,57 @@ async function fetchApodFromNasa(date: string): Promise<{
   return response.json();
 }
 
-// Get APOD (cached with auto-refresh)
+// Get APOD - always fetch fresh from NASA, use cache only as fallback
 app.get('/api/apod', async (_req, res) => {
   try {
-    const today = getTodayDate();
+    // Always fetch today's APOD from NASA (no date param = today)
+    const nasaData = await fetchApodFromNasa();
+    const apodDate = nasaData.date;
 
-    // Check if we have today's APOD cached
-    const [cachedApod] = await getDb()
+    // Check if we already have this date cached
+    const [existingCache] = await getDb()
       .select()
       .from(apodCache)
-      .where(eq(apodCache.date, today))
+      .where(eq(apodCache.date, apodDate))
       .limit(1);
 
-    if (cachedApod) {
-      // Return cached data for today
-      res.json(cachedApod);
-      return;
+    // Save to cache if not already cached
+    if (!existingCache) {
+      await getDb().insert(apodCache).values({
+        date: nasaData.date,
+        title: nasaData.title,
+        explanation: nasaData.explanation,
+        url: nasaData.url,
+        hdurl: nasaData.hdurl || null,
+        media_type: nasaData.media_type,
+        copyright: nasaData.copyright || null,
+        service_version: nasaData.service_version || null,
+      });
     }
 
-    // No cache for today - fetch from NASA API
-    console.log(`Fetching fresh APOD for ${today}`);
-    const nasaData = await fetchApodFromNasa(today);
-
-    // Store in cache
-    await getDb().insert(apodCache).values({
-      date: nasaData.date,
-      title: nasaData.title,
-      explanation: nasaData.explanation,
-      url: nasaData.url,
-      hdurl: nasaData.hdurl || null,
-      media_type: nasaData.media_type,
-      copyright: nasaData.copyright || null,
-      service_version: nasaData.service_version || null,
-    });
-
-    // Return fresh data
+    // Return fresh data from NASA
     res.json(nasaData);
   } catch (error) {
-    console.error('APOD fetch error:', error);
+    console.error('NASA API error, falling back to cache:', error);
 
-    // If NASA API fails, try to return the most recent cached APOD as fallback
+    // NASA API failed - fall back to most recent cached APOD
     try {
-      const [fallbackApod] = await getDb()
+      const [cachedApod] = await getDb()
         .select()
         .from(apodCache)
         .orderBy(desc(apodCache.id))
         .limit(1);
 
-      if (fallbackApod) {
-        res.json({ ...fallbackApod, _fallback: true });
+      if (cachedApod) {
+        res.json({
+          ...cachedApod,
+          _cached: true,
+          _error: error instanceof Error ? error.message : 'Unknown error'
+        });
         return;
       }
-    } catch (fallbackError) {
-      // Ignore fallback errors
+    } catch (cacheError) {
+      // Cache also failed
     }
 
     res.status(500).json({
