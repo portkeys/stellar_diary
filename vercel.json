@@ -1,9 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist/public",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.mjs" },
-    { "source": "/((?!api/).*)", "destination": "/" }
-  ]
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "server/**/*.ts,shared/**/*.ts"
+    }
+  }
 }
