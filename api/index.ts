@@ -1,14 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 // Using relative path since Vercel may not resolve path aliases
 import { celestialObjects, observations, apodCache } from '../shared/schema';
 import { eq, desc } from 'drizzle-orm';
-import ws from 'ws';
-
-// Configure Neon for serverless
-neonConfig.webSocketConstructor = ws;
 
 // Database connection (lazy initialization)
 let db: ReturnType<typeof drizzle> | null = null;
@@ -17,8 +13,8 @@ function getDb() {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL is not set');
     }
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool });
+    const sql = neon(process.env.DATABASE_URL);
+    db = drizzle({ client: sql });
   }
   return db;
 }
