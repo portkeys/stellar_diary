@@ -1,0 +1,133 @@
+# StellarDiary - Project Context
+
+> **Last Updated:** 2026-01-08
+> **Status:** Active development
+
+## Overview
+
+StellarDiary is an astronomy companion web app for telescope enthusiasts (specifically Apertura AD8 Dobsonian users). It serves as a personal observational journal and sky-watching guide with NASA data integration.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui |
+| Backend | Node.js, Express.js, TypeScript |
+| Database | PostgreSQL (Neon serverless), Drizzle ORM |
+| State | TanStack React Query |
+| Routing | Wouter |
+| Forms | React Hook Form + Zod |
+| Deployment | Render.com |
+
+## Project Structure
+
+```
+StellarDiary/
+├── client/src/
+│   ├── pages/           # Route pages (Home, MonthlyGuide, MyObservations, Learn, Admin)
+│   ├── components/
+│   │   ├── ui/          # Shadcn/ui components (50+)
+│   │   └── astronomy/   # Domain components (ApodSection, CelestialCard, ObservationList)
+│   ├── hooks/           # Custom hooks (use-mobile, use-toast)
+│   └── lib/             # Utilities (queryClient, utils)
+├── server/
+│   ├── index.ts         # Express app entry
+│   ├── routes.ts        # API endpoints (14+)
+│   ├── storage.ts       # Database interface (IStorage pattern)
+│   ├── db.ts            # Drizzle + Neon setup
+│   └── services/        # Business logic (nasaApi, celestialObjects, nasaImages)
+├── shared/
+│   └── schema.ts        # Drizzle tables + Zod schemas (single source of truth)
+└── migrations/          # Auto-generated Drizzle migrations
+```
+
+## Key Features
+
+1. **NASA APOD Integration** - Daily astronomy picture with caching
+2. **Celestial Object Database** - Planets, galaxies, nebulae, clusters (7 types)
+3. **Observation Tracking** - Personal observation journal with CRUD
+4. **Monthly Sky Guides** - Curated viewing guides by hemisphere
+5. **Educational Content** - Telescope tips, collimation guide
+6. **Image Fallback System** - NASA Images → Wikipedia → defaults
+
+## API Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/apod` | NASA Astronomy Picture of the Day |
+| `GET/POST /api/celestial-objects` | Celestial object CRUD |
+| `GET/POST/PATCH/DELETE /api/observations` | User observations |
+| `GET/PATCH /api/monthly-guide` | Monthly sky guides |
+| `GET /api/telescope-tips` | Educational tips |
+| `POST /api/admin/*` | Admin operations |
+
+## Database Schema (shared/schema.ts)
+
+- `celestialObjects` - Astronomical objects with coordinates, magnitude, images
+- `observations` - User observation records
+- `monthlyGuides` - Curated monthly viewing guides
+- `telescopeTips` - Educational content
+- `apodCache` - NASA APOD response cache
+- `users` - User accounts (Passport.js ready)
+
+## Commands
+
+```bash
+npm run dev      # Start dev server (port 5000)
+npm run build    # Build for production
+npm start        # Run production build
+npm run db:push  # Apply schema changes
+npm run check    # TypeScript validation
+```
+
+## Environment Variables
+
+```
+DATABASE_URL=    # Neon PostgreSQL connection string
+NASA_API_KEY=    # NASA API key (optional, has DEMO_KEY fallback)
+NODE_ENV=        # production | development
+```
+
+## Patterns & Conventions
+
+- **Components:** PascalCase (`ApodSection.tsx`)
+- **Utilities:** camelCase (`queryClient.ts`)
+- **API paths:** kebab-case (`/api/celestial-objects`)
+- **DB columns:** snake_case in SQL, camelCase in TypeScript
+- **Validation:** Zod at API boundaries
+- **State:** TanStack Query for server state, local state for UI
+
+## Recent Changes
+
+<!-- Update this section after each significant PR -->
+- **2026-01-08:** Fixed APOD and sorting order
+- **2026-01-07:** Added NASA/Wikipedia image fallback for new objects
+- **2026-01-07:** Fixed new object image issue
+
+## Development Notes
+
+- Image search uses Python scripts for NASA/Wikipedia APIs
+- Celestial objects support hemisphere-based filtering (Northern/Southern/Both)
+- Monthly guides are admin-managed via Admin panel
+- Session auth infrastructure in place but not fully implemented
+
+## Common Tasks
+
+### Adding a new celestial object type
+1. Update `objectType` enum in `shared/schema.ts`
+2. Add default image in `server/services/celestialObjects.ts`
+3. Update filter options in `client/src/components/astronomy/`
+
+### Adding a new API endpoint
+1. Define Zod schema in `shared/schema.ts`
+2. Add route in `server/routes.ts`
+3. Implement storage method in `server/storage.ts`
+4. Create React Query hook in client
+
+### Updating monthly guide
+1. Use Admin panel at `/admin`
+2. Or run `server/scripts/updateMonthlyGuide.ts`
+
+---
+
+*This file is auto-read by Claude Code at session start. Update after significant changes.*
