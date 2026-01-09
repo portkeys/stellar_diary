@@ -1,19 +1,18 @@
-import express from 'express';
-import serverless from 'serverless-http';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const app = express();
-app.use(express.json());
+// Simple router without express
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const path = req.url?.split('?')[0] || '';
 
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+  // Health check
+  if (path === '/api/health' || path === '/api') {
+    return res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  }
 
-app.get('/api/test', (_req, res) => {
-  res.json({ test: 'express works' });
-});
+  // Test endpoint
+  if (path === '/api/test') {
+    return res.status(200).json({ test: 'vercel native works' });
+  }
 
-const handler = serverless(app);
-
-export default async (req: any, res: any) => {
-  return handler(req, res);
-};
+  return res.status(404).json({ error: 'Not found', path });
+}
