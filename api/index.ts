@@ -1,6 +1,5 @@
 import express from 'express';
 import serverless from 'serverless-http';
-import { registerRoutes } from '../server/routes';
 
 const app = express();
 
@@ -13,12 +12,33 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint
+app.get('/api/debug', (_req, res) => {
+  res.json({
+    env: {
+      hasDbUrl: !!process.env.DATABASE_URL,
+      nodeEnv: process.env.NODE_ENV,
+      vercel: process.env.VERCEL,
+    }
+  });
+});
+
 // Register all API routes (skip seeding in serverless - run npm run db:seed separately)
 let routesRegistered = false;
+let registrationError: Error | null = null;
+
 const registerRoutesOnce = async () => {
+  if (registrationError) throw registrationError;
   if (!routesRegistered) {
-    await registerRoutes(app, { skipSeeding: true });
-    routesRegistered = true;
+    try {
+      const { registerRoutes } = await import('../server/routes');
+      await registerRoutes(app, { skipSeeding: true });
+      routesRegistered = true;
+    } catch (err) {
+      registrationError = err as Error;
+      console.error('Route registration failed:', err);
+      throw err;
+    }
   }
 };
 
@@ -26,6 +46,15 @@ const registerRoutesOnce = async () => {
 const handler = serverless(app);
 
 export default async (req: any, res: any) => {
-  await registerRoutesOnce();
-  return handler(req, res);
+  try {
+    await registerRoutesOnce();
+    return handler(req, res);
+  } catch (err) {
+    console.error('Handler error:', err);
+    res.status(500).json({
+      error: 'Function error',
+      message: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined
+    });
+  }
 };
