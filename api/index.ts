@@ -2,7 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import { celestialObjects, observations, apodCache } from '@shared/schema';
+// Using relative path since Vercel may not resolve path aliases
+import { celestialObjects, observations, apodCache } from '../shared/schema';
 import { eq, desc } from 'drizzle-orm';
 import ws from 'ws';
 
