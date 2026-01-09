@@ -44,6 +44,11 @@ app.get('/api/health', (_req, res) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // server is null in serverless mode, but this file is only used for local dev
+  if (!server) {
+    throw new Error('Server not initialized - this should not happen in local dev mode');
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";

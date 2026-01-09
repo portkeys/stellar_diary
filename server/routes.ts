@@ -12,12 +12,17 @@ import {
   celestialObjectTypes
 } from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Seed the database with initial data
-  await seedDatabase();
+export async function registerRoutes(app: Express, options?: { skipSeeding?: boolean }): Promise<Server | null> {
+  // Skip seeding in serverless environments (run npm run db:seed separately)
+  const isServerless = process.env.VERCEL === '1' || options?.skipSeeding;
 
-  // Clean up any duplicate celestial objects
-  await cleanupDuplicateCelestialObjects();
+  if (!isServerless) {
+    // Seed the database with initial data
+    await seedDatabase();
+
+    // Clean up any duplicate celestial objects
+    await cleanupDuplicateCelestialObjects();
+  }
 
   // NASA APOD API endpoint
   app.get("/api/apod", async (req: Request, res: Response) => {
@@ -671,7 +676,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
+  // For serverless, we don't need an HTTP server
+  if (isServerless) {
+    return null;
+  }
 
+  const httpServer = createServer(app);
   return httpServer;
 }
