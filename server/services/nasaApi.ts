@@ -1,15 +1,18 @@
+/**
+ * NASA APOD API Integration
+ *
+ * Fetches Astronomy Picture of the Day from NASA's API with database caching.
+ * Uses Node.js native fetch (Vercel compatible - no Python dependency).
+ */
+
 import { ApodResponse, InsertApodCache, apodCache } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc } from "drizzle-orm";
-import { promisify } from "util";
-import { exec } from "child_process";
-import path from "path";
 
-const execPromise = promisify(exec);
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
 
 /**
- * Fetch APOD from NASA's official API using Node (no Python dependency)
+ * Fetch APOD from NASA's official API using Node.js fetch
  */
 async function fetchApodFromNasaApi(date?: string): Promise<ApodResponse> {
   const baseUrl = 'https://api.nasa.gov/planetary/apod';
@@ -21,9 +24,9 @@ async function fetchApodFromNasaApi(date?: string): Promise<ApodResponse> {
   const response = await fetch(url, {
     headers: {
       'Accept': 'application/json',
-      'User-Agent': 'StellarDiary/1.0 (+https://stellar-diary)' as any
-    } as any
-  } as any);
+      'User-Agent': 'StellarDiary/1.0 (+https://stellar-diary.vercel.app)'
+    }
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -48,39 +51,6 @@ async function fetchApodFromNasaApi(date?: string): Promise<ApodResponse> {
 }
 
 /**
- * Executes the Python script to fetch APOD data
- * @param command Command to execute (fetch or fetch_range)
- * @param args Additional arguments to pass to the Python script
- * @returns Promise with the result
- */
-async function executePythonScript(command: string, ...args: string[]): Promise<any> {
-  const scriptPath = path.join(process.cwd(), 'server', 'services', 'fetch_apod.py');
-  
-  // Filter out undefined arguments and add NASA_API_KEY as an additional argument
-  const filteredArgs = args.filter(Boolean).map(arg => arg ? `"${arg}"` : '');
-  
-  // Add NASA_API_KEY as the last argument
-  const cmdArgs = [command, ...filteredArgs, `"${NASA_API_KEY}"`];
-  const cmd = `python3 "${scriptPath}" ${cmdArgs.join(' ')}`;
-  
-  console.log(`Executing Python script: ${cmd.replace(NASA_API_KEY, '[REDACTED]')}`);
-  
-  try {
-    const { stdout, stderr } = await execPromise(cmd);
-    
-    if (stderr) {
-      console.error(`Python script error: ${stderr}`);
-    }
-    
-    const result = JSON.parse(stdout);
-    return result;
-  } catch (error) {
-    console.error("Error executing Python script:", error);
-    throw error;
-  }
-}
-
-/**
  * Fetches the Astronomy Picture of the Day from NASA's API with database caching
  * @param date Optional date in YYYY-MM-DD format. If not specified, returns today's APOD
  * @param forceRefresh Force a refresh from the NASA API even if we have cached data
@@ -92,11 +62,11 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
   const year = today.getFullYear();
   const month = (today.getMonth() + 1).toString().padStart(2, '0');
   const day = today.getDate().toString().padStart(2, '0');
-  
+
   // Date format for API requests
-  const todayStr = `${year}-${month}-${day}`;  
+  const todayStr = `${year}-${month}-${day}`;
   const targetDate = date || todayStr;
-  
+
   // Check if we should force refresh
   if (forceRefresh) {
     console.log(`Force refresh requested for APOD. Clearing cache for ${targetDate}`);
@@ -108,12 +78,12 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       console.error('Error clearing cache during force refresh:', err);
       // Continue even if clearing fails
     }
-  } 
+  }
   // Check for cached data if not forcing refresh
   else {
     try {
       const cachedData = await db.select().from(apodCache).where(eq(apodCache.date, targetDate));
-      
+
       if (cachedData.length > 0) {
         console.log(`Using cached APOD data for ${targetDate}`);
         return cachedData[0] as unknown as ApodResponse;
@@ -123,17 +93,13 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       // Continue to fetch from API if cache fails
     }
   }
-  
+
   try {
     console.log(`Fetching APOD data from NASA API for ${targetDate}...`);
-    // First try the official NASA API via Node fetch
     const data = await fetchApodFromNasaApi(targetDate);
-    
-    // Check if there was an error
-    // (NASA API returns non-error payloads with 200 OK only)
-    
-    console.log(`Python script returned APOD data: ${data.title} (${data.date})`);
-    
+
+    console.log(`NASA API returned APOD data: ${data.title} (${data.date})`);
+
     // Save to cache
     try {
       const insertData: InsertApodCache = {
@@ -146,64 +112,33 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
         copyright: data.copyright || null,
         service_version: data.service_version || null
       };
-      
+
       // Delete any existing record for the same date
       await db.delete(apodCache).where(eq(apodCache.date, data.date));
-      
+
       // Insert new record with fresh data
       await db.insert(apodCache).values(insertData);
-      console.log(`Cached new APOD data (NASA API) for ${data.date}`);
+      console.log(`Cached new APOD data for ${data.date}`);
     } catch (err) {
       console.error('Error caching APOD data:', err);
       // Continue even if caching fails
     }
-    
+
     return data as ApodResponse;
   } catch (error) {
-    console.error('NASA API fetch failed, attempting Python scraper fallback:', error);
-    // Python fallback (scraper)
-    try {
-      console.log(`Fetching APOD data using Python scraper for ${targetDate}...`);
-      const data = await executePythonScript('fetch', targetDate, forceRefresh.toString());
-      if (data.error) {
-        throw new Error(data.message);
-      }
-      console.log(`Python scraper returned APOD data: ${data.title} (${data.date})`);
-      try {
-        const insertData: InsertApodCache = {
-          date: data.date,
-          title: data.title,
-          explanation: data.explanation,
-          url: data.url,
-          hdurl: data.hdurl || null,
-          media_type: data.media_type,
-          copyright: data.copyright || null,
-          service_version: data.service_version || null
-        };
-        await db.delete(apodCache).where(eq(apodCache.date, data.date));
-        await db.insert(apodCache).values(insertData);
-        console.log(`Cached new APOD data (Python) for ${data.date}`);
-      } catch (err) {
-        console.error('Error caching APOD data (Python):', err);
-      }
-      return data as ApodResponse;
-    } catch (fallbackError) {
-      console.error('Python fallback failed:', fallbackError);
-    }
-    
+    console.error('NASA API fetch failed:', error);
+
     // Try to get the most recent cached entry as a fallback
     try {
       const cachedEntries = await db.select().from(apodCache).orderBy(desc(apodCache.cached_at)).limit(1);
       if (cachedEntries.length > 0) {
         console.log('Using most recent cached APOD as fallback');
-        const latestEntry = cachedEntries[0];
-        // Keep the original date from the cached entry for historical accuracy
-        return latestEntry as unknown as ApodResponse;
+        return cachedEntries[0] as unknown as ApodResponse;
       }
     } catch (err) {
       console.error('Error fetching fallback from cache:', err);
     }
-    
+
     // Last resort fallback
     return {
       date: targetDate,
@@ -211,7 +146,7 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
       media_type: "image",
       service_version: "v1",
       title: "NASA APOD Temporarily Unavailable",
-      url: "https://apod.nasa.gov/apod/image/0612/sombrero_hst.jpg", // Fallback to a classic APOD image
+      url: "https://apod.nasa.gov/apod/image/0612/sombrero_hst.jpg",
       copyright: "NASA"
     };
   }
@@ -224,17 +159,31 @@ export async function fetchApod(date?: string, forceRefresh = false): Promise<Ap
  * @returns Promise with array of APOD data
  */
 export async function fetchApodRange(startDate: string, endDate: string): Promise<ApodResponse[]> {
+  const baseUrl = 'https://api.nasa.gov/planetary/apod';
+  const params = new URLSearchParams({
+    api_key: NASA_API_KEY,
+    start_date: startDate,
+    end_date: endDate
+  });
+
+  const url = `${baseUrl}?${params.toString()}`;
+
   try {
-    console.log(`Fetching APOD range using Python script...`);
-    
-    // Call the Python script to fetch the data range
-    const data = await executePythonScript('fetch_range', startDate, endDate);
-    
-    // Check if there was an error
-    if (data.error) {
-      throw new Error(data.message);
+    console.log(`Fetching APOD range from ${startDate} to ${endDate}...`);
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'StellarDiary/1.0 (+https://stellar-diary.vercel.app)'
+      }
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`NASA APOD API error ${response.status}: ${text}`);
     }
-    
+
+    const data = await response.json();
     return data as ApodResponse[];
   } catch (error) {
     console.error('Error fetching APOD range:', error);

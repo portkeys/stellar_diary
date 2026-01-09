@@ -17,12 +17,18 @@ StellarDiary is an astronomy companion web app for telescope enthusiasts (specif
 | State | TanStack React Query |
 | Routing | Wouter |
 | Forms | React Hook Form + Zod |
-| Deployment | Render.com |
+| Deployment | Vercel (serverless) |
 
 ## Project Structure
 
 ```
 StellarDiary/
+├── api/                 # Vercel serverless API routes
+│   ├── apod.ts          # APOD endpoint
+│   ├── celestial-objects/
+│   ├── observations/
+│   ├── monthly-guide/
+│   └── admin/           # Admin endpoints
 ├── client/src/
 │   ├── pages/           # Route pages (Home, MonthlyGuide, MyObservations, Learn, Admin)
 │   ├── components/
@@ -31,14 +37,16 @@ StellarDiary/
 │   ├── hooks/           # Custom hooks (use-mobile, use-toast)
 │   └── lib/             # Utilities (queryClient, utils)
 ├── server/
-│   ├── index.ts         # Express app entry
-│   ├── routes.ts        # API endpoints (14+)
+│   ├── index.ts         # Express app entry (local dev)
+│   ├── routes.ts        # Express routes (local dev)
 │   ├── storage.ts       # Database interface (IStorage pattern)
 │   ├── db.ts            # Drizzle + Neon setup
-│   └── services/        # Business logic (nasaApi, celestialObjects, nasaImages)
+│   └── services/        # Business logic (nasaApi, celestialObjects, nasaImagesNode)
 ├── shared/
 │   └── schema.ts        # Drizzle tables + Zod schemas (single source of truth)
-└── migrations/          # Auto-generated Drizzle migrations
+├── scripts/
+│   └── seed.ts          # One-time database seeding
+└── vercel.json          # Vercel deployment config
 ```
 
 ## Key Features
@@ -73,11 +81,14 @@ StellarDiary/
 ## Commands
 
 ```bash
-npm run dev      # Start dev server (port 5000)
-npm run build    # Build for production
-npm start        # Run production build
-npm run db:push  # Apply schema changes
-npm run check    # TypeScript validation
+npm run dev          # Start local dev server (port 5000)
+npm run build        # Build for production (Express)
+npm run build:vercel # Build for Vercel deployment
+npm start            # Run production build locally
+npm run db:push      # Apply schema changes
+npm run db:seed      # Seed database (run once after deploy)
+npm run check        # TypeScript validation
+vercel dev           # Test Vercel functions locally
 ```
 
 ## Environment Variables
@@ -100,16 +111,20 @@ NODE_ENV=        # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-01-08:** Migrated from Render to Vercel (serverless)
+- **2026-01-08:** Replaced Python scripts with Node.js for NASA/Wikipedia image search
 - **2026-01-08:** Fixed APOD and sorting order
 - **2026-01-07:** Added NASA/Wikipedia image fallback for new objects
 - **2026-01-07:** Fixed new object image issue
 
 ## Development Notes
 
-- Image search uses Python scripts for NASA/Wikipedia APIs
+- Image search uses native Node.js fetch for NASA/Wikipedia APIs (no Python)
 - Celestial objects support hemisphere-based filtering (Northern/Southern/Both)
 - Monthly guides are admin-managed via Admin panel
 - Session auth infrastructure in place but not fully implemented
+- Deployed on Vercel with serverless functions in `/api/`
+- Database seeding is a one-time operation via `npm run db:seed`
 
 ## Common Tasks
 
@@ -120,9 +135,10 @@ NODE_ENV=        # production | development
 
 ### Adding a new API endpoint
 1. Define Zod schema in `shared/schema.ts`
-2. Add route in `server/routes.ts`
+2. Create Vercel API route in `api/` directory
 3. Implement storage method in `server/storage.ts`
 4. Create React Query hook in client
+5. (Optional) Add Express route in `server/routes.ts` for local dev
 
 ### Updating monthly guide
 1. Use Admin panel at `/admin`

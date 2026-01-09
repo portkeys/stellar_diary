@@ -1,191 +1,304 @@
 # Deployment Guide
 
-This document provides step-by-step instructions for deploying the Astronomy Companion App to various platforms.
+This document provides step-by-step instructions for deploying the Astronomy Companion App.
 
 ## Prerequisites
 
 - GitHub account
-- Database provider (recommended: Neon, Railway, or Render PostgreSQL)
-- Render account (for deployment)
+- Database provider (recommended: Neon PostgreSQL)
+- Vercel account (free tier works)
 
-## 1. GitHub Setup
+---
 
-### Initial Repository Setup
-1. Create a new repository on GitHub
-2. Clone this project to your local machine
-3. Initialize git and push to GitHub:
+## Vercel Deployment (Recommended)
 
-```bash
-git init
-git add .
-git commit -m "Initial commit: Astronomy Companion App"
-git branch -M main
-git remote add origin https://github.com/yourusername/your-repo-name.git
-git push -u origin main
-```
+Vercel provides always-on serverless deployment with no cold start delays.
 
-## 2. Database Setup
+### Step 1: Prepare Your Repository
 
-### Option A: Neon (Recommended)
+1. Push your code to GitHub:
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push origin main
+   ```
+
+### Step 2: Set Up Database (Neon)
+
 1. Go to [Neon Console](https://console.neon.tech/)
 2. Create a new project
-3. Copy the connection string
-4. The format will be: `postgresql://username:password@ep-xyz.region.aws.neon.tech/dbname?sslmode=require`
+3. Copy the connection string (format: `postgresql://user:pass@ep-xyz.region.aws.neon.tech/dbname?sslmode=require`)
 
-### Option B: Railway
-1. Go to [Railway](https://railway.app/)
-2. Create a new PostgreSQL database
-3. Copy the connection string from the Variables tab
+### Step 3: Deploy to Vercel
 
-### Option C: Render PostgreSQL
-1. In your Render dashboard, create a new PostgreSQL database
-2. Note the connection details
+#### Option A: Vercel Dashboard (Easiest)
 
-## 3. Render Deployment
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click **"Add New..."** → **"Project"**
+3. Import your GitHub repository
+4. Configure the project:
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build:vercel`
+   - **Output Directory**: `dist/public`
+   - **Install Command**: `npm install`
 
-### Automatic Deployment (Recommended)
-1. Fork/clone this repository to your GitHub account
-2. Go to [Render Dashboard](https://dashboard.render.com/)
-3. Click "New" → "Web Service"
-4. Connect your GitHub repository
-5. Use these settings:
-   - **Name**: `astronomy-app` (or your preferred name)
-   - **Environment**: `Node`
-   - **Region**: Choose closest to your users
-   - **Branch**: `main`
-   - **Build Command**: `npm ci && npm run build`
-   - **Start Command**: `npm start`
+5. Add environment variables:
+   | Variable | Value |
+   |----------|-------|
+   | `DATABASE_URL` | Your Neon connection string |
+   | `NASA_API_KEY` | (Optional) Your NASA API key |
+   | `NODE_ENV` | `production` |
 
-### Environment Variables
-In Render, add these environment variables:
-- `NODE_ENV`: `production`
-- `DATABASE_URL`: Your PostgreSQL connection string
-- `PORT`: `10000` (Render's default, will be set automatically)
+6. Click **"Deploy"**
 
-### Manual Deployment with render.yaml
-1. The project includes a `render.yaml` file for Infrastructure as Code
-2. In Render, go to "New" → "Blueprint"
-3. Connect your repository and Render will automatically detect the `render.yaml`
+#### Option B: Vercel CLI
 
-## 4. Database Migration
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
 
-After deployment, run the database setup:
+2. Login to Vercel:
+   ```bash
+   vercel login
+   ```
 
-### Using Render Shell
-1. Go to your deployed service in Render
-2. Open the "Shell" tab
-3. Run: `npm run db:push`
+3. Deploy:
+   ```bash
+   vercel
+   ```
 
-### Local Database Push (Alternative)
-1. Set your production DATABASE_URL in a local `.env` file
-2. Run: `npm run db:push`
-3. Remove the production DATABASE_URL from your local `.env`
+4. Follow the prompts:
+   - Link to existing project? **No**
+   - Project name: `stellar-diary` (or your choice)
+   - Directory: `.` (current directory)
 
-## 5. Post-Deployment Setup
+5. Add environment variables:
+   ```bash
+   vercel env add DATABASE_URL
+   # Paste your Neon connection string when prompted
 
-### Health Check
-Your app includes a health check endpoint at `/api/health`. Render will automatically use this to monitor your app.
+   vercel env add NASA_API_KEY
+   # Paste your NASA API key (or skip for DEMO_KEY)
+   ```
 
-### Domain Configuration
-- Your app will be available at: `https://your-app-name.onrender.com`
-- You can configure a custom domain in Render's settings
+6. Deploy to production:
+   ```bash
+   vercel --prod
+   ```
 
-### Monitoring
-- Use Render's built-in metrics and logs
-- Monitor database performance through your database provider's dashboard
+### Step 4: Initialize Database
 
-## 6. Environment-Specific Configurations
+After first deployment, seed the database:
 
-### Development
+```bash
+# Option 1: Run locally with production DATABASE_URL
+DATABASE_URL="your-neon-connection-string" npm run db:seed
+
+# Option 2: Push schema first, then seed
+DATABASE_URL="your-neon-connection-string" npm run db:push
+DATABASE_URL="your-neon-connection-string" npm run db:seed
+```
+
+### Step 5: Verify Deployment
+
+1. Visit your Vercel URL: `https://your-project.vercel.app`
+2. Test the health endpoint: `https://your-project.vercel.app/api/health`
+3. Verify APOD loads on the homepage
+4. Test creating an observation
+
+---
+
+## Project Configuration
+
+### vercel.json
+
+The project includes a `vercel.json` configuration:
+
+```json
+{
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist/public",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/(.*)", "destination": "/" }
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@3"
+    }
+  }
+}
+```
+
+### API Routes Structure
+
+Vercel serverless functions are in the `/api` directory:
+
+```
+api/
+├── health.ts                 # GET /api/health
+├── apod.ts                   # GET /api/apod
+├── celestial-object-types.ts # GET /api/celestial-object-types
+├── telescope-tips.ts         # GET /api/telescope-tips
+├── celestial-objects/
+│   ├── index.ts              # GET/POST /api/celestial-objects
+│   ├── [id].ts               # GET/PATCH/DELETE /api/celestial-objects/:id
+│   └── update-all-images.ts  # POST /api/celestial-objects/update-all-images
+├── observations/
+│   ├── index.ts              # GET/POST /api/observations
+│   └── [id].ts               # PATCH/DELETE /api/observations/:id
+├── monthly-guide/
+│   ├── index.ts              # GET /api/monthly-guide
+│   └── [id].ts               # PATCH /api/monthly-guide/:id
+└── admin/
+    ├── manual-monthly-guide.ts
+    ├── update-all-images.ts
+    └── update-object-image/[id].ts
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
+| `NASA_API_KEY` | No | NASA API key (defaults to DEMO_KEY) |
+| `NODE_ENV` | No | Set to `production` (Vercel sets this automatically) |
+
+---
+
+## Local Development
+
+### Using Express Server (Traditional)
+
 ```bash
 # Install dependencies
 npm install
 
 # Set up environment
-cp .env .env
-# Edit .env with your local database URL
+cp .env.example .env
+# Edit .env with your database URL
 
 # Run database migrations
 npm run db:push
 
+# Seed database (first time only)
+npm run db:seed
+
 # Start development server
 npm run dev
+# Server runs at http://localhost:5000
 ```
 
-### Production
-The production build process:
-1. `npm ci` - Clean install of dependencies
-2. `npm run build` - Builds both frontend and backend
-3. `npm start` - Starts the production server
+### Using Vercel Dev (Serverless)
 
-## 7. Troubleshooting
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Link to Vercel project
+vercel link
+
+# Pull environment variables
+vercel env pull
+
+# Start local serverless dev
+vercel dev
+# Server runs at http://localhost:3000
+```
+
+---
+
+## Troubleshooting
 
 ### Common Issues
 
 **Build Failures**
-- Ensure all dependencies are in `package.json`, not just `devDependencies`
-- Check that TypeScript compilation passes: `npm run check`
+- Ensure TypeScript compilation passes: `npm run check`
+- Check that all dependencies are installed
 
 **Database Connection Issues**
-- Verify DATABASE_URL format and credentials
-- Ensure database accepts connections from Render's IP ranges
-- Check SSL requirements (most cloud databases require `?sslmode=require`)
+- Verify `DATABASE_URL` is set correctly in Vercel
+- Ensure the connection string includes `?sslmode=require`
+- Check that Neon project is not paused
 
-**Port Issues**
-- Don't hardcode ports; use `process.env.PORT || 5000`
-- Render automatically sets PORT to 10000
+**API Routes Not Working**
+- Verify `/api` directory exists at project root
+- Check Vercel function logs in dashboard
+- Ensure `vercel.json` is properly configured
 
-**Static File Serving**
-- Frontend build files are served from `/dist` by the Express server
-- Ensure build process completes successfully
+**Cold Starts (Rare on Vercel)**
+- Vercel functions are always-on at edge
+- If experiencing delays, check database connection (Neon may pause after inactivity)
 
-### Logs and Debugging
-- Use Render's log viewer to debug deployment issues
-- Add console.log statements for debugging (they'll appear in Render logs)
-- Use `npm run check` locally to catch TypeScript errors before deployment
+### Viewing Logs
 
-## 8. Security Considerations
-
-### Environment Variables
-- Never commit `.env` files to git
-- Use strong, unique passwords for databases
-- Consider setting a SESSION_SECRET for production
-
-### Database Security
-- Use connection string with SSL enabled
-- Regularly rotate database passwords
-- Monitor database access logs
-
-## 9. Performance Optimization
-
-### Frontend
-- Static files are served with caching headers
-- Vite optimizes bundle size automatically
-
-### Backend
-- Uses connection pooling for database
-- Implements proper error handling
-- Includes health checks for monitoring
-
-### Database
-- Indexes are defined in Drizzle schema
-- Connection pooling configured for serverless deployment
-- Consider read replicas for high-traffic applications
-
-## 10. Backup and Maintenance
-
-### Database Backups
-- Configure automated backups through your database provider
-- Test backup restoration process periodically
-
-### Updates and Maintenance
-- Monitor for security updates in dependencies
-- Update regularly: `npm audit` and `npm update`
-- Test updates in development before deploying to production
+1. Go to Vercel Dashboard → Your Project → **Deployments**
+2. Click on a deployment → **Functions** tab
+3. View real-time logs for each API route
 
 ---
 
-For additional support or questions, refer to:
-- [Render Documentation](https://render.com/docs)
+## Updating Your Deployment
+
+### Automatic Deployments
+
+Vercel automatically deploys when you push to GitHub:
+
+```bash
+git add .
+git commit -m "Your changes"
+git push origin main
+# Vercel automatically deploys
+```
+
+### Manual Deployment
+
+```bash
+vercel --prod
+```
+
+### Preview Deployments
+
+Push to a non-main branch for a preview URL:
+
+```bash
+git checkout -b feature/new-feature
+git push origin feature/new-feature
+# Vercel creates a preview deployment
+```
+
+---
+
+## Legacy: Render Deployment
+
+> **Note:** The project has been migrated to Vercel for better performance.
+> Render deployment is still possible but not recommended due to cold start delays.
+
+If you need to deploy to Render:
+
+1. The Express server (`server/index.ts`) is still functional
+2. Use these settings:
+   - **Build Command**: `npm ci && npm run build`
+   - **Start Command**: `npm start`
+3. Add environment variables in Render dashboard
+
+---
+
+## Security Considerations
+
+- Never commit `.env` files to git
+- Use strong, unique database passwords
+- Rotate database credentials periodically
+- Enable Neon's IP allowlist for production
+
+---
+
+## Support
+
+- [Vercel Documentation](https://vercel.com/docs)
 - [Neon Documentation](https://neon.tech/docs)
 - [Drizzle ORM Documentation](https://orm.drizzle.team/)
