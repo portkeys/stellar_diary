@@ -4,6 +4,14 @@
   "outputDirectory": "dist/public",
   "framework": "vite",
   "rewrites": [
+    { "source": "/api/celestial-objects/:id", "destination": "/api/celestial-objects?id=:id" },
+    { "source": "/api/celestial-objects/:id/update-image", "destination": "/api/celestial-objects?id=:id&action=update-image" },
+    { "source": "/api/observations/:id", "destination": "/api/observations?id=:id" },
+    { "source": "/api/monthly-guide/:id", "destination": "/api/monthly-guide?id=:id" },
+    { "source": "/api/admin/manual-monthly-guide", "destination": "/api/admin?action=manual-monthly-guide" },
+    { "source": "/api/admin/update-object-image/:id", "destination": "/api/admin?action=update-object-image&id=:id" },
+    { "source": "/api/admin/update-all-images", "destination": "/api/admin?action=update-all-images" },
+    { "source": "/api/admin/preview-nasa-image/:name", "destination": "/api/admin?action=preview-nasa-image&objectName=:name" },
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
