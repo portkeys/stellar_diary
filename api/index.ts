@@ -2,9 +2,49 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-// Using relative path since Vercel may not resolve path aliases
-import { celestialObjects, observations, apodCache } from '../shared/schema';
+import { pgTable, text, serial, integer, boolean, date, timestamp } from 'drizzle-orm/pg-core';
 import { eq, desc } from 'drizzle-orm';
+
+// Inline schema definitions (Vercel can't resolve imports from outside /api)
+const celestialObjects = pgTable('celestial_objects', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  description: text('description').notNull(),
+  coordinates: text('coordinates').notNull(),
+  bestViewingTime: text('best_viewing_time'),
+  imageUrl: text('image_url'),
+  visibilityRating: text('visibility_rating'),
+  information: text('information'),
+  constellation: text('constellation'),
+  magnitude: text('magnitude'),
+  hemisphere: text('hemisphere'),
+  recommendedEyepiece: text('recommended_eyepiece'),
+  month: text('month'),
+});
+
+const observations = pgTable('observations', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id'),
+  objectId: integer('object_id'),
+  isObserved: boolean('is_observed').default(false),
+  observationNotes: text('observation_notes'),
+  dateAdded: timestamp('date_added').defaultNow(),
+  plannedDate: date('planned_date'),
+});
+
+const apodCache = pgTable('apod_cache', {
+  id: serial('id').primaryKey(),
+  date: text('date').notNull(),
+  title: text('title').notNull(),
+  explanation: text('explanation').notNull(),
+  url: text('url').notNull(),
+  hdurl: text('hdurl'),
+  media_type: text('media_type').notNull(),
+  copyright: text('copyright'),
+  service_version: text('service_version'),
+  cached_at: timestamp('cached_at').defaultNow().notNull(),
+});
 
 // Database connection (lazy initialization)
 let db: ReturnType<typeof drizzle> | null = null;
