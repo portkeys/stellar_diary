@@ -107,21 +107,101 @@ app.get('/api/observations', async (_req, res) => {
   }
 });
 
-// Get APOD (cached)
+// Helper to get today's date in YYYY-MM-DD format
+function getTodayDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Helper to fetch APOD from NASA API
+async function fetchApodFromNasa(date: string): Promise<{
+  date: string;
+  title: string;
+  explanation: string;
+  url: string;
+  hdurl?: string;
+  media_type: string;
+  copyright?: string;
+  service_version?: string;
+}> {
+  const apiKey = process.env.NASA_API_KEY || 'DEMO_KEY';
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    date: date
+  });
+
+  const response = await fetch(`https://api.nasa.gov/planetary/apod?${params.toString()}`, {
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'StellarDiary/1.0'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`NASA API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get APOD (cached with auto-refresh)
 app.get('/api/apod', async (_req, res) => {
   try {
+    const today = getTodayDate();
+
+    // Check if we have today's APOD cached
     const [cachedApod] = await getDb()
       .select()
       .from(apodCache)
-      .orderBy(desc(apodCache.id))
+      .where(eq(apodCache.date, today))
       .limit(1);
 
     if (cachedApod) {
+      // Return cached data for today
       res.json(cachedApod);
-    } else {
-      res.status(404).json({ error: 'No APOD cached' });
+      return;
     }
+
+    // No cache for today - fetch from NASA API
+    console.log(`Fetching fresh APOD for ${today}`);
+    const nasaData = await fetchApodFromNasa(today);
+
+    // Store in cache
+    await getDb().insert(apodCache).values({
+      date: nasaData.date,
+      title: nasaData.title,
+      explanation: nasaData.explanation,
+      url: nasaData.url,
+      hdurl: nasaData.hdurl || null,
+      media_type: nasaData.media_type,
+      copyright: nasaData.copyright || null,
+      service_version: nasaData.service_version || null,
+    });
+
+    // Return fresh data
+    res.json(nasaData);
   } catch (error) {
+    console.error('APOD fetch error:', error);
+
+    // If NASA API fails, try to return the most recent cached APOD as fallback
+    try {
+      const [fallbackApod] = await getDb()
+        .select()
+        .from(apodCache)
+        .orderBy(desc(apodCache.id))
+        .limit(1);
+
+      if (fallbackApod) {
+        res.json({ ...fallbackApod, _fallback: true });
+        return;
+      }
+    } catch (fallbackError) {
+      // Ignore fallback errors
+    }
+
     res.status(500).json({
       error: 'Failed to fetch APOD',
       message: error instanceof Error ? error.message : 'Unknown error'
