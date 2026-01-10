@@ -91,15 +91,9 @@ The app will be available at `http://localhost:5000`
 
 ## Deployment
 
-This project is ready for deployment on various platforms:
+This project is deployed on Vercel with serverless functions.
 
-### Quick Deploy to Render
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-### Manual Deployment
-See detailed deployment guides:
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - Complete deployment guide for Render, Railway, and other platforms
-- [GITHUB_SETUP.md](./GITHUB_SETUP.md) - Setting up the project on GitHub and local development
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions.
 
 ### Environment Variables Required for Production
 - `DATABASE_URL` - PostgreSQL connection string

@@ -62,23 +62,6 @@ temp/
 .parcel-cache/
 .eslintcache
 
-# Replit specific
-.replit
-replit.nix
-.upm/
-.config/
-.pythonlibs/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-
 # Drizzle
 drizzle/
 migrations/
