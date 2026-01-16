@@ -211,10 +211,32 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Get all celestial objects
-app.get('/api/celestial-objects', async (_req, res) => {
+// Get all celestial objects (with optional filtering)
+app.get('/api/celestial-objects', async (req, res) => {
   try {
-    const objects = await getDb().select().from(celestialObjects);
+    const { type, month, hemisphere } = req.query;
+
+    let objects = await getDb().select().from(celestialObjects);
+
+    // Filter by type if provided
+    if (type && typeof type === 'string') {
+      objects = objects.filter(obj => obj.type === type);
+    }
+
+    // Filter by month if provided
+    if (month && typeof month === 'string') {
+      objects = objects.filter(obj => obj.month === month);
+    }
+
+    // Filter by hemisphere if provided
+    if (hemisphere && typeof hemisphere === 'string') {
+      objects = objects.filter(obj =>
+        obj.hemisphere === hemisphere ||
+        obj.hemisphere?.toLowerCase() === 'both' ||
+        obj.hemisphere === 'Both'
+      );
+    }
+
     res.json(objects);
   } catch (error) {
     res.status(500).json({
