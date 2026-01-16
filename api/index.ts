@@ -722,6 +722,215 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
   }
 });
 
+// Create a new celestial object
+app.post('/api/celestial-objects', async (req, res) => {
+  try {
+    // Search for NASA or Wikipedia image if name is provided
+    let imageUrl = req.body.imageUrl;
+    let imageSource = 'fallback';
+
+    if (req.body.name) {
+      try {
+        console.log(`🔍 Searching for image (NASA/Wikipedia) for: ${req.body.name}`);
+        const result = await searchCelestialObjectImage(req.body.name);
+        if (result.success && result.image_url) {
+          imageUrl = result.image_url;
+          imageSource = result.source || 'unknown';
+          console.log(`✓ Found image for ${req.body.name} [${imageSource}]: ${imageUrl}`);
+        } else {
+          console.log(`⚠ No image found for ${req.body.name}: ${result.error || 'No image available'}`);
+        }
+      } catch (error) {
+        console.error(`❌ Image search failed for ${req.body.name}:`, error);
+      }
+    }
+
+    // If no image was found, use type-specific fallback
+    if (!imageUrl) {
+      const objectType = req.body.type || 'galaxy';
+      const fallbackImages: Record<string, string> = {
+        'galaxy': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+        'nebula': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+        'star_cluster': 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=800&h=500',
+        'planet': 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=800&h=500',
+        'star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+        'double_star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+        'meteor_shower': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&h=500',
+      };
+      imageUrl = fallbackImages[objectType.toLowerCase()] || fallbackImages['galaxy'];
+      imageSource = 'fallback';
+      console.log(`📸 Using fallback image for type "${objectType}": ${imageUrl}`);
+    }
+
+    // Check if a celestial object with this name already exists
+    const existingObjects = await getDb().select().from(celestialObjects);
+    const exists = existingObjects.some(
+      (obj) => obj.name.toLowerCase() === req.body.name?.toLowerCase()
+    );
+
+    if (exists) {
+      return res.status(409).json({
+        message: `A celestial object with the name "${req.body.name}" already exists`
+      });
+    }
+
+    // Create the celestial object
+    const [newObject] = await getDb().insert(celestialObjects).values({
+      name: req.body.name,
+      type: req.body.type,
+      description: req.body.description || `${req.body.name} - a celestial object.`,
+      coordinates: req.body.coordinates || 'See star chart',
+      bestViewingTime: req.body.bestViewingTime || 'Variable',
+      imageUrl: imageUrl,
+      visibilityRating: req.body.visibilityRating || 'Custom',
+      information: req.body.information || 'Custom celestial object',
+      constellation: req.body.constellation || 'Not specified',
+      magnitude: req.body.magnitude || 'Not specified',
+      hemisphere: req.body.hemisphere || 'Both',
+      recommendedEyepiece: req.body.recommendedEyepiece || 'Not specified',
+      month: req.body.month || null,
+    }).returning();
+
+    res.status(201).json({
+      ...newObject,
+      _debug: { imageSource }
+    });
+  } catch (error) {
+    console.error('Error creating celestial object:', error);
+    res.status(500).json({
+      error: 'Failed to create celestial object',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Create a new observation
+app.post('/api/observations', async (req, res) => {
+  try {
+    const { objectId, isObserved, observationNotes, plannedDate } = req.body;
+
+    if (!objectId) {
+      return res.status(400).json({ message: 'objectId is required' });
+    }
+
+    // Check if celestial object exists
+    const [object] = await getDb()
+      .select()
+      .from(celestialObjects)
+      .where(eq(celestialObjects.id, objectId))
+      .limit(1);
+
+    if (!object) {
+      return res.status(404).json({ message: 'Celestial object not found' });
+    }
+
+    // For demo purposes, use a fixed user ID of 1
+    const userId = 1;
+
+    // Create new observation
+    const [newObservation] = await getDb().insert(observations).values({
+      userId,
+      objectId,
+      isObserved: isObserved || false,
+      observationNotes: observationNotes || null,
+      plannedDate: plannedDate || null,
+    }).returning();
+
+    res.status(201).json(newObservation);
+  } catch (error) {
+    console.error('Error creating observation:', error);
+    res.status(500).json({
+      error: 'Failed to create observation',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Update observation (mark as observed, add notes)
+app.patch('/api/observations/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    // Check if observation exists
+    const [observation] = await getDb()
+      .select()
+      .from(observations)
+      .where(eq(observations.id, id))
+      .limit(1);
+
+    if (!observation) {
+      return res.status(404).json({ message: 'Observation not found' });
+    }
+
+    // For demo purposes, use a fixed user ID of 1
+    const userId = 1;
+    if (observation.userId !== userId) {
+      return res.status(403).json({ message: 'Not authorized to update this observation' });
+    }
+
+    // Build update object
+    const updateData: Partial<typeof observation> = {};
+    if (req.body.isObserved !== undefined) updateData.isObserved = req.body.isObserved;
+    if (req.body.observationNotes !== undefined) updateData.observationNotes = req.body.observationNotes;
+    if (req.body.plannedDate !== undefined) updateData.plannedDate = req.body.plannedDate;
+
+    const [updatedObservation] = await getDb()
+      .update(observations)
+      .set(updateData)
+      .where(eq(observations.id, id))
+      .returning();
+
+    res.json(updatedObservation);
+  } catch (error) {
+    console.error('Error updating observation:', error);
+    res.status(500).json({
+      error: 'Failed to update observation',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Delete observation
+app.delete('/api/observations/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    // Check if observation exists
+    const [observation] = await getDb()
+      .select()
+      .from(observations)
+      .where(eq(observations.id, id))
+      .limit(1);
+
+    if (!observation) {
+      return res.status(404).json({ message: 'Observation not found' });
+    }
+
+    // For demo purposes, use a fixed user ID of 1
+    const userId = 1;
+    if (observation.userId !== userId) {
+      return res.status(403).json({ message: 'Not authorized to delete this observation' });
+    }
+
+    await getDb().delete(observations).where(eq(observations.id, id));
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting observation:', error);
+    res.status(500).json({
+      error: 'Failed to delete observation',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Catch-all for other routes
 app.all('*', (req, res) => {
   res.status(404).json({ error: 'Not found', path: req.path });
