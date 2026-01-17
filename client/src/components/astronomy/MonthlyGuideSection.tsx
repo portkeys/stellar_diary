@@ -9,20 +9,19 @@ const MonthlyGuideSection = () => {
   // Get current month name and year
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const currentYear = new Date().getFullYear();
-  
-  // Construct query string for featured objects only
-  const queryParams = new URLSearchParams();
-  queryParams.append('hemisphere', 'Northern');
-  queryParams.append('month', currentMonth);
-  
-  const { data: celestialObjects, isLoading, isError } = useQuery<CelestialObject[]>({
-    queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
+
+  // Query for monthly guide content first
+  const { data: monthlyGuide, isLoading: guideLoading } = useQuery<MonthlyGuide>({
+    queryKey: [`/api/monthly-guide?hemisphere=Northern&month=${currentMonth}`],
   });
 
-  // Query for monthly guide content
-  const { data: monthlyGuide, isLoading: guideLoading } = useQuery<MonthlyGuide>({
-    queryKey: [`/api/monthly-guide?hemisphere=Northern`],
+  // Fetch objects linked to this guide
+  const { data: celestialObjects, isLoading: objectsLoading, isError } = useQuery<CelestialObject[]>({
+    queryKey: [`/api/monthly-guide/${monthlyGuide?.id}/objects`],
+    enabled: !!monthlyGuide?.id,
   });
+
+  const isLoading = guideLoading || objectsLoading;
 
   // Limit to 3 featured objects for the home page
   const featuredObjects = celestialObjects?.slice(0, 3) || [];

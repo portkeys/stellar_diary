@@ -81,16 +81,16 @@ const MonthlyGuidePage = () => {
     throwOnError: false
   });
 
-  // Construct query string for celestial objects
-  const queryParams = new URLSearchParams();
-  if (hemisphere) queryParams.append('hemisphere', hemisphere);
-  if (objectType) queryParams.append('type', objectType);
-  queryParams.append('month', currentMonth);
-
-  // Fetch celestial objects
+  // Fetch celestial objects linked to this guide
   const { data: celestialObjects, isLoading: isObjectsLoading, isError: isObjectsError } = useQuery<CelestialObject[]>({
-    queryKey: [`/api/celestial-objects?${queryParams.toString()}`],
+    queryKey: [`/api/monthly-guide/${guide?.id}/objects`],
+    enabled: !!guide?.id, // Only fetch when we have a guide
   });
+
+  // Filter objects by type if filter is set
+  const filteredObjects = objectType
+    ? celestialObjects?.filter(obj => obj.type === objectType)
+    : celestialObjects;
 
   // Query for celestial object types (for filter dropdown)
   const { data: objectTypes } = useQuery<string[]>({
@@ -161,7 +161,7 @@ const MonthlyGuidePage = () => {
         setContentUrl("");
         // Refresh the data
         queryClient.invalidateQueries({ queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/celestial-objects?${queryParams.toString()}`] });
+        // Objects will be refreshed when guide is updated since query depends on guide.id
 
         toast({
           title: "Content Imported!",
@@ -615,9 +615,9 @@ const MonthlyGuidePage = () => {
               </Button>
             </div>
           </div>
-        ) : celestialObjects && celestialObjects.length > 0 ? (
+        ) : filteredObjects && filteredObjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {celestialObjects.map(object => (
+            {filteredObjects.map(object => (
               <CelestialCard key={object.id} celestialObject={object} />
             ))}
           </div>

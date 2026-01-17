@@ -6,21 +6,15 @@ import { pgTable, text, serial, integer, boolean, date, timestamp } from 'drizzl
 import { eq, desc } from 'drizzle-orm';
 
 // Inline schema definitions (Vercel can't resolve imports from outside /api)
+// Simplified celestial objects - static catalog without time-specific info
 const celestialObjects = pgTable('celestial_objects', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
+  name: text('name').notNull().unique(),
   type: text('type').notNull(),
   description: text('description').notNull(),
-  coordinates: text('coordinates').notNull(),
-  bestViewingTime: text('best_viewing_time'),
   imageUrl: text('image_url'),
-  visibilityRating: text('visibility_rating'),
-  information: text('information'),
   constellation: text('constellation'),
   magnitude: text('magnitude'),
-  hemisphere: text('hemisphere'),
-  recommendedEyepiece: text('recommended_eyepiece'),
-  month: text('month'),
 });
 
 const observations = pgTable('observations', {
@@ -54,7 +48,18 @@ const monthlyGuides = pgTable('monthly_guides', {
   description: text('description').notNull(),
   hemisphere: text('hemisphere').notNull(),
   videoUrls: text('video_urls').array(),
-  isAdmin: boolean('is_admin').default(false),
+  sources: text('sources').array(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Guide objects junction table - links celestial objects to specific monthly guides
+const guideObjects = pgTable('guide_objects', {
+  id: serial('id').primaryKey(),
+  guideId: integer('guide_id').notNull(),
+  objectId: integer('object_id').notNull(),
+  viewingTips: text('viewing_tips'),
+  highlights: text('highlights'),
+  sortOrder: integer('sort_order').default(0),
 });
 
 // Database connection (lazy initialization)
@@ -211,30 +216,16 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Get all celestial objects (with optional filtering)
+// Get all celestial objects (static catalog, optional type filter)
 app.get('/api/celestial-objects', async (req, res) => {
   try {
-    const { type, month, hemisphere } = req.query;
+    const { type } = req.query;
 
     let objects = await getDb().select().from(celestialObjects);
 
     // Filter by type if provided
     if (type && typeof type === 'string') {
       objects = objects.filter(obj => obj.type === type);
-    }
-
-    // Filter by month if provided
-    if (month && typeof month === 'string') {
-      objects = objects.filter(obj => obj.month === month);
-    }
-
-    // Filter by hemisphere if provided
-    if (hemisphere && typeof hemisphere === 'string') {
-      objects = objects.filter(obj =>
-        obj.hemisphere === hemisphere ||
-        obj.hemisphere?.toLowerCase() === 'both' ||
-        obj.hemisphere === 'Both'
-      );
     }
 
     res.json(objects);
@@ -378,6 +369,48 @@ app.get('/api/monthly-guide', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to fetch monthly guide',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get objects linked to a monthly guide
+app.get('/api/monthly-guide/:id/objects', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    // Get guide objects for this guide
+    const links = await getDb().select().from(guideObjects)
+      .where(eq(guideObjects.guideId, id));
+
+    if (links.length === 0) {
+      return res.json([]);
+    }
+
+    // Get the actual celestial objects
+    const objectIds = links.map(link => link.objectId);
+    const objects = await getDb().select().from(celestialObjects);
+    const linkedObjects = objects.filter(obj => objectIds.includes(obj.id));
+
+    // Combine with viewing tips and highlights
+    const result = links.map(link => {
+      const obj = linkedObjects.find(o => o.id === link.objectId);
+      return {
+        ...obj,
+        viewingTips: link.viewingTips,
+        highlights: link.highlights,
+        sortOrder: link.sortOrder,
+      };
+    }).filter(item => item.id).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to fetch guide objects',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -674,16 +707,9 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
             name: obj.name,
             type: obj.type,
             description: obj.description,
-            coordinates: 'See star chart',
-            bestViewingTime: `Best viewed in ${month}`,
             imageUrl: imageUrl,
-            visibilityRating: 'Good',
-            information: `Featured in ${month} ${year} sky guide.`,
-            constellation: obj.constellation || 'Various',
-            magnitude: obj.magnitude || 'Variable',
-            hemisphere: 'Northern',
-            recommendedEyepiece: obj.type === 'planet' ? 'High power (6-10mm)' : 'Low to medium power (20-40mm)',
-            month: month,
+            constellation: obj.constellation || null,
+            magnitude: obj.magnitude || null,
           });
           objectsAdded++;
           existingNames.add(obj.name.toLowerCase());
@@ -699,32 +725,60 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
 
     // Check if guide already exists for this month/year
     const existingGuides = await getDb().select().from(monthlyGuides);
-    const existingGuide = existingGuides.find(g =>
+    let guide = existingGuides.find(g =>
       g.month === month &&
       g.year === year &&
       g.hemisphere === 'Northern'
     );
 
-    if (existingGuide) {
-      // Update existing guide
+    if (guide) {
+      // Update existing guide with new source
+      const existingSources = guide.sources || [];
+      const newSources = existingSources.includes(url) ? existingSources : [...existingSources, url];
       await getDb()
         .update(monthlyGuides)
         .set({
           headline: `${month} ${year}: Astronomy Highlights`,
-          description: `Featured celestial objects and viewing opportunities for ${month} ${year}. Content imported from: ${url}`,
+          description: `Featured celestial objects and viewing opportunities for ${month} ${year}.`,
+          sources: newSources,
         })
-        .where(eq(monthlyGuides.id, existingGuide.id));
+        .where(eq(monthlyGuides.id, guide.id));
     } else {
       // Create new guide
-      await getDb().insert(monthlyGuides).values({
+      const [newGuide] = await getDb().insert(monthlyGuides).values({
         month,
         year,
         hemisphere: 'Northern',
         headline: `${month} ${year}: Astronomy Highlights`,
-        description: `Featured celestial objects and viewing opportunities for ${month} ${year}. Content imported from: ${url}`,
+        description: `Featured celestial objects and viewing opportunities for ${month} ${year}.`,
         videoUrls: [],
-        isAdmin: false,
-      });
+        sources: [url],
+      }).returning();
+      guide = newGuide;
+    }
+
+    // Link extracted objects to this guide via guideObjects junction table
+    if (guide) {
+      // Get all objects that were just added or already exist
+      const allObjects = await getDb().select().from(celestialObjects);
+      const extractedNames = new Set(extractedObjects.map(o => o.name.toLowerCase()));
+
+      for (const obj of allObjects) {
+        if (extractedNames.has(obj.name.toLowerCase())) {
+          // Check if already linked
+          const existingLinks = await getDb().select().from(guideObjects)
+            .where(eq(guideObjects.guideId, guide.id));
+          const alreadyLinked = existingLinks.some(link => link.objectId === obj.id);
+
+          if (!alreadyLinked) {
+            await getDb().insert(guideObjects).values({
+              guideId: guide.id,
+              objectId: obj.id,
+              sortOrder: existingLinks.length,
+            });
+          }
+        }
+      }
     }
 
     res.json({
@@ -744,14 +798,14 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
   }
 });
 
-// Create a new celestial object
+// Create a new celestial object (static catalog entry)
 app.post('/api/celestial-objects', async (req, res) => {
   try {
     // Search for NASA or Wikipedia image if name is provided
     let imageUrl = req.body.imageUrl;
-    let imageSource = 'fallback';
+    let imageSource = 'provided';
 
-    if (req.body.name) {
+    if (!imageUrl && req.body.name) {
       try {
         console.log(`🔍 Searching for image (NASA/Wikipedia) for: ${req.body.name}`);
         const result = await searchCelestialObjectImage(req.body.name);
@@ -772,12 +826,11 @@ app.post('/api/celestial-objects', async (req, res) => {
       const objectType = req.body.type || 'galaxy';
       const fallbackImages: Record<string, string> = {
         'galaxy': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
-        'nebula': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
+        'nebula': 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=800&h=500',
         'star_cluster': 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=800&h=500',
         'planet': 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=800&h=500',
-        'star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
         'double_star': 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&h=500',
-        'meteor_shower': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&h=500',
+        'other': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&h=500',
       };
       imageUrl = fallbackImages[objectType.toLowerCase()] || fallbackImages['galaxy'];
       imageSource = 'fallback';
@@ -796,21 +849,14 @@ app.post('/api/celestial-objects', async (req, res) => {
       });
     }
 
-    // Create the celestial object
+    // Create the celestial object with simplified schema
     const [newObject] = await getDb().insert(celestialObjects).values({
       name: req.body.name,
-      type: req.body.type,
+      type: req.body.type || 'other',
       description: req.body.description || `${req.body.name} - a celestial object.`,
-      coordinates: req.body.coordinates || 'See star chart',
-      bestViewingTime: req.body.bestViewingTime || 'Variable',
       imageUrl: imageUrl,
-      visibilityRating: req.body.visibilityRating || 'Custom',
-      information: req.body.information || 'Custom celestial object',
-      constellation: req.body.constellation || 'Not specified',
-      magnitude: req.body.magnitude || 'Not specified',
-      hemisphere: req.body.hemisphere || 'Both',
-      recommendedEyepiece: req.body.recommendedEyepiece || 'Not specified',
-      month: req.body.month || null,
+      constellation: req.body.constellation || null,
+      magnitude: req.body.magnitude || null,
     }).returning();
 
     res.status(201).json({

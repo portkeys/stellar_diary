@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchApod } from "./services/nasaApi";
 import { searchCelestialObjectImage, updateCelestialObjectImage, updateAllCelestialObjectImages } from "./services/nasaImages";
-import { seedDatabase, getCurrentMonth, getCurrentYear, filterCelestialObjects } from "./services/celestialObjects";
+import { seedDatabase, getCurrentMonth, getCurrentYear } from "./services/celestialObjects";
 import { celestialObjectExists, cleanupDuplicateCelestialObjects } from "./services/cleanupDuplicates";
 import {
   insertObservationSchema,
@@ -211,15 +211,11 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
   // Get all celestial objects
   app.get("/api/celestial-objects", async (req: Request, res: Response) => {
     try {
-      const { type, month, hemisphere } = req.query;
+      const { type } = req.query;
 
-      // If any filters are provided, use the filter function
-      if (type || month || hemisphere) {
-        const objects = await filterCelestialObjects(
-          type as string | undefined,
-          month as string | undefined,
-          hemisphere as string | undefined
-        );
+      // Filter by type if provided
+      if (type) {
+        const objects = await storage.getCelestialObjectsByType(type as string);
         return res.json(objects);
       }
 
@@ -636,16 +632,9 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
               name: obj.name,
               type: obj.type,
               description: obj.description,
-              coordinates: 'See star chart',
-              bestViewingTime: `Best viewed in ${month}`,
               imageUrl: imageUrl,
-              visibilityRating: 'Good',
-              information: `Featured in ${month} ${year} sky guide.`,
-              constellation: obj.constellation || 'Various',
-              magnitude: obj.magnitude || 'Variable',
-              hemisphere: 'Northern',
-              recommendedEyepiece: obj.type === 'planet' ? 'High power (6-10mm)' : 'Low to medium power (20-40mm)',
-              month: month,
+              constellation: obj.constellation || null,
+              magnitude: obj.magnitude || null,
             });
             objectsAdded++;
             console.log(`✓ Added: ${obj.name} [image: ${imageSource}]`);
@@ -677,7 +666,7 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
           headline: `${month} ${year}: Astronomy Highlights`,
           description: `Featured celestial objects and viewing opportunities for ${month} ${year}. Content imported from: ${url}`,
           videoUrls: [],
-          isAdmin: false,
+          sources: [url],
         });
       }
 
@@ -717,7 +706,6 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
         headline,
         description,
         videoUrls: videoUrls || [],
-        isAdmin: true
       };
 
       await storage.createMonthlyGuide(monthlyGuide);
@@ -732,132 +720,6 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
       res.status(500).json({
         success: false,
         message: `Failed to create manual guide: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        objectsAdded: 0,
-        guideUpdated: false
-      });
-    }
-  });
-
-  app.post("/api/admin/create-july-guide", async (req: Request, res: Response) => {
-    try {
-      // Create July 2025 guide with authentic objects from High Point Scientific video
-      const featuredObjects = [
-        {
-          name: "Messier 4",
-          type: "star_cluster",
-          description: "One of the closest globular clusters to Earth at just 7,200 light-years away. M4 is located in the constellation Scorpius and offers spectacular views of individual stars even in modest telescopes.",
-          constellation: "Scorpius",
-          magnitude: "5.9",
-          coordinates: "RA: 16h 23m 35s | Dec: -26° 31′ 32″",
-          visibility: "Best viewing in southern sky after 10 PM",
-          tips: "Use medium magnification to resolve individual stars. The cluster has a distinctive bar-like feature across its center that's visible in larger telescopes."
-        },
-        {
-          name: "Lagoon Nebula (M8)",
-          type: "nebula",
-          description: "A stunning emission nebula in Sagittarius, the Lagoon Nebula is one of the most spectacular deep-sky objects visible from Earth. This star-forming region glows beautifully in telescopes.",
-          constellation: "Sagittarius",
-          magnitude: "6.0",
-          coordinates: "RA: 18h 03m 37s | Dec: -24° 23′ 12″",
-          visibility: "Excellent visibility in dark skies, visible to naked eye",
-          tips: "Use a nebula filter to enhance contrast. Low to medium magnification reveals the dark lane that gives it the 'lagoon' appearance."
-        },
-        {
-          name: "Eagle Nebula (M16)",
-          type: "nebula",
-          description: "Famous for the Hubble Space Telescope's 'Pillars of Creation' image, the Eagle Nebula is an active star-forming region in Serpens constellation with incredible detail visible in telescopes.",
-          constellation: "Serpens",
-          magnitude: "6.4",
-          coordinates: "RA: 18h 18m 48s | Dec: -13° 49′ 00″",
-          visibility: "Best viewed in dark skies with telescopes",
-          tips: "Use nebula filter and medium magnification. Look for the dark pillars and bright star cluster embedded within the nebula."
-        },
-        {
-          name: "Saturn and Neptune Conjunction",
-          type: "planet",
-          description: "In July 2025, Saturn and Neptune appear remarkably close together in the sky, offering a rare opportunity to observe both planets in the same telescopic field of view.",
-          constellation: "Aquarius",
-          magnitude: "0.1 (Saturn), 7.8 (Neptune)",
-          coordinates: "RA: Variable | Dec: Variable (Close conjunction)",
-          visibility: "Best viewing after 11 PM, look for Saturn first",
-          tips: "Start with Saturn to locate the pair, then use high magnification to spot Neptune nearby. Saturn's rings and Neptune's blue disk make a stunning contrast."
-        }
-      ];
-
-      let objectsAdded = 0;
-
-      // Helper function to map types
-      const mapObjectType = (type: string): string => {
-        const typeMap: { [key: string]: string } = {
-          'galaxy': 'galaxy',
-          'nebula': 'nebula',
-          'planet': 'planet',
-          'star_cluster': 'star_cluster',
-          'double_star': 'double_star',
-          'star': 'double_star',
-          'moon': 'moon',
-          'meteor_shower': 'other',
-          'comet': 'other'
-        };
-        return typeMap[type.toLowerCase()] || 'other';
-      };
-
-      // Helper function for eyepiece recommendations
-      const getRecommendedEyepiece = (type: string): string => {
-        const eyepieceMap: { [key: string]: string } = {
-          'planet': 'High power (6-10mm) for planetary detail',
-          'nebula': 'Medium power (12-20mm) with nebula filter',
-          'star_cluster': 'Low to medium power (20-40mm) for full cluster view',
-          'double_star': 'High power (6-12mm) to split close pairs',
-          'galaxy': 'Low to medium power (20-40mm) for extended objects'
-        };
-        return eyepieceMap[type] || 'Medium power recommended';
-      };
-
-      // Add objects to database
-      for (const obj of featuredObjects) {
-        const celestialObject = {
-          name: obj.name,
-          type: mapObjectType(obj.type),
-          description: obj.description,
-          coordinates: obj.coordinates,
-          bestViewingTime: obj.visibility,
-          imageUrl: `https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500`,
-          visibilityRating: obj.visibility,
-          information: obj.tips,
-          constellation: obj.constellation,
-          magnitude: obj.magnitude,
-          hemisphere: 'Northern',
-          recommendedEyepiece: getRecommendedEyepiece(obj.type),
-          month: 'July'
-        };
-
-        try {
-          const existingObject = await storage.getCelestialObjectByName(obj.name);
-          if (!existingObject) {
-            await storage.createCelestialObject(celestialObject);
-            console.log(`✓ Added ${obj.name} (${obj.type})`);
-            objectsAdded++;
-          } else {
-            console.log(`⚠ Skipped ${obj.name} (already exists)`);
-          }
-        } catch (error) {
-          console.log(`⚠ Error processing ${obj.name}: ${error}`);
-        }
-      }
-
-      res.json({
-        success: true,
-        message: `Successfully created July 2025 guide with ${objectsAdded} featured objects from High Point Scientific video`,
-        objectsAdded,
-        guideUpdated: true
-      });
-
-    } catch (error) {
-      console.error("Error creating July 2025 guide:", error);
-      res.status(500).json({
-        success: false,
-        message: `Failed to create July guide: ${error instanceof Error ? error.message : 'Unknown error'}`,
         objectsAdded: 0,
         guideUpdated: false
       });

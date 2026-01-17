@@ -42,6 +42,11 @@ const CelestialCard = ({
     return type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  // Check if the image is from 2MASS (for Messier catalog objects)
+  const is2MASSImage = (url: string | null | undefined): boolean => {
+    return url?.includes('ipac.caltech.edu/2mass') ?? false;
+  };
+
   const getTypeSpecificFallbackImage = (type: string) => {
     switch (type) {
       case 'galaxy':
@@ -113,6 +118,11 @@ const CelestialCard = ({
         <div className="absolute top-2 right-2 bg-space-blue-dark bg-opacity-75 backdrop-blur-sm px-2 py-1 rounded-full text-xs">
           {getTypeIcon(celestialObject.type)} {formatType(celestialObject.type)}
         </div>
+        {is2MASSImage(celestialObject.imageUrl) && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 px-2 py-1 text-[9px] text-gray-300">
+            Image: 2MASS/UMass/IPAC-Caltech/NASA/NSF
+          </div>
+        )}
       </div>
       <div className="p-4">
         <div className="flex justify-between items-start mb-3">
@@ -153,21 +163,20 @@ const CelestialCard = ({
           )}
         </div>
         <div className="flex items-center gap-3 mb-3 text-sm">
-          <span className="bg-cosmic-purple px-2 py-1 rounded text-xs">
-            <i className="fas fa-eye mr-1"></i> {celestialObject.visibilityRating}
-          </span>
-          <span className="text-star-dim">
-            <i className="fas fa-clock mr-1"></i> {celestialObject.bestViewingTime}
-          </span>
+          {celestialObject.constellation && (
+            <span className="bg-cosmic-purple px-2 py-1 rounded text-xs">
+              <i className="fas fa-star mr-1"></i> {celestialObject.constellation}
+            </span>
+          )}
+          {celestialObject.magnitude && (
+            <span className="text-star-dim">
+              <i className="fas fa-sun mr-1"></i> Mag {celestialObject.magnitude}
+            </span>
+          )}
         </div>
-        <p className="text-sm text-star-dim mb-4">
+        <p className="text-sm text-star-dim">
           {celestialObject.description}
         </p>
-        <div className="flex items-center justify-between text-xs">
-          <div>
-            <span className="text-mono"><i className="fas fa-map-marker-alt mr-1"></i> {celestialObject.coordinates}</span>
-          </div>
-        </div>
       </div>
     </div>
   );

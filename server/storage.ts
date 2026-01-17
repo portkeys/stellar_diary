@@ -1,14 +1,15 @@
-import { 
-  User, InsertUser, 
+import {
+  User, InsertUser,
   CelestialObject, InsertCelestialObject,
   Observation, InsertObservation,
   MonthlyGuide, InsertMonthlyGuide,
+  GuideObject, InsertGuideObject,
   TelescopeTip, InsertTelescopeTip,
-  users, celestialObjects, observations, 
-  monthlyGuides, telescopeTips, apodCache
+  users, celestialObjects, observations,
+  monthlyGuides, guideObjects, telescopeTips, apodCache
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 // Extend the storage interface with all required CRUD operations
 export interface IStorage {
@@ -17,14 +18,14 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Celestial objects operations
+  // Celestial objects operations (static catalog)
   getCelestialObject(id: number): Promise<CelestialObject | undefined>;
   getCelestialObjectByName(name: string): Promise<CelestialObject | undefined>;
   getAllCelestialObjects(): Promise<CelestialObject[]>;
   getCelestialObjectsByType(type: string): Promise<CelestialObject[]>;
-  getCelestialObjectsByMonth(month: string): Promise<CelestialObject[]>;
-  getCelestialObjectsByHemisphere(hemisphere: string): Promise<CelestialObject[]>;
+  getCelestialObjectsByIds(ids: number[]): Promise<CelestialObject[]>;
   createCelestialObject(object: InsertCelestialObject): Promise<CelestialObject>;
+  updateCelestialObject(id: number, object: Partial<CelestialObject>): Promise<CelestialObject | undefined>;
   deleteCelestialObject(id: number): Promise<boolean>;
   
   // Observation operations
@@ -36,10 +37,18 @@ export interface IStorage {
   
   // Monthly guides operations
   getMonthlyGuide(id: number): Promise<MonthlyGuide | undefined>;
+  getMonthlyGuideByMonthYear(month: string, year: number, hemisphere: string): Promise<MonthlyGuide | undefined>;
   getCurrentMonthlyGuide(hemisphere: string): Promise<MonthlyGuide | undefined>;
   getAllMonthlyGuides(): Promise<MonthlyGuide[]>;
   createMonthlyGuide(guide: InsertMonthlyGuide): Promise<MonthlyGuide>;
   updateMonthlyGuide(id: number, guide: Partial<MonthlyGuide>): Promise<MonthlyGuide | undefined>;
+  deleteMonthlyGuide(id: number): Promise<boolean>;
+
+  // Guide objects operations (links objects to guides)
+  getGuideObjects(guideId: number): Promise<GuideObject[]>;
+  getGuideObjectsWithDetails(guideId: number): Promise<(GuideObject & { object: CelestialObject })[]>;
+  createGuideObject(guideObject: InsertGuideObject): Promise<GuideObject>;
+  deleteGuideObjectsByGuide(guideId: number): Promise<boolean>;
   
   // Telescope tips operations
   getTelescopeTip(id: number): Promise<TelescopeTip | undefined>;
@@ -85,22 +94,9 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(celestialObjects).where(eq(celestialObjects.type, type));
   }
 
-  async getCelestialObjectsByMonth(month: string): Promise<CelestialObject[]> {
-    return await db.select().from(celestialObjects).where(eq(celestialObjects.month, month));
-  }
-
-  async getCelestialObjectsByHemisphere(hemisphere: string): Promise<CelestialObject[]> {
-    // For hemisphere we need to check both exact match and 'both'
-    if (hemisphere === 'both') {
-      return await db.select().from(celestialObjects);
-    } else {
-      return await db.select().from(celestialObjects).where(
-        or(
-          eq(celestialObjects.hemisphere, hemisphere), 
-          eq(celestialObjects.hemisphere, 'both')
-        )
-      );
-    }
+  async getCelestialObjectsByIds(ids: number[]): Promise<CelestialObject[]> {
+    if (ids.length === 0) return [];
+    return await db.select().from(celestialObjects).where(inArray(celestialObjects.id, ids));
   }
 
   async createCelestialObject(insertObject: InsertCelestialObject): Promise<CelestialObject> {
@@ -110,7 +106,16 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return object;
   }
-  
+
+  async updateCelestialObject(id: number, update: Partial<CelestialObject>): Promise<CelestialObject | undefined> {
+    const [updatedObject] = await db
+      .update(celestialObjects)
+      .set(update)
+      .where(eq(celestialObjects.id, id))
+      .returning();
+    return updatedObject || undefined;
+  }
+
   async deleteCelestialObject(id: number): Promise<boolean> {
     const [deleted] = await db
       .delete(celestialObjects)
@@ -158,21 +163,24 @@ export class DatabaseStorage implements IStorage {
     return guide || undefined;
   }
 
-  async getCurrentMonthlyGuide(hemisphere: string): Promise<MonthlyGuide | undefined> {
-    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-    const currentYear = new Date().getFullYear();
-    
+  async getMonthlyGuideByMonthYear(month: string, year: number, hemisphere: string): Promise<MonthlyGuide | undefined> {
     const [guide] = await db.select().from(monthlyGuides).where(
       and(
-        eq(monthlyGuides.month, currentMonth),
-        eq(monthlyGuides.year, currentYear),
+        eq(monthlyGuides.month, month),
+        eq(monthlyGuides.year, year),
         or(
           eq(monthlyGuides.hemisphere, hemisphere),
-          eq(monthlyGuides.hemisphere, 'both')
+          eq(monthlyGuides.hemisphere, 'Both')
         )
       )
     );
     return guide || undefined;
+  }
+
+  async getCurrentMonthlyGuide(hemisphere: string): Promise<MonthlyGuide | undefined> {
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+    const currentYear = new Date().getFullYear();
+    return this.getMonthlyGuideByMonthYear(currentMonth, currentYear, hemisphere);
   }
 
   async getAllMonthlyGuides(): Promise<MonthlyGuide[]> {
@@ -186,7 +194,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return guide;
   }
-  
+
   async updateMonthlyGuide(id: number, update: Partial<MonthlyGuide>): Promise<MonthlyGuide | undefined> {
     const [updatedGuide] = await db
       .update(monthlyGuides)
@@ -194,6 +202,49 @@ export class DatabaseStorage implements IStorage {
       .where(eq(monthlyGuides.id, id))
       .returning();
     return updatedGuide || undefined;
+  }
+
+  async deleteMonthlyGuide(id: number): Promise<boolean> {
+    // First delete all guide objects for this guide
+    await db.delete(guideObjects).where(eq(guideObjects.guideId, id));
+    // Then delete the guide itself
+    const [deleted] = await db
+      .delete(monthlyGuides)
+      .where(eq(monthlyGuides.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  // Guide objects operations
+  async getGuideObjects(guideId: number): Promise<GuideObject[]> {
+    return await db.select().from(guideObjects)
+      .where(eq(guideObjects.guideId, guideId))
+      .orderBy(guideObjects.sortOrder);
+  }
+
+  async getGuideObjectsWithDetails(guideId: number): Promise<(GuideObject & { object: CelestialObject })[]> {
+    const gos = await this.getGuideObjects(guideId);
+    const objectIds = gos.map(go => go.objectId);
+    const objects = await this.getCelestialObjectsByIds(objectIds);
+    const objectMap = new Map(objects.map(o => [o.id, o]));
+
+    return gos.map(go => ({
+      ...go,
+      object: objectMap.get(go.objectId)!
+    })).filter(go => go.object !== undefined);
+  }
+
+  async createGuideObject(insertGuideObject: InsertGuideObject): Promise<GuideObject> {
+    const [guideObject] = await db
+      .insert(guideObjects)
+      .values(insertGuideObject)
+      .returning();
+    return guideObject;
+  }
+
+  async deleteGuideObjectsByGuide(guideId: number): Promise<boolean> {
+    await db.delete(guideObjects).where(eq(guideObjects.guideId, guideId));
+    return true;
   }
 
   async getTelescopeTip(id: number): Promise<TelescopeTip | undefined> {

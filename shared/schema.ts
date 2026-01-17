@@ -18,22 +18,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const celestialObjectTypes = ["planet", "galaxy", "nebula", "star_cluster", "double_star", "moon", "other"] as const;
 export type CelestialObjectType = typeof celestialObjectTypes[number];
 
-// Celestial objects schema
+// Celestial objects schema (static catalog - object info that doesn't change)
 export const celestialObjects = pgTable("celestial_objects", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   type: text("type").notNull(),
   description: text("description").notNull(),
-  coordinates: text("coordinates").notNull(), // RA and Dec in format: "RAh RAm RAs | Dec° Dec′ Dec″"
-  bestViewingTime: text("best_viewing_time"), // Time range or specific month
-  imageUrl: text("image_url"), // URL to image
-  visibilityRating: text("visibility_rating"), // Poor, Good, Excellent
-  information: text("information"), // Additional object info
+  imageUrl: text("image_url"), // URL to image (2MASS for Messier, NASA for others)
   constellation: text("constellation"), // Constellation it belongs to
   magnitude: text("magnitude"), // Visual magnitude
-  hemisphere: text("hemisphere"), // Northern, Southern, Both
-  recommendedEyepiece: text("recommended_eyepiece"), // Suggestions for viewing
-  month: text("month"), // Month when it's best to observe
 });
 
 export const insertCelestialObjectSchema = createInsertSchema(celestialObjects).omit({
@@ -74,10 +67,26 @@ export const monthlyGuides = pgTable("monthly_guides", {
   description: text("description").notNull(),
   hemisphere: text("hemisphere").notNull(), // Northern, Southern, Both
   videoUrls: text("video_urls").array(), // Array of YouTube video URLs
-  isAdmin: boolean("is_admin").default(false), // Flag to identify if content is only for admin view
+  sources: text("sources").array(), // URLs of source articles (High Point Scientific, Sky & Telescope)
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertMonthlyGuideSchema = createInsertSchema(monthlyGuides).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Guide objects junction table - links celestial objects to specific monthly guides
+export const guideObjects = pgTable("guide_objects", {
+  id: serial("id").primaryKey(),
+  guideId: integer("guide_id").notNull(), // FK to monthly_guides
+  objectId: integer("object_id").notNull(), // FK to celestial_objects
+  viewingTips: text("viewing_tips"), // Time-specific tips ("Best after 9 PM", "Look near Orion")
+  highlights: text("highlights"), // Why it's special this month ("Opposition", "Close to Moon on 15th")
+  sortOrder: integer("sort_order").default(0), // For ordering objects in the guide
+});
+
+export const insertGuideObjectSchema = createInsertSchema(guideObjects).omit({
   id: true,
 });
 
@@ -106,6 +115,9 @@ export type InsertObservation = z.infer<typeof insertObservationSchema>;
 
 export type MonthlyGuide = typeof monthlyGuides.$inferSelect;
 export type InsertMonthlyGuide = z.infer<typeof insertMonthlyGuideSchema>;
+
+export type GuideObject = typeof guideObjects.$inferSelect;
+export type InsertGuideObject = z.infer<typeof insertGuideObjectSchema>;
 
 export type TelescopeTip = typeof telescopeTips.$inferSelect;
 export type InsertTelescopeTip = z.infer<typeof insertTelescopeTipSchema>;

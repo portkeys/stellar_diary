@@ -45,7 +45,6 @@ const formSchema = z.object({
   selectedObjectId: z.number().optional(),
   objectName: z.string().min(2, { message: "Object name must be at least 2 characters." }),
   objectType: z.string().optional(),
-  coordinates: z.string().optional(),
   description: z.string().optional(),
   isObserved: z.boolean().default(false),
   observationDate: z.string().optional(),
@@ -84,7 +83,6 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
       selectedObjectId: undefined,
       objectName: '',
       objectType: '',
-      coordinates: '',
       description: '',
       isObserved: false,
       observationDate: '',
@@ -104,7 +102,6 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
       form.setValue('selectedObjectId', objectId);
       form.setValue('objectName', selectedObject.name);
       form.setValue('objectType', selectedObject.type);
-      form.setValue('coordinates', selectedObject.coordinates || '');
       form.setValue('description', selectedObject.description || '');
       setIsCreatingNew(false);
     }
@@ -116,7 +113,6 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
     form.setValue('selectedObjectId', undefined);
     form.setValue('objectName', '');
     form.setValue('objectType', '');
-    form.setValue('coordinates', '');
     form.setValue('description', '');
     setIsCreatingNew(true);
     setSearchOpen(false);
@@ -144,12 +140,9 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
         const response = await apiRequest('POST', '/api/celestial-objects', {
           name: values.objectName,
           type: values.objectType,
-          coordinates: values.coordinates || 'Not specified',
           description: values.description || `Custom observation of ${values.objectName}`,
-          month: new Date().toLocaleString('default', { month: 'long' }),
-          hemisphere: 'Both',
         });
-        
+
         const celestialObject = await response.json();
         objectId = celestialObject.id;
       }
@@ -367,43 +360,23 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
             )}
 
             {isCreatingNew && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="coordinates"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-star-white">Coordinates (optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., RA: 13h 29m | Dec: +47° 11′"
-                          className="bg-space-blue-dark border-cosmic-purple"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-star-white">Description (optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Brief description of the celestial object"
-                          className="bg-space-blue-dark border-cosmic-purple resize-none h-20"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-star-white">Description (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Brief description of the celestial object"
+                        className="bg-space-blue-dark border-cosmic-purple resize-none h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             <FormField
