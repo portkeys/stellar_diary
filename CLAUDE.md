@@ -1,7 +1,7 @@
 # StellarDiary - Project Context
 
-> **Last Updated:** 2026-01-08
-> **Status:** Active development
+> **Last Updated:** 2026-02-04
+> **Status:** Active development - Deployed on Vercel at stellardiary.org
 
 ## Overview
 
@@ -111,11 +111,11 @@ NODE_ENV=        # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-02-04:** Completed Vercel migration with custom domain (stellardiary.org)
 - **2026-01-08:** Migrated from Render to Vercel (serverless)
 - **2026-01-08:** Replaced Python scripts with Node.js for NASA/Wikipedia image search
 - **2026-01-08:** Fixed APOD and sorting order
 - **2026-01-07:** Added NASA/Wikipedia image fallback for new objects
-- **2026-01-07:** Fixed new object image issue
 
 ## Development Notes
 

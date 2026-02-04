@@ -264,21 +264,6 @@ git push origin feature/new-feature
 
 ---
 
-## Legacy: Render Deployment
-
-> **Note:** The project has been migrated to Vercel for better performance.
-> Render deployment is still possible but not recommended due to cold start delays.
-
-If you need to deploy to Render:
-
-1. The Express server (`server/index.ts`) is still functional
-2. Use these settings:
-   - **Build Command**: `npm ci && npm run build`
-   - **Start Command**: `npm start`
-3. Add environment variables in Render dashboard
-
----
-
 ## Security Considerations
 
 - Never commit `.env` files to git
