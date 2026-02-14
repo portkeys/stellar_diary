@@ -203,59 +203,132 @@ async function searchWikipediaImage(objectName: string): Promise<{ success: bool
 }
 
 /**
+ * Common names for well-known Messier objects to improve image search accuracy.
+ */
+const MESSIER_COMMON_NAMES: Record<string, string> = {
+  'M1': 'Crab Nebula',
+  'M8': 'Lagoon Nebula',
+  'M11': 'Wild Duck Cluster',
+  'M13': 'Great Hercules Cluster',
+  'M16': 'Eagle Nebula',
+  'M17': 'Omega Nebula',
+  'M20': 'Trifid Nebula',
+  'M27': 'Dumbbell Nebula',
+  'M31': 'Andromeda Galaxy',
+  'M33': 'Triangulum Galaxy',
+  'M42': 'Orion Nebula',
+  'M43': 'De Mairan Nebula',
+  'M44': 'Beehive Cluster',
+  'M45': 'Pleiades',
+  'M51': 'Whirlpool Galaxy',
+  'M57': 'Ring Nebula',
+  'M63': 'Sunflower Galaxy',
+  'M64': 'Black Eye Galaxy',
+  'M78': 'Orion reflection nebula',
+  'M81': 'Bode Galaxy',
+  'M82': 'Cigar Galaxy',
+  'M97': 'Owl Nebula',
+  'M101': 'Pinwheel Galaxy',
+  'M104': 'Sombrero Galaxy',
+};
+
+/**
+ * Expand short catalog names to full names for better search results.
+ * E.g., "M42" -> ["Orion Nebula", "Messier 42"], "NGC 7000" -> ["NGC 7000 nebula"]
+ */
+function expandObjectName(name: string): string[] {
+  const queries: string[] = [];
+
+  // Messier objects: prefer common name, then "Messier N"
+  const messierMatch = name.match(/^M(\d+)$/i);
+  if (messierMatch) {
+    const commonName = MESSIER_COMMON_NAMES[name.toUpperCase()];
+    if (commonName) {
+      queries.push(commonName);
+    }
+    queries.push(`Messier ${messierMatch[1]}`);
+  }
+
+  // NGC objects: add "nebula" context
+  const ngcMatch = name.match(/^NGC\s*(\d+)$/i);
+  if (ngcMatch) {
+    queries.push(`NGC ${ngcMatch[1]} nebula galaxy`);
+  }
+
+  // IC objects
+  const icMatch = name.match(/^IC\s*(\d+)$/i);
+  if (icMatch) {
+    queries.push(`IC ${icMatch[1]} nebula galaxy`);
+  }
+
+  // Always include original name as fallback
+  if (queries.length === 0 || queries[0] !== name) {
+    queries.push(name);
+  }
+
+  return queries;
+}
+
+/**
  * Search for a celestial object image - tries NASA first, then Wikipedia
  */
 export async function searchCelestialObjectImage(objectName: string): Promise<NasaImageSearchResult> {
   try {
     console.log(`Searching for image (NASA/Wikipedia) for: ${objectName}`);
 
-    // Try NASA first
-    const searchResult = await searchNasaImagesData(objectName, 3);
+    const searchQueries = expandObjectName(objectName);
 
-    if (searchResult) {
-      const imageUrl = await extractBestImageUrl(searchResult);
+    // Try NASA with expanded queries
+    for (const query of searchQueries) {
+      const searchResult = await searchNasaImagesData(query, 3);
 
-      if (imageUrl) {
-        const items = searchResult.collection?.items || [];
-        const data = items[0]?.data?.[0];
+      if (searchResult) {
+        const imageUrl = await extractBestImageUrl(searchResult);
 
+        if (imageUrl) {
+          const items = searchResult.collection?.items || [];
+          const data = items[0]?.data?.[0];
+
+          return {
+            success: true,
+            object_name: objectName,
+            image_url: imageUrl,
+            source: 'nasa',
+            metadata: {
+              title: data?.title || '',
+              description: data?.description || '',
+              date_created: data?.date_created || '',
+              center: data?.center || '',
+              nasa_id: data?.nasa_id || ''
+            }
+          };
+        }
+      }
+    }
+
+    // Fallback to Wikipedia with expanded queries
+    console.log(`NASA search failed for ${objectName}, trying Wikipedia...`);
+    for (const query of searchQueries) {
+      const wikiResult = await searchWikipediaImage(query);
+
+      if (wikiResult.success && wikiResult.image_url) {
         return {
           success: true,
           object_name: objectName,
-          image_url: imageUrl,
-          source: 'nasa',
+          image_url: wikiResult.image_url,
+          source: 'wikipedia',
           metadata: {
-            title: data?.title || '',
-            description: data?.description || '',
-            date_created: data?.date_created || '',
-            center: data?.center || '',
-            nasa_id: data?.nasa_id || ''
+            title: wikiResult.title,
+            description: '',
+            date_created: '',
+            center: '',
+            nasa_id: ''
           }
         };
       }
     }
 
-    // Fallback to Wikipedia
-    console.log(`NASA search failed for ${objectName}, trying Wikipedia...`);
-    const wikiResult = await searchWikipediaImage(objectName);
-
-    if (wikiResult.success && wikiResult.image_url) {
-      return {
-        success: true,
-        object_name: objectName,
-        image_url: wikiResult.image_url,
-        source: 'wikipedia',
-        metadata: {
-          title: wikiResult.title,
-          description: '',
-          date_created: '',
-          center: '',
-          nasa_id: ''
-        }
-      };
-    }
-
-    // Both failed
+    // All queries failed
     return {
       success: false,
       object_name: objectName,

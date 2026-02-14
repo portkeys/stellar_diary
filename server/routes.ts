@@ -11,154 +11,8 @@ import {
   insertCelestialObjectSchema,
   celestialObjectTypes
 } from "@shared/schema";
-
-// Helper function to extract celestial objects from article text
-function extractCelestialObjectsFromText(text: string, month: string): Array<{
-  name: string;
-  type: string;
-  description: string;
-  constellation?: string;
-  magnitude?: string;
-}> {
-  const objects: Array<{
-    name: string;
-    type: string;
-    description: string;
-    constellation?: string;
-    magnitude?: string;
-  }> = [];
-  const foundNames = new Set<string>();
-
-  // Messier object data
-  const messierData: Record<number, { type: string; description: string; constellation: string; magnitude: string }> = {
-    1: { type: 'nebula', description: 'The Crab Nebula - a supernova remnant from 1054 AD.', constellation: 'Taurus', magnitude: '8.4' },
-    8: { type: 'nebula', description: 'The Lagoon Nebula - a giant interstellar cloud.', constellation: 'Sagittarius', magnitude: '6.0' },
-    13: { type: 'star_cluster', description: 'The Great Hercules Cluster - one of the brightest globular clusters.', constellation: 'Hercules', magnitude: '5.8' },
-    16: { type: 'nebula', description: 'The Eagle Nebula - contains the Pillars of Creation.', constellation: 'Serpens', magnitude: '6.4' },
-    17: { type: 'nebula', description: 'The Omega Nebula - a bright emission nebula.', constellation: 'Sagittarius', magnitude: '6.0' },
-    20: { type: 'nebula', description: 'The Trifid Nebula - a combination emission, reflection, and dark nebula.', constellation: 'Sagittarius', magnitude: '6.3' },
-    27: { type: 'nebula', description: 'The Dumbbell Nebula - a planetary nebula.', constellation: 'Vulpecula', magnitude: '7.5' },
-    31: { type: 'galaxy', description: 'The Andromeda Galaxy - nearest major galaxy to the Milky Way.', constellation: 'Andromeda', magnitude: '3.4' },
-    33: { type: 'galaxy', description: 'The Triangulum Galaxy - a spiral galaxy.', constellation: 'Triangulum', magnitude: '5.7' },
-    42: { type: 'nebula', description: 'The Orion Nebula - one of the brightest nebulae visible to the naked eye.', constellation: 'Orion', magnitude: '4.0' },
-    44: { type: 'star_cluster', description: 'The Beehive Cluster - an open cluster in Cancer.', constellation: 'Cancer', magnitude: '3.7' },
-    45: { type: 'star_cluster', description: 'The Pleiades - the Seven Sisters open cluster.', constellation: 'Taurus', magnitude: '1.6' },
-    51: { type: 'galaxy', description: 'The Whirlpool Galaxy - a grand-design spiral galaxy.', constellation: 'Canes Venatici', magnitude: '8.4' },
-    57: { type: 'nebula', description: 'The Ring Nebula - a planetary nebula.', constellation: 'Lyra', magnitude: '8.8' },
-    81: { type: 'galaxy', description: "Bode's Galaxy - a grand design spiral galaxy.", constellation: 'Ursa Major', magnitude: '6.9' },
-    82: { type: 'galaxy', description: 'The Cigar Galaxy - a starburst galaxy.', constellation: 'Ursa Major', magnitude: '8.4' },
-    101: { type: 'galaxy', description: 'The Pinwheel Galaxy - a face-on spiral galaxy.', constellation: 'Ursa Major', magnitude: '7.9' },
-    104: { type: 'galaxy', description: 'The Sombrero Galaxy - distinctive for its bright nucleus.', constellation: 'Virgo', magnitude: '8.0' },
-  };
-
-  // Messier objects (M1, M31, etc.)
-  const messierPattern = /\b(M|Messier\s*)(\d{1,3})\b/gi;
-  let match;
-  while ((match = messierPattern.exec(text)) !== null) {
-    const num = parseInt(match[2]);
-    const name = `M${num}`;
-    if (!foundNames.has(name)) {
-      foundNames.add(name);
-      const data = messierData[num];
-      if (data) {
-        objects.push({ name, ...data });
-      } else {
-        // Default for unknown Messier objects
-        const galaxies = [31, 32, 33, 49, 51, 58, 59, 60, 61, 63, 64, 65, 66, 74, 77, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 96, 98, 99, 100, 101, 104, 105, 106, 108, 109, 110];
-        const nebulae = [1, 8, 16, 17, 20, 27, 42, 43, 57, 76, 78, 97];
-        let type = 'star_cluster';
-        if (galaxies.includes(num)) type = 'galaxy';
-        if (nebulae.includes(num)) type = 'nebula';
-        objects.push({
-          name,
-          type,
-          description: `Messier ${num} - a deep sky object in the Messier catalog.`,
-          constellation: 'Various',
-          magnitude: 'Variable'
-        });
-      }
-    }
-  }
-
-  // NGC objects
-  const ngcPattern = /\bNGC\s*(\d{1,4})\b/gi;
-  while ((match = ngcPattern.exec(text)) !== null) {
-    const name = `NGC ${match[1]}`;
-    if (!foundNames.has(name)) {
-      foundNames.add(name);
-      objects.push({
-        name,
-        type: 'galaxy',
-        description: `NGC ${match[1]} - a deep sky object visible in ${month}.`,
-      });
-    }
-  }
-
-  // IC objects
-  const icPattern = /\bIC\s*(\d{1,4})\b/gi;
-  while ((match = icPattern.exec(text)) !== null) {
-    const name = `IC ${match[1]}`;
-    if (!foundNames.has(name)) {
-      foundNames.add(name);
-      objects.push({
-        name,
-        type: 'nebula',
-        description: `IC ${match[1]} - a deep sky object visible in ${month}.`,
-      });
-    }
-  }
-
-  // Planets
-  const planetData: Record<string, { description: string; magnitude: string }> = {
-    Mercury: { description: 'Mercury - the smallest planet, visible during twilight.', magnitude: '-1.9 to 5.7' },
-    Venus: { description: 'Venus - the brightest planet, the morning or evening star.', magnitude: '-4.9 to -3.8' },
-    Mars: { description: 'Mars - the Red Planet, showing surface features through telescopes.', magnitude: '-2.9 to 1.8' },
-    Jupiter: { description: 'Jupiter - the largest planet with cloud bands and Galilean moons.', magnitude: '-2.9 to -1.6' },
-    Saturn: { description: 'Saturn - the ringed planet, spectacular through a telescope.', magnitude: '-0.5 to 1.5' },
-    Uranus: { description: 'Uranus - an ice giant appearing as a blue-green disc.', magnitude: '5.3 to 6.0' },
-    Neptune: { description: 'Neptune - the most distant planet, requiring a telescope.', magnitude: '7.8 to 8.0' },
-  };
-
-  for (const [planet, data] of Object.entries(planetData)) {
-    const planetPattern = new RegExp(`\\b${planet}\\b`, 'gi');
-    if (planetPattern.test(text) && !foundNames.has(planet)) {
-      foundNames.add(planet);
-      objects.push({
-        name: planet,
-        type: 'planet',
-        description: data.description,
-        magnitude: data.magnitude,
-      });
-    }
-  }
-
-  // Named deep sky objects
-  const namedObjects: Record<string, { type: string; description: string; constellation: string }> = {
-    'Orion Nebula': { type: 'nebula', description: 'The Orion Nebula (M42) - a diffuse nebula south of Orion\'s Belt.', constellation: 'Orion' },
-    'Andromeda Galaxy': { type: 'galaxy', description: 'The Andromeda Galaxy (M31) - nearest major galaxy to the Milky Way.', constellation: 'Andromeda' },
-    'Pleiades': { type: 'star_cluster', description: 'The Pleiades (M45) - the Seven Sisters open cluster.', constellation: 'Taurus' },
-    'Ring Nebula': { type: 'nebula', description: 'The Ring Nebula (M57) - a planetary nebula in Lyra.', constellation: 'Lyra' },
-    'Whirlpool Galaxy': { type: 'galaxy', description: 'The Whirlpool Galaxy (M51) - a grand-design spiral galaxy.', constellation: 'Canes Venatici' },
-    'Lagoon Nebula': { type: 'nebula', description: 'The Lagoon Nebula (M8) - a giant interstellar cloud.', constellation: 'Sagittarius' },
-    'Eagle Nebula': { type: 'nebula', description: 'The Eagle Nebula (M16) - contains the Pillars of Creation.', constellation: 'Serpens' },
-    'Crab Nebula': { type: 'nebula', description: 'The Crab Nebula (M1) - a supernova remnant from 1054 AD.', constellation: 'Taurus' },
-    'Hercules Cluster': { type: 'star_cluster', description: 'The Great Hercules Cluster (M13) - a bright globular cluster.', constellation: 'Hercules' },
-    'Beehive Cluster': { type: 'star_cluster', description: 'The Beehive Cluster (M44) - an open cluster in Cancer.', constellation: 'Cancer' },
-    'Double Cluster': { type: 'star_cluster', description: 'The Double Cluster - NGC 869 and NGC 884 in Perseus.', constellation: 'Perseus' },
-    'Dumbbell Nebula': { type: 'nebula', description: 'The Dumbbell Nebula (M27) - a bright planetary nebula.', constellation: 'Vulpecula' },
-    'Sombrero Galaxy': { type: 'galaxy', description: 'The Sombrero Galaxy (M104) - galaxy with bright nucleus.', constellation: 'Virgo' },
-  };
-
-  for (const [name, info] of Object.entries(namedObjects)) {
-    const pattern = new RegExp(name, 'gi');
-    if (pattern.test(text) && !foundNames.has(name)) {
-      foundNames.add(name);
-      objects.push({ name, ...info });
-    }
-  }
-
-  return objects;
-}
+import { extractCelestialObjectsFromText } from "./services/objectExtractor";
+import { autoPopulatePreview } from "./services/guideAutoPopulate";
 
 export async function registerRoutes(app: Express, options?: { skipSeeding?: boolean }): Promise<Server | null> {
   // Skip seeding in serverless environments (run npm run db:seed separately)
@@ -403,6 +257,25 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
     } catch (error) {
       res.status(500).json({
         message: `Failed to get monthly guide: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Get guide objects with details
+  app.get("/api/monthly-guide/:id/objects", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const guideObjects = await storage.getGuideObjectsWithDetails(id);
+      // Return flat CelestialObject array (frontend expects CelestialObject[])
+      const objects = guideObjects.map(go => go.object);
+      res.json(objects);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to get guide objects: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
@@ -726,6 +599,135 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
     }
   });
 
+  // Auto-populate preview - returns suggested objects from all 3 sources
+  app.post("/api/admin/auto-populate-preview", async (req: Request, res: Response) => {
+    try {
+      const { month, year } = req.body;
+
+      if (!month || !year) {
+        return res.status(400).json({ message: "Month and year are required" });
+      }
+
+      const preview = await autoPopulatePreview(month, parseInt(year));
+      res.json(preview);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to generate auto-populate preview: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Auto-populate confirm - commits selected objects/videos to DB
+  app.post("/api/admin/auto-populate-confirm", async (req: Request, res: Response) => {
+    try {
+      const { month, year, hemisphere, headline, description, videoUrls, sources, objects } = req.body;
+
+      if (!month || !year || !headline || !description || !objects) {
+        return res.status(400).json({
+          success: false,
+          message: "Month, year, headline, description, and objects are required",
+        });
+      }
+
+      const yearNum = parseInt(year);
+
+      // Create or update monthly guide
+      const guides = await storage.getAllMonthlyGuides();
+      const existingGuide = guides.find(g =>
+        g.month === month && g.year === yearNum && g.hemisphere === (hemisphere || 'Northern')
+      );
+
+      let guide;
+      if (existingGuide) {
+        guide = await storage.updateMonthlyGuide(existingGuide.id, {
+          headline,
+          description,
+          videoUrls: videoUrls || [],
+          sources: sources || [],
+        });
+        // Clear existing guide objects to re-link
+        await storage.deleteGuideObjectsByGuide(existingGuide.id);
+      } else {
+        guide = await storage.createMonthlyGuide({
+          month,
+          year: yearNum,
+          hemisphere: hemisphere || 'Northern',
+          headline,
+          description,
+          videoUrls: videoUrls || [],
+          sources: sources || [],
+        });
+      }
+
+      if (!guide) {
+        return res.status(500).json({ success: false, message: "Failed to create/update guide" });
+      }
+
+      // Process each selected object
+      let objectsAdded = 0;
+      let objectsLinked = 0;
+
+      for (let i = 0; i < objects.length; i++) {
+        const obj = objects[i];
+        try {
+          let dbObject = await storage.getCelestialObjectByName(obj.name);
+
+          if (!dbObject) {
+            // Create new celestial object with image search
+            let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
+
+            try {
+              const imageResult = await searchCelestialObjectImage(obj.name) as any;
+              if (imageResult.success && imageResult.image_url) {
+                imageUrl = imageResult.image_url;
+              }
+            } catch {
+              // Use fallback image
+            }
+
+            dbObject = await storage.createCelestialObject({
+              name: obj.name,
+              type: obj.type,
+              description: obj.description,
+              imageUrl,
+              constellation: obj.constellation || null,
+              magnitude: obj.magnitude || null,
+            });
+            objectsAdded++;
+
+            // Small delay between image API calls
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+
+          // Link object to guide
+          await storage.createGuideObject({
+            guideId: guide.id,
+            objectId: dbObject.id,
+            viewingTips: obj.viewingTips || null,
+            highlights: obj.highlights || null,
+            sortOrder: i,
+          });
+          objectsLinked++;
+        } catch (err) {
+          console.log(`Skipped ${obj.name}: ${err}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Guide created for ${month} ${year} with ${objectsLinked} objects (${objectsAdded} new)`,
+        guideId: guide.id,
+        objectsAdded,
+        objectsLinked,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Failed to confirm auto-populate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
+  });
+
   // NASA Image Update Routes
   app.post("/api/admin/update-object-image/:id", async (req: Request, res: Response) => {
     try {
@@ -765,6 +767,52 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
       res.status(500).json({
         success: false,
         message: `Failed to update images: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Refresh images for objects that still have placeholder/unsplash images
+  app.post("/api/admin/refresh-placeholder-images", async (req: Request, res: Response) => {
+    try {
+      const allObjects = await storage.getAllCelestialObjects();
+      const placeholderObjects = allObjects.filter(obj =>
+        !obj.imageUrl || obj.imageUrl.includes('unsplash.com') || obj.imageUrl.includes('placeholder')
+      );
+
+      if (placeholderObjects.length === 0) {
+        return res.json({ success: true, message: "No objects with placeholder images found", updated: 0, total: allObjects.length });
+      }
+
+      let updated = 0;
+      let failed = 0;
+      for (const obj of placeholderObjects) {
+        try {
+          const imageResult = await searchCelestialObjectImage(obj.name);
+          if (imageResult.success && imageResult.image_url) {
+            await storage.updateCelestialObject(obj.id, { imageUrl: imageResult.image_url });
+            updated++;
+            console.log(`Updated image for ${obj.name}: ${imageResult.source}`);
+          } else {
+            failed++;
+          }
+          // Rate limit
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch {
+          failed++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Updated ${updated} of ${placeholderObjects.length} placeholder images (${failed} failed)`,
+        updated,
+        failed,
+        total: placeholderObjects.length,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Failed to refresh images: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   });

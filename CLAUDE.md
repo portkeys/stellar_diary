@@ -94,9 +94,10 @@ vercel dev           # Test Vercel functions locally
 ## Environment Variables
 
 ```
-DATABASE_URL=    # Neon PostgreSQL connection string
-NASA_API_KEY=    # NASA API key (optional, has DEMO_KEY fallback)
-NODE_ENV=        # production | development
+DATABASE_URL=      # Neon PostgreSQL connection string
+NASA_API_KEY=      # NASA API key (optional, has DEMO_KEY fallback)
+YOUTUBE_API_KEY=   # YouTube Data API v3 key (optional, for auto-populate monthly guides)
+NODE_ENV=          # production | development
 ```
 
 ## Patterns & Conventions

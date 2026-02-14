@@ -591,10 +591,10 @@ const MyObservations = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-space-blue p-5 rounded-xl shadow-lg">
-            <div className="text-nebula-pink text-xl mb-3"><i className="fas fa-book"></i></div>
-            <h3 className="text-space font-semibold text-lg mb-2">Keep an Observation Journal</h3>
+            <div className="text-nebula-pink text-xl mb-3"><i className="fas fa-binoculars"></i></div>
+            <h3 className="text-space font-semibold text-lg mb-2">AD8 Eyepiece Setup</h3>
             <p className="text-star-dim text-sm">
-              Record details like date, time, seeing conditions, and what eyepieces you used. This helps track your progress and compare observations over time.
+              With the 30mm eyepiece (40x), use the extension tube for proper focus — great for wide-field views of clusters and large nebulae. With the 9mm eyepiece (133x), remove the extension tube for sharp focus on planets, double stars, and compact objects.
             </p>
           </div>
           

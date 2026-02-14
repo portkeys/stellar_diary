@@ -5,10 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CelestialCard from "@/components/astronomy/CelestialCard";
-import { Input } from "@/components/ui/input";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Extract YouTube video ID from URL
 const getYouTubeVideoId = (url: string) => {
@@ -58,33 +54,22 @@ const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) 
 const MonthlyGuidePage = () => {
   const [hemisphere, setHemisphere] = useState<string>("Northern");
   const [objectType, setObjectType] = useState<string | null>(null);
-  const [newVideoUrl, setNewVideoUrl] = useState<string>("");
-  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Toggle for admin mode
-  const [contentUrl, setContentUrl] = useState<string>("");
-  const [isImporting, setIsImporting] = useState<boolean>(false);
-  const [importResult, setImportResult] = useState<{success: boolean, message: string, objectsAdded: number} | null>(null);
-  const [showPasscodeDialog, setShowPasscodeDialog] = useState<boolean>(false);
-  const [passcode, setPasscode] = useState<string>("");
-  const [passcodeError, setPasscodeError] = useState<string>("");
-  const { toast } = useToast();
 
   // Get current month name
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const currentYear = new Date().getFullYear();
 
   // Fetch monthly guide info
-  const { data: guide, isLoading: isGuideLoading, isError: isGuideError } = useQuery<MonthlyGuide>({
+  const { data: guide, isLoading: isGuideLoading } = useQuery<MonthlyGuide>({
     queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`],
-    // Continue even if the monthly guide is not found
     retry: false,
-    // Don't treat 404 as an error for admin purposes
     throwOnError: false
   });
 
   // Fetch celestial objects linked to this guide
   const { data: celestialObjects, isLoading: isObjectsLoading, isError: isObjectsError } = useQuery<CelestialObject[]>({
     queryKey: [`/api/monthly-guide/${guide?.id}/objects`],
-    enabled: !!guide?.id, // Only fetch when we have a guide
+    enabled: !!guide?.id,
   });
 
   // Filter objects by type if filter is set
@@ -98,97 +83,7 @@ const MonthlyGuidePage = () => {
   });
 
   const isLoading = isGuideLoading || isObjectsLoading;
-  const isError = isObjectsError; // Use the objects error state for the main error display
-
-  // Handle admin mode toggle with passcode verification
-  const handleAdminModeToggle = () => {
-    if (isAdmin) {
-      // Exit admin mode
-      setIsAdmin(false);
-    } else {
-      // Enter admin mode - show passcode dialog
-      setShowPasscodeDialog(true);
-      setPasscode("");
-      setPasscodeError("");
-    }
-  };
-
-  // Handle passcode verification
-  const handlePasscodeSubmit = () => {
-    const correctPasscode = "tutulemma";
-
-    if (passcode === correctPasscode) {
-      setIsAdmin(true);
-      setShowPasscodeDialog(false);
-      setPasscode("");
-      setPasscodeError("");
-      console.log("Admin access granted. Guide data:", guide);
-      toast({
-        title: "Admin Access Granted",
-        description: "You now have access to admin functionality",
-      });
-    } else {
-      setPasscodeError("Sorry, you don't have access to admin role. Incorrect passcode.");
-      setPasscode("");
-    }
-  };
-
-  // Handle content import from URLs
-  const handleContentImport = async () => {
-    if (!contentUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    setImportResult(null);
-
-    try {
-      const response = await fetch("/api/admin/update-monthly-guide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: contentUrl.trim() })
-      });
-
-      const result = await response.json();
-      setImportResult(result);
-
-      if (result.success) {
-        setContentUrl("");
-        // Refresh the data
-        queryClient.invalidateQueries({ queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`] });
-        // Objects will be refreshed when guide is updated since query depends on guide.id
-
-        toast({
-          title: "Content Imported!",
-          description: result.message,
-        });
-      } else {
-        toast({
-          title: "Import Failed",
-          description: result.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      setImportResult({
-        success: false,
-        message: "Failed to import content. Please try again.",
-        objectsAdded: 0
-      });
-      toast({
-        title: "Error",
-        description: "Failed to import content. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
+  const isError = isObjectsError;
 
   const handleHemisphereChange = (value: string) => {
     setHemisphere(value);
@@ -205,106 +100,10 @@ const MonthlyGuidePage = () => {
         <h1 className="text-4xl text-space font-bold text-stellar-gold mb-3">
           Monthly Sky Guide: {currentMonth} {currentYear}
         </h1>
+        {guide?.description && (
+          <p className="text-star-dim text-lg">{guide.description}</p>
+        )}
       </div>
-
-      {/* June 2025 Astronomy Highlights Summary */}
-      {currentMonth === "June" && currentYear === 2025 && (
-        <div className="mb-10">
-          <h2 className="text-2xl text-space font-bold text-stellar-gold mb-6">
-            <i className="fas fa-star text-stellar-gold mr-2"></i>
-            June 2025: Astronomy Highlights
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Mars, Regulus, and the Moon */}
-            <div className="bg-space-blue rounded-xl shadow-xl p-6">
-              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
-                Mars, Regulus, and the Moon
-              </h3>
-              <p className="text-star-dim mb-4">
-                Although Mars is slowly losing ground to the approaching Sun, it's still reasonably well placed for telescopic observation in the evening sky. The planet's disc has shrunk to 5 arcseconds in diameter and dimmed to magnitude 1.3, almost matching Regulus at magnitude 1.4.
-              </p>
-              <div className="bg-space-blue-dark p-3 rounded-lg">
-                <p className="text-sm text-stellar-gold font-medium">Key Dates:</p>
-                <ul className="text-sm text-star-dim mt-2 space-y-1">
-                  <li>• June 1st: Crescent Moon beside Regulus</li>
-                  <li>• June 5th-27th: Mars and Regulus in same binocular field</li>
-                  <li>• June 16th-17th: Closest approach (0.8 degrees apart)</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Planetary Highlights */}
-            <div className="bg-space-blue rounded-xl shadow-xl p-6">
-              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
-                Our Nearest Neighbors
-              </h3>
-              <p className="text-star-dim mb-4">
-                Jupiter may be visible very low over the west-northwest horizon during the first few days of June, about 15 minutes after sunset. Mercury appears two degrees to Jupiter's right on the 7th, then climbs further from the Sun to become an easy target during the last ten days of the month.
-              </p>
-              <div className="bg-space-blue-dark p-3 rounded-lg">
-                <p className="text-sm text-stellar-gold font-medium">Visibility:</p>
-                <ul className="text-sm text-star-dim mt-2 space-y-1">
-                  <li>• Jupiter: First few days, very low horizon</li>
-                  <li>• Mercury: Easy target last 10 days of month</li>
-                  <li>• Uranus: Lost in Sun's glare</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Featured Deep Sky Objects */}
-            <div className="bg-space-blue rounded-xl shadow-xl p-6">
-              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
-                Deep Sky Highlights
-              </h3>
-              <p className="text-star-dim mb-4">
-                Summer favorites begin to take center stage. The Great Hercules Cluster (M13) is detectable in binoculars and stunning through telescopes. Galaxy season winds down with M102, the Spindle Galaxy, still visible in darker skies.
-              </p>
-              <div className="bg-space-blue-dark p-3 rounded-lg">
-                <p className="text-sm text-stellar-gold font-medium">Must-See Objects:</p>
-                <ul className="text-sm text-star-dim mt-2 space-y-1">
-                  <li>• M13: Great Hercules Cluster - summer favorite</li>
-                  <li>• M102: Spindle Galaxy with dark dust lane</li>
-                  <li>• IC 4665: Summer Beehive cluster</li>
-                  <li>• Graffias: Beautiful triple star system</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Observing Tips */}
-            <div className="bg-space-blue rounded-xl shadow-xl p-6">
-              <h3 className="text-xl font-semibold text-nebula-pink mb-3">
-                Observing Tips for June
-              </h3>
-              <p className="text-star-dim mb-4">
-                This month offers excellent opportunities for both planetary and deep-sky observation. The color contrast between Mars and Regulus provides a great photo opportunity and visual comparison.
-              </p>
-              <div className="bg-space-blue-dark p-3 rounded-lg">
-                <p className="text-sm text-stellar-gold font-medium">Best Practices:</p>
-                <ul className="text-sm text-star-dim mt-2 space-y-1">
-                  <li>• Use 10x50 binoculars for Mars-Regulus pairing</li>
-                  <li>• 100x magnification resolves M13 individual stars</li>
-                  <li>• Dark skies needed for M102's dust lane</li>
-                  <li>• Low power telescope ideal for IC 4665</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 bg-space-blue-dark rounded-lg p-4">
-            <p className="text-star-dim text-sm">
-              <strong className="text-stellar-gold">Source:</strong> Content summarized from High Point Scientific's "What's in the Sky This Month? June 2025"
-              <br />
-              <a href="https://www.highpointscientific.com/astronomy-hub/post/night-sky-news/whats-in-the-sky-this-month-june-2025"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="text-nebula-pink hover:underline text-xs">
-                View Original Article →
-              </a>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Filter Controls */}
       <div className="mb-8 flex flex-wrap gap-4 items-center justify-between bg-space-blue-dark p-4 rounded-lg">
@@ -371,205 +170,6 @@ const MonthlyGuidePage = () => {
           </div>
         </div>
       )}
-
-      {/* Admin Controls - Only visible when admin mode is toggled */}
-      <div className="mb-10">
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="outline"
-            className={isAdmin ? "bg-nebula-pink text-white" : "border-nebula-pink text-nebula-pink"}
-            onClick={handleAdminModeToggle}
-          >
-            {isAdmin ? "Exit Admin Mode" : "Admin Mode"}
-          </Button>
-        </div>
-
-        {isAdmin && (
-          <div className="bg-space-blue rounded-lg p-6 mb-8">
-            <h3 className="text-xl text-nebula-pink font-semibold mb-6">Update Monthly Guide</h3>
-
-            {/* Status Info */}
-            {!guide && !isGuideLoading && (
-              <div className="mb-4 p-3 bg-yellow-900/30 text-yellow-300 border border-yellow-700 rounded">
-                <div className="font-medium">No Guide Found</div>
-                <div className="text-sm">No monthly guide exists for {currentMonth} {currentYear}. You can still import content to create one.</div>
-              </div>
-            )}
-
-            {isGuideLoading && (
-              <div className="mb-4 p-3 bg-blue-900/30 text-blue-300 border border-blue-700 rounded">
-                Loading monthly guide...
-              </div>
-            )}
-
-            {/* Content Import Section */}
-            <div className="mb-8 p-4 bg-space-blue-dark rounded-lg">
-              <h4 className="text-lg text-stellar-gold font-medium mb-4">Import Content & Objects</h4>
-              <p className="text-star-dim text-sm mb-4">Parse astronomy articles to extract celestial objects and update guide content</p>
-
-              <div className="flex gap-2 mb-4">
-                <Input
-                  type="text"
-                  placeholder="Enter article URL (e.g., High Point Scientific monthly guide)"
-                  value={contentUrl}
-                  onChange={(e) => setContentUrl(e.target.value)}
-                  className="flex-1 bg-space-blue border-cosmic-purple"
-                />
-                <Button
-                  onClick={handleContentImport}
-                  disabled={isImporting || !contentUrl}
-                  className="bg-nebula-pink hover:bg-nebula-pink/80"
-                >
-                  {isImporting ? "Importing..." : "Import Content"}
-                </Button>
-              </div>
-
-              {importResult && (
-                <div className={`p-3 rounded text-sm ${
-                  importResult.success 
-                    ? 'bg-green-900/30 text-green-300 border border-green-700' 
-                    : 'bg-red-900/30 text-red-300 border border-red-700'
-                }`}>
-                  <div className="font-medium">{importResult.success ? 'Success!' : 'Error'}</div>
-                  <div>{importResult.message}</div>
-                  {importResult.objectsAdded > 0 && (
-                    <div className="mt-1">Added {importResult.objectsAdded} new celestial objects</div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Video Management Section */}
-            <div className="p-4 bg-space-blue-dark rounded-lg">
-              <h4 className="text-lg text-stellar-gold font-medium mb-4">Manage Featured Videos</h4>
-
-              {!guide && (
-                <div className="mb-4 p-3 bg-orange-900/30 text-orange-300 border border-orange-700 rounded text-sm">
-                  Note: Adding videos will require a monthly guide. Import content first or create one automatically.
-                </div>
-              )}
-
-            {/* Add video URL form */}
-            <div className="flex gap-2 mb-6">
-              <Input
-                type="text"
-                placeholder="Enter YouTube URL"
-                value={newVideoUrl}
-                onChange={(e) => setNewVideoUrl(e.target.value)}
-                className="flex-1 bg-space-blue-dark border-cosmic-purple"
-              />
-              <Button
-                onClick={async () => {
-                  if (!newVideoUrl) return;
-
-                  // Validate URL
-                  if (!getYouTubeVideoId(newVideoUrl)) {
-                    toast({
-                      title: "Invalid YouTube URL",
-                      description: "Please enter a valid YouTube video URL",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-
-                  if (!guide) {
-                    toast({
-                      title: "No Monthly Guide",
-                      description: "Please import content or create a monthly guide first",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-
-                  try {
-                    // Create a new array with existing videos plus the new one
-                    const updatedVideoUrls = [...(guide.videoUrls || []), newVideoUrl];
-
-                    // Update the guide with the new video list
-                    await apiRequest(
-                      "PATCH",
-                      `/api/monthly-guide/${guide.id}`,
-                      { videoUrls: updatedVideoUrls }
-                    );
-
-                    // Clear the input field
-                    setNewVideoUrl("");
-
-                    // Invalidate the query to refresh the data
-                    queryClient.invalidateQueries({
-                      queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`]
-                    });
-
-                    toast({
-                      title: "Video Added",
-                      description: "The video has been added to the monthly guide",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to add video. Please try again.",
-                      variant: "destructive"
-                    });
-                  }
-                }}
-                className="bg-cosmic-purple hover:bg-cosmic-purple-light"
-              >
-                Add Video
-              </Button>
-            </div>
-
-            {/* Current videos list with remove buttons */}
-            {guide && guide.videoUrls && guide.videoUrls.length > 0 ? (
-              <div className="space-y-3">
-                <h4 className="text-md font-medium text-star-bright mb-2">Current Videos:</h4>
-                {guide.videoUrls.map((videoUrl, index) => (
-                  <div key={index} className="flex justify-between items-center bg-space-blue-dark p-3 rounded">
-                    <div className="truncate flex-1 mr-2">{videoUrl}</div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          // Filter out the video being removed
-                          const updatedVideoUrls = guide.videoUrls?.filter((_, idx) => idx !== index);
-
-                          // Update the guide with the filtered video list
-                          await apiRequest(
-                            "PATCH",
-                            `/api/monthly-guide/${guide.id}`,
-                            { videoUrls: updatedVideoUrls }
-                          );
-
-                          // Invalidate the query to refresh the data
-                          queryClient.invalidateQueries({
-                            queryKey: [`/api/monthly-guide?month=${currentMonth}&hemisphere=${hemisphere}`]
-                          });
-
-                          toast({
-                            title: "Video Removed",
-                            description: "The video has been removed from the monthly guide",
-                          });
-                        } catch (error) {
-                          toast({
-                            title: "Error",
-                            description: "Failed to remove video. Please try again.",
-                            variant: "destructive"
-                          });
-                        }
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-star-dim italic">No videos added yet. Add a YouTube URL to get started.</p>
-            )}
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Celestial Objects Grid */}
       <div className="mb-10">
@@ -643,62 +243,6 @@ const MonthlyGuidePage = () => {
           </div>
         )}
       </div>
-
-      {/* Admin Passcode Verification Dialog */}
-      <Dialog open={showPasscodeDialog} onOpenChange={setShowPasscodeDialog}>
-        <DialogContent className="bg-space-blue border-cosmic-purple">
-          <DialogHeader>
-            <DialogTitle className="text-stellar-gold">
-              Admin Access Required
-            </DialogTitle>
-            <DialogDescription className="text-star-dim">
-              Enter the admin passcode to access administrative features.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="my-4">
-            <Input
-              type="password"
-              placeholder="Enter passcode"
-              value={passcode}
-              onChange={(e) => {
-                setPasscode(e.target.value);
-                setPasscodeError(""); // Clear error when typing
-              }}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handlePasscodeSubmit();
-                }
-              }}
-              className="bg-space-blue-dark border-cosmic-purple text-star-white"
-            />
-            {passcodeError && (
-              <p className="mt-2 text-sm text-red-400">{passcodeError}</p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="border-cosmic-purple text-star-dim"
-              onClick={() => {
-                setShowPasscodeDialog(false);
-                setPasscode("");
-                setPasscodeError("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-nebula-pink hover:bg-nebula-pink/80"
-              onClick={handlePasscodeSubmit}
-              disabled={!passcode.trim()}
-            >
-              Verify
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
