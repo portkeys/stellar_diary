@@ -46,9 +46,9 @@ const LearningResources = () => {
                 </div>
               </div>
               
-              <Link href="/learn">
+              <Link href="/my-progress">
                 <Button className="bg-nebula-pink hover:bg-opacity-90 px-4 py-2 rounded-md text-sm font-medium">
-                  Start Learning <i className="fas fa-arrow-right ml-1"></i>
+                  Track Progress <i className="fas fa-arrow-right ml-1"></i>
                 </Button>
               </Link>
             </div>

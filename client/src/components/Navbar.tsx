@@ -30,8 +30,8 @@ const Navbar = () => {
               <Link href="/my-observations" className={`px-3 py-5 text-sm font-medium border-b-2 ${isActive('/my-observations') ? 'border-nebula-pink' : 'border-transparent hover:border-stellar-gold'}`}>
                 My Observations
               </Link>
-              <Link href="/learn" className={`px-3 py-5 text-sm font-medium border-b-2 ${isActive('/learn') ? 'border-nebula-pink' : 'border-transparent hover:border-stellar-gold'}`}>
-                Learn
+              <Link href="/my-progress" className={`px-3 py-5 text-sm font-medium border-b-2 ${isActive('/my-progress') ? 'border-nebula-pink' : 'border-transparent hover:border-stellar-gold'}`}>
+                My Progress
               </Link>
             </div>
           </div>
@@ -61,8 +61,8 @@ const Navbar = () => {
           <Link href="/my-observations" className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/my-observations') ? 'bg-cosmic-purple-light' : 'hover:bg-cosmic-purple-light'}`}>
             My Observations
           </Link>
-          <Link href="/learn" className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/learn') ? 'bg-cosmic-purple-light' : 'hover:bg-cosmic-purple-light'}`}>
-            Learn
+          <Link href="/my-progress" className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/my-progress') ? 'bg-cosmic-purple-light' : 'hover:bg-cosmic-purple-light'}`}>
+            My Progress
           </Link>
         </div>
       </div>

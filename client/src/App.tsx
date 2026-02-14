@@ -9,7 +9,7 @@ import StarryBackground from "@/components/StarryBackground";
 import Home from "@/pages/Home";
 import MonthlyGuide from "@/pages/MonthlyGuide";
 import MyObservations from "@/pages/MyObservations";
-import Learn from "@/pages/Learn";
+import MyProgress from "@/pages/MyProgress";
 import CollimationGuide from "@/pages/CollimationGuide";
 import Admin from "@/pages/Admin";
 
@@ -19,7 +19,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/monthly-guide" component={MonthlyGuide} />
       <Route path="/my-observations" component={MyObservations} />
-      <Route path="/learn" component={Learn} />
+      <Route path="/my-progress" component={MyProgress} />
       <Route path="/collimation-guide" component={CollimationGuide} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />

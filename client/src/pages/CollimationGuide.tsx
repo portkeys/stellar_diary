@@ -9,9 +9,9 @@ const CollimationGuide = () => {
         <div className="flex flex-col md:flex-row gap-10 items-center">
           <div className="md:w-1/2">
             <div className="flex items-center mb-2">
-              <Link href="/learn">
+              <Link href="/my-observations">
                 <a className="text-star-dim hover:text-stellar-gold mr-2">
-                  <i className="fas fa-arrow-left"></i> Back to Learn
+                  <i className="fas fa-arrow-left"></i> Back to My Observations
                 </a>
               </Link>
             </div>
@@ -247,9 +247,9 @@ const CollimationGuide = () => {
       </div>
       
       <div className="flex justify-center mb-12">
-        <Link href="/learn">
+        <Link href="/my-observations">
           <Button className="bg-nebula-pink hover:bg-opacity-90 px-6 py-4 text-lg rounded-lg">
-            <i className="fas fa-arrow-left mr-2"></i> Back to Learning Resources
+            <i className="fas fa-arrow-left mr-2"></i> Back to My Observations
           </Button>
         </Link>
       </div>

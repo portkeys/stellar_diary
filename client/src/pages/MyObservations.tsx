@@ -614,6 +614,23 @@ const MyObservations = () => {
             </p>
           </div>
         </div>
+
+        <div className="mt-6">
+          <Link href="/collimation-guide">
+            <div className="bg-space-blue p-5 rounded-xl shadow-lg cursor-pointer hover:ring-2 hover:ring-stellar-gold transition-all">
+              <div className="flex items-center gap-3">
+                <div className="text-nebula-pink text-xl"><i className="fas fa-bullseye"></i></div>
+                <div>
+                  <h3 className="text-space font-semibold text-lg">Collimation Guide</h3>
+                  <p className="text-star-dim text-sm">
+                    Step-by-step guide to aligning your AD8 Dobsonian mirrors for the sharpest views.
+                  </p>
+                </div>
+                <i className="fas fa-chevron-right text-star-dim ml-auto"></i>
+              </div>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   );
