@@ -153,6 +153,10 @@ async function extractBestImageUrl(apiResponse: NasaApiResponse): Promise<string
       }
     }
 
+    // Ensure HTTPS to avoid mixed content warnings
+    if (bestUrl) {
+      bestUrl = bestUrl.replace(/^http:\/\//, 'https://');
+    }
     return bestUrl;
   } catch (error) {
     console.error('Error extracting image URL:', error);
