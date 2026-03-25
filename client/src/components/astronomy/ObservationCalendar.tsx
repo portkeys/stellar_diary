@@ -1,55 +1,56 @@
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo } from "react";
 
 interface ObservationCalendarProps {
   /** Map of "YYYY-MM-DD" → observation count */
   dateCountMap: Map<string, number>;
 }
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfWeek(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
-
-function formatDateKey(year: number, month: number, day: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+function formatDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const { weeks, monthPositions, totalYear } = useMemo(() => {
+    const today = new Date();
+    // Go back ~52 weeks (364 days)
+    const start = new Date(today);
+    start.setDate(start.getDate() - 363);
+    // Align to Sunday
+    start.setDate(start.getDate() - start.getDay());
 
-  const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
-
-  const daysInMonth = getDaysInMonth(viewYear, viewMonth);
-  const firstDayOfWeek = getFirstDayOfWeek(viewYear, viewMonth);
-
-  const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const navigateMonth = (direction: -1 | 1) => {
-    const newDate = new Date(viewYear, viewMonth + direction);
-    setViewYear(newDate.getFullYear());
-    setViewMonth(newDate.getMonth());
-  };
-
-  const monthTotal = useMemo(() => {
+    const weeksArr: { date: Date; count: number; key: string }[][] = [];
+    const monthPos: { label: string; col: number }[] = [];
+    let currentWeek: { date: Date; count: number; key: string }[] = [];
+    let lastMonth = -1;
     let total = 0;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key = formatDateKey(viewYear, viewMonth, d);
-      total += dateCountMap.get(key) || 0;
+
+    const cursor = new Date(start);
+    while (cursor <= today) {
+      const key = formatDateKey(cursor);
+      const count = dateCountMap.get(key) || 0;
+      total += count;
+
+      if (cursor.getDay() === 0 && currentWeek.length > 0) {
+        weeksArr.push(currentWeek);
+        currentWeek = [];
+      }
+
+      // Track month label positions
+      if (cursor.getMonth() !== lastMonth) {
+        monthPos.push({ label: MONTH_LABELS[cursor.getMonth()], col: weeksArr.length });
+        lastMonth = cursor.getMonth();
+      }
+
+      currentWeek.push({ date: new Date(cursor), count, key });
+      cursor.setDate(cursor.getDate() + 1);
     }
-    return total;
-  }, [dateCountMap, viewYear, viewMonth, daysInMonth]);
+    if (currentWeek.length > 0) weeksArr.push(currentWeek);
+
+    return { weeks: weeksArr, monthPositions: monthPos, totalYear: total };
+  }, [dateCountMap]);
 
   const getCellColor = (count: number) => {
     if (count === 0) return "bg-space-blue-dark";
@@ -58,68 +59,85 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
     return "bg-stellar-gold";
   };
 
+  const cellSize = 13;
+  const gap = 3;
+
   return (
     <div>
-      {/* Navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigateMonth(-1)}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-star-white">{monthLabel}</h3>
-          <p className="text-sm text-star-dim">
-            {monthTotal} observation{monthTotal !== 1 ? "s" : ""} this month
-          </p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => navigateMonth(1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-star-dim">
+          {totalYear} observation{totalYear !== 1 ? "s" : ""} in the last year
+        </p>
       </div>
 
-      {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {WEEKDAYS.map((day) => (
-          <div key={day} className="text-center text-xs text-star-dim py-1">
-            {day}
+      <div className="overflow-x-auto">
+        <div className="inline-flex gap-1">
+          {/* Day labels */}
+          <div className="flex flex-col mr-1" style={{ gap }}>
+            {DAY_LABELS.map((label, i) => (
+              <div
+                key={i}
+                className="text-[10px] text-star-dim flex items-center justify-end pr-1"
+                style={{ height: cellSize, width: 28 }}
+              >
+                {label}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1">
-        {/* Empty cells for offset */}
-        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`empty-${i}`} className="aspect-square" />
-        ))}
-
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const key = formatDateKey(viewYear, viewMonth, day);
-          const count = dateCountMap.get(key) || 0;
-          const isToday = key === todayKey;
-
-          return (
-            <div
-              key={day}
-              className={`aspect-square rounded-md flex items-center justify-center text-xs relative cursor-default transition-colors ${getCellColor(count)} ${
-                isToday ? "ring-2 ring-nebula-pink" : ""
-              } ${count > 0 ? "text-space-blue-dark font-medium" : "text-star-dim"}`}
-              title={`${key}: ${count} observation${count !== 1 ? "s" : ""}`}
-            >
-              {day}
+          {/* Grid */}
+          <div>
+            {/* Month labels */}
+            <div className="flex" style={{ height: 14, marginBottom: 2 }}>
+              {monthPositions.map((mp, i) => {
+                const nextCol = i + 1 < monthPositions.length ? monthPositions[i + 1].col : weeks.length;
+                const span = nextCol - mp.col;
+                return (
+                  <div
+                    key={`${mp.label}-${mp.col}`}
+                    className="text-[10px] text-star-dim"
+                    style={{ width: span * (cellSize + gap), minWidth: 0 }}
+                  >
+                    {span >= 3 ? mp.label : ""}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+
+            {/* Cells */}
+            <div className="flex" style={{ gap }}>
+              {weeks.map((week, wi) => (
+                <div key={wi} className="flex flex-col" style={{ gap }}>
+                  {Array.from({ length: 7 }).map((_, di) => {
+                    const day = week.find((d) => d.date.getDay() === di);
+                    if (!day) {
+                      return <div key={di} style={{ width: cellSize, height: cellSize }} />;
+                    }
+                    const isToday = day.key === formatDateKey(new Date());
+                    return (
+                      <div
+                        key={di}
+                        className={`rounded-sm ${getCellColor(day.count)} ${isToday ? "ring-1 ring-nebula-pink" : ""}`}
+                        style={{ width: cellSize, height: cellSize }}
+                        title={`${day.key}: ${day.count} observation${day.count !== 1 ? "s" : ""}`}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-3 mt-4 text-xs text-star-dim">
+      <div className="flex items-center justify-end gap-2 mt-3 text-[10px] text-star-dim">
         <span>Less</span>
         <div className="flex gap-1">
-          <div className="w-4 h-4 rounded-sm bg-space-blue-dark" />
-          <div className="w-4 h-4 rounded-sm bg-stellar-gold/30" />
-          <div className="w-4 h-4 rounded-sm bg-stellar-gold/60" />
-          <div className="w-4 h-4 rounded-sm bg-stellar-gold" />
+          <div className="w-3 h-3 rounded-sm bg-space-blue-dark" />
+          <div className="w-3 h-3 rounded-sm bg-stellar-gold/30" />
+          <div className="w-3 h-3 rounded-sm bg-stellar-gold/60" />
+          <div className="w-3 h-3 rounded-sm bg-stellar-gold" />
         </div>
         <span>More</span>
       </div>

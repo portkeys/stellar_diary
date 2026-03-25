@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ObservationCalendar from "@/components/astronomy/ObservationCalendar";
@@ -136,81 +135,54 @@ const MyProgress = () => {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Activity Heatmap */}
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full rounded-xl" />
-          <Skeleton className="h-80 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl mb-6" />
+      ) : (
+        <Card className="bg-space-blue border-cosmic-purple/30 mb-6">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold text-star-white mb-4">
+              <i className="fas fa-calendar-alt mr-2 text-stellar-gold" />
+              Observing Activity
+            </h2>
+            {totalObserved === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-star-dim text-sm">
+                  Start recording observations to see your activity here.
+                </p>
+              </div>
+            ) : (
+              <ObservationCalendar dateCountMap={dateCountMap} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Solar System & Messier side by side */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-80 rounded-xl" />
         </div>
       ) : (
-        <Tabs defaultValue="calendar" className="w-full">
-          <TabsList className="grid grid-cols-3 gap-2 bg-space-blue-dark p-1 rounded-xl mb-6">
-            <TabsTrigger
-              value="calendar"
-              className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white"
-            >
-              <i className="fas fa-calendar-alt mr-2" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger
-              value="solar-system"
-              className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white"
-            >
-              <i className="fas fa-globe mr-2" />
-              Solar System
-            </TabsTrigger>
-            <TabsTrigger
-              value="messier"
-              className="data-[state=active]:bg-cosmic-purple data-[state=active]:text-star-white"
-            >
-              <i className="fas fa-star mr-2" />
-              Messier
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="calendar">
-            <Card className="bg-space-blue border-cosmic-purple/30">
-              <CardContent className="p-6">
-                {totalObserved === 0 ? (
-                  <div className="text-center py-12">
-                    <i className="fas fa-calendar-alt text-4xl text-cosmic-purple/40 mb-4" />
-                    <h3 className="text-lg font-semibold text-star-white mb-2">
-                      No observations yet
-                    </h3>
-                    <p className="text-star-dim text-sm max-w-md mx-auto">
-                      Start recording your observations to see your activity on the calendar.
-                      Every clear night is an opportunity!
-                    </p>
-                  </div>
-                ) : (
-                  <ObservationCalendar dateCountMap={dateCountMap} />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="solar-system">
-            <Card className="bg-space-blue border-cosmic-purple/30">
-              <CardContent className="p-6">
-                <SolarSystemTracker
-                  celestialObjects={objects}
-                  observations={obs}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="messier">
-            <Card className="bg-space-blue border-cosmic-purple/30">
-              <CardContent className="p-6">
-                <MessierChallenge
-                  celestialObjects={objects}
-                  observations={obs}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-space-blue border-cosmic-purple/30">
+            <CardContent className="p-6">
+              <SolarSystemTracker
+                celestialObjects={objects}
+                observations={obs}
+              />
+            </CardContent>
+          </Card>
+          <Card className="bg-space-blue border-cosmic-purple/30">
+            <CardContent className="p-6">
+              <MessierChallenge
+                celestialObjects={objects}
+                observations={obs}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
