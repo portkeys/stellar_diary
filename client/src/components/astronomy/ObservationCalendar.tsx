@@ -53,11 +53,7 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
   }, [dateCountMap]);
 
   const getCellStyle = (count: number): string => {
-    if (count === 0) return "bg-space-blue-dark";
-    // Solid colors for clear visual distinction on dark backgrounds
-    if (count === 1) return "bg-[#5e4a1e]";   // dim gold-brown
-    if (count === 2) return "bg-[#9a7b2f]";   // medium gold
-    return "bg-[#f5c842]";                      // bright gold
+    return count > 0 ? "bg-[#f5c842]" : "bg-space-blue-dark";
   };
 
   const cellSize = 13;
@@ -133,14 +129,14 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
 
       {/* Legend */}
       <div className="flex items-center justify-end gap-2 mt-3 text-[10px] text-star-dim">
-        <span>Less</span>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm bg-space-blue-dark" />
-          <div className="w-3 h-3 rounded-sm bg-[#5e4a1e]" />
-          <div className="w-3 h-3 rounded-sm bg-[#9a7b2f]" />
-          <div className="w-3 h-3 rounded-sm bg-[#f5c842]" />
+          <span>No activity</span>
         </div>
-        <span>More</span>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm bg-[#f5c842]" />
+          <span>Observed</span>
+        </div>
       </div>
     </div>
   );
