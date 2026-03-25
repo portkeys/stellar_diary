@@ -175,7 +175,7 @@ const ObservationList = () => {
                     <i className="fas fa-hourglass mr-2"></i>
                     To Observe
                   </h3>
-                  {observations.filter(obs => !obs.isObserved).slice(0, 3).map(observation => (
+                  {observations.filter(obs => !obs.isObserved).sort((a, b) => getObservationSortTime(b) - getObservationSortTime(a)).slice(0, 3).map(observation => (
                     <div key={observation.id} className="bg-blue-900 bg-opacity-30 border border-blue-400 border-opacity-30 rounded-lg p-3">
                       <div className="flex flex-col w-full">
                         <div className="flex items-center">

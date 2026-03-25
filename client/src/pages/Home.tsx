@@ -2,8 +2,10 @@ import ApodSection from "@/components/astronomy/ApodSection";
 import MonthlyGuideSection from "@/components/astronomy/MonthlyGuideSection";
 import ObservationList from "@/components/astronomy/ObservationList";
 import { ExternalLink } from "lucide-react";
+import { useState } from "react";
 
 const Home = () => {
+  const [showVideo, setShowVideo] = useState(false);
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       {/* Hero Section */}
@@ -36,13 +38,33 @@ const Home = () => {
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden w-full lg:w-2/3">
             <div className="relative aspect-video">
-              <iframe
-                src="https://www.youtube.com/embed/KITDZbAjlR8"
-                title="Telescope Collimation Guide"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
+              {showVideo ? (
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/KITDZbAjlR8?autoplay=1"
+                  title="Telescope Collimation Guide"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 cursor-pointer group"
+                  onClick={() => setShowVideo(true)}
+                >
+                  <img
+                    src="https://img.youtube.com/vi/KITDZbAjlR8/hqdefault.jpg"
+                    alt="Telescope Collimation Guide"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all">
+                    <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col space-y-3 lg:w-1/3">

@@ -54,6 +54,7 @@ const YouTubeEmbed = ({ videoUrl, title = "YouTube video" }: YouTubeEmbedProps) 
 const MonthlyGuidePage = () => {
   const [hemisphere, setHemisphere] = useState<string>("Northern");
   const [objectType, setObjectType] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Get current month name
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
@@ -72,10 +73,20 @@ const MonthlyGuidePage = () => {
     enabled: !!guide?.id,
   });
 
-  // Filter objects by type if filter is set
-  const filteredObjects = objectType
-    ? celestialObjects?.filter(obj => obj.type === objectType)
-    : celestialObjects;
+  // Filter objects by type and search query
+  const filteredObjects = celestialObjects?.filter(obj => {
+    if (objectType && obj.type !== objectType) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (
+        obj.name.toLowerCase().includes(q) ||
+        obj.constellation?.toLowerCase().includes(q) ||
+        obj.type?.toLowerCase().includes(q) ||
+        obj.description?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   // Query for celestial object types (for filter dropdown)
   const { data: objectTypes } = useQuery<string[]>({
@@ -103,6 +114,28 @@ const MonthlyGuidePage = () => {
         {guide?.description && (
           <p className="text-star-dim text-lg">{guide.description}</p>
         )}
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-4">
+        <div className="relative">
+          <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-star-dim"></i>
+          <input
+            type="text"
+            placeholder="Search objects (e.g. M81, Orion, galaxy...)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-space-blue-dark border border-cosmic-purple rounded-lg py-3 pl-11 pr-10 text-sm text-white placeholder-star-dim focus:outline-none focus:border-stellar-gold focus:ring-1 focus:ring-stellar-gold"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-star-dim hover:text-white"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Controls */}
@@ -133,8 +166,8 @@ const MonthlyGuidePage = () => {
             </SelectTrigger>
             <SelectContent className="bg-space-blue border border-cosmic-purple">
               <SelectItem value="Northern">Northern Hemisphere</SelectItem>
-              <SelectItem value="Southern">Southern Hemisphere</SelectItem>
-              <SelectItem value="Both">Both Hemispheres</SelectItem>
+              <SelectItem value="Southern" disabled className="opacity-40">Southern Hemisphere (coming soon)</SelectItem>
+              <SelectItem value="Both" disabled className="opacity-40">Both Hemispheres (coming soon)</SelectItem>
             </SelectContent>
           </Select>
 
@@ -144,6 +177,7 @@ const MonthlyGuidePage = () => {
             onClick={() => {
               setObjectType(null);
               setHemisphere("Northern");
+              setSearchQuery("");
             }}
           >
             <i className="fas fa-sync-alt mr-1"></i> Reset

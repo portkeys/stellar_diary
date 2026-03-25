@@ -44,9 +44,9 @@ const ApodSection = () => {
         <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">
           <div className="relative">
             <Skeleton className="w-full h-[400px] md:h-[500px]" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="bg-space-blue-dark bg-opacity-90 backdrop-blur-sm p-4 rounded-lg">
+            <div className="hidden md:block absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
+            <div className="p-4 md:p-0 md:absolute md:bottom-4 md:left-4 md:right-4">
+              <div className="bg-space-blue-dark md:bg-opacity-90 md:backdrop-blur-sm p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
                   <Skeleton className="h-6 w-2/3" />
                   <Skeleton className="h-4 w-1/4" />
@@ -150,9 +150,9 @@ const ApodSection = () => {
             </div>
           )}
 
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="bg-space-blue-dark bg-opacity-90 backdrop-blur-sm p-4 rounded-lg">
+          <div className="hidden md:block absolute inset-x-0 bottom-0 bg-gradient-to-t from-space-blue-dark to-transparent h-40"></div>
+          <div className="p-4 md:p-0 md:absolute md:bottom-4 md:left-4 md:right-4">
+            <div className="bg-space-blue-dark md:bg-opacity-90 md:backdrop-blur-sm p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-xl text-space font-semibold text-stellar-gold">
                   {apod.title}
