@@ -52,11 +52,12 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
     return { weeks: weeksArr, monthPositions: monthPos, totalYear: total };
   }, [dateCountMap]);
 
-  const getCellColor = (count: number) => {
+  const getCellStyle = (count: number): string => {
     if (count === 0) return "bg-space-blue-dark";
-    if (count === 1) return "bg-stellar-gold/30";
-    if (count === 2) return "bg-stellar-gold/60";
-    return "bg-stellar-gold";
+    // Solid colors for clear visual distinction on dark backgrounds
+    if (count === 1) return "bg-[#5e4a1e]";   // dim gold-brown
+    if (count === 2) return "bg-[#9a7b2f]";   // medium gold
+    return "bg-[#f5c842]";                      // bright gold
   };
 
   const cellSize = 13;
@@ -117,7 +118,7 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
                     return (
                       <div
                         key={di}
-                        className={`rounded-sm ${getCellColor(day.count)} ${isToday ? "ring-1 ring-nebula-pink" : ""}`}
+                        className={`rounded-sm ${getCellStyle(day.count)} ${isToday ? "ring-1 ring-nebula-pink" : ""}`}
                         style={{ width: cellSize, height: cellSize }}
                         title={`${day.key}: ${day.count} observation${day.count !== 1 ? "s" : ""}`}
                       />
@@ -135,9 +136,9 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
         <span>Less</span>
         <div className="flex gap-1">
           <div className="w-3 h-3 rounded-sm bg-space-blue-dark" />
-          <div className="w-3 h-3 rounded-sm bg-stellar-gold/30" />
-          <div className="w-3 h-3 rounded-sm bg-stellar-gold/60" />
-          <div className="w-3 h-3 rounded-sm bg-stellar-gold" />
+          <div className="w-3 h-3 rounded-sm bg-[#5e4a1e]" />
+          <div className="w-3 h-3 rounded-sm bg-[#9a7b2f]" />
+          <div className="w-3 h-3 rounded-sm bg-[#f5c842]" />
         </div>
         <span>More</span>
       </div>
