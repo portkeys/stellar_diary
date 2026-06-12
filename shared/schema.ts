@@ -15,7 +15,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 // Define celestial object types
-export const celestialObjectTypes = ["planet", "galaxy", "nebula", "star_cluster", "double_star", "moon", "other"] as const;
+export const celestialObjectTypes = ["planet", "galaxy", "nebula", "star_cluster", "double_star", "moon", "constellation", "satellite", "other"] as const;
 export type CelestialObjectType = typeof celestialObjectTypes[number];
 
 // Celestial objects schema (static catalog - object info that doesn't change)

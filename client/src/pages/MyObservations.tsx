@@ -31,6 +31,10 @@ const MyObservations = () => {
         return 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800&h=500&fit=crop&auto=format';
       case 'moon':
         return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format';
+      case 'constellation':
+        return 'https://images.unsplash.com/photo-1593331292296-1bb2644113cb?w=800&h=500&fit=crop&auto=format';
+      case 'satellite':
+        return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format';
       default:
         return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format';
     }
@@ -188,9 +192,33 @@ const MyObservations = () => {
     return dateStr ? new Date(dateStr).getTime() : 0;
   };
 
-  const observedSorted = (observations || [])
-    .filter(obs => obs.isObserved)
-    .sort((a, b) => getObservationSortDate(b) - getObservationSortDate(a));
+  // Format an observation's date for display (adjusts for PST timezone)
+  const formatObservedDate = (obs: EnhancedObservation) => {
+    if (obs.plannedDate) {
+      const date = new Date(obs.plannedDate);
+      const userTimezoneDate = new Date(date.getTime() + (480 * 60000)); // Add 8 hours for PST
+      return userTimezoneDate.toLocaleDateString();
+    }
+    return obs.dateAdded ? new Date(obs.dateAdded as Date).toLocaleDateString() : 'Unknown';
+  };
+
+  // Group observed entries by object so the same object seen multiple times shows
+  // once with a total count and all of its dated sessions nested inside
+  const observedGroups = (() => {
+    const groups = new Map<number, { object: any; sessions: EnhancedObservation[] }>();
+    for (const obs of (observations || []).filter(obs => obs.isObserved)) {
+      const key = obs.objectId ?? -1;
+      if (!groups.has(key)) {
+        groups.set(key, { object: obs.celestialObject, sessions: [] });
+      }
+      groups.get(key)!.sessions.push(obs);
+    }
+    const arr = Array.from(groups.values());
+    // Newest session first within each group, and groups ordered by most recent session
+    arr.forEach(g => g.sessions.sort((a, b) => getObservationSortDate(b) - getObservationSortDate(a)));
+    arr.sort((a, b) => getObservationSortDate(b.sessions[0]) - getObservationSortDate(a.sessions[0]));
+    return arr;
+  })();
 
   return (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
@@ -310,8 +338,11 @@ const MyObservations = () => {
                                   observation.celestialObject?.type === 'nebula' ? 'meteor' : 
                                   observation.celestialObject?.type === 'planet' ? 'globe' : 
                                   observation.celestialObject?.type === 'star_cluster' ? 'star' :
+                                  observation.celestialObject?.type === 'double_star' ? 'star-half-alt' :
+                                  observation.celestialObject?.type === 'moon' ? 'moon' :
+                                  observation.celestialObject?.type === 'satellite' ? 'satellite' :
                                   'star'
-                                } mr-1`}></i> 
+                                } mr-1`}></i>
                                 {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                               </span>
                               <span className="flex items-center">
@@ -354,112 +385,110 @@ const MyObservations = () => {
                 </div>
               )}
 
-              {/* Observed Entries Section */}
-              {observedSorted.length > 0 && (
+              {/* Observed Entries Section - grouped by object with a total count */}
+              {observedGroups.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl text-space font-bold mb-4 flex items-center">
                     <span className="inline-block w-3 h-3 rounded-full bg-green-300 mr-2"></span>
                     Observed Entries
                   </h3>
                   <div className="space-y-6">
-                    {observedSorted.map(observation => (
-                      <div key={observation.id} className="bg-space-blue-light rounded-lg p-6 flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <img 
-                            src={observation.celestialObject?.imageUrl || getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other')} 
-                            alt={observation.celestialObject?.name} 
-                            className="w-20 h-20 rounded-md object-cover" 
+                    {observedGroups.map(group => (
+                      <div key={group.object?.id ?? group.sessions[0].id} className="bg-space-blue-light rounded-lg p-6 flex flex-col gap-4">
+                        {/* Object header with count */}
+                        <div className="flex gap-4">
+                          <img
+                            src={group.object?.imageUrl || getTypeSpecificFallbackImage(group.object?.type || 'other')}
+                            alt={group.object?.name}
+                            className="w-20 h-20 rounded-md object-cover shrink-0"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
-                              target.src = getTypeSpecificFallbackImage(observation.celestialObject?.type || 'other');
+                              target.src = getTypeSpecificFallbackImage(group.object?.type || 'other');
                             }}
                           />
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <h4 className="text-space font-semibold text-xl">{observation.celestialObject?.name}</h4>
-                              <div className="flex items-center space-x-2">
-                                <Button 
-                                  variant="ghost"
-                                  className="text-green-300 hover:text-green-200"
-                                  onClick={() => handleToggleObserved(observation.id, observation.isObserved!)}
-                                  title="Mark as not observed"
-                                >
-                                  <i className="fas fa-check-circle text-xl"></i>
-                                </Button>
-                                <Button 
-                                  variant="ghost"
-                                  className="text-star-dim hover:text-stellar-gold"
-                                  onClick={() => handleOpenNotesDialog(observation)}
-                                  title="Edit notes"
-                                >
-                                  <i className="fas fa-edit text-xl"></i>
-                                </Button>
-                                <Button 
-                                  variant="ghost"
-                                  className="text-star-dim hover:text-red-500"
-                                  onClick={() => handleRemove(observation.id)}
-                                  title="Remove from observation list"
-                                >
-                                  <i className="fas fa-trash text-xl"></i>
-                                </Button>
-
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-3">
+                              <div>
+                                <h4 className="text-space font-semibold text-xl">{group.object?.name}</h4>
+                                <span className="text-sm text-star-dim">
+                                  <i className={`fas fa-${
+                                    group.object?.type === 'galaxy' ? 'galaxy' :
+                                    group.object?.type === 'nebula' ? 'meteor' :
+                                    group.object?.type === 'planet' ? 'globe' :
+                                    group.object?.type === 'star_cluster' ? 'star' :
+                                    group.object?.type === 'double_star' ? 'star-half-alt' :
+                                    group.object?.type === 'moon' ? 'moon' :
+                                    group.object?.type === 'satellite' ? 'satellite' :
+                                    'star'
+                                  } mr-1`}></i>
+                                  {(group.object?.type || 'other').replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                </span>
                               </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 my-1 text-sm text-star-dim">
-                              <span>
-                                <i className={`fas fa-${
-                                  observation.celestialObject?.type === 'galaxy' ? 'galaxy' : 
-                                  observation.celestialObject?.type === 'nebula' ? 'meteor' : 
-                                  observation.celestialObject?.type === 'planet' ? 'globe' : 
-                                  observation.celestialObject?.type === 'star_cluster' ? 'star' :
-                                  'star'
-                                } mr-1`}></i> 
-                                {observation.celestialObject?.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                              </span>
-                              <span className="flex items-center">
-                                <i className="fas fa-calendar mr-1"></i> 
-                                Observed: {observation.plannedDate ? 
-                                  (() => {
-                                    const date = new Date(observation.plannedDate);
-                                    // Adjust for PST timezone (UTC-8)
-                                    const userTimezoneDate = new Date(date.getTime() + (480 * 60000));
-                                    return userTimezoneDate.toLocaleDateString();
-                                  })() : 
-                                  (observation.dateAdded ? new Date(observation.dateAdded as Date).toLocaleDateString() : 'Unknown')}
-                                <Button
-                                  variant="ghost"
-                                  className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenDateDialog(observation);
-                                  }}
-                                  title="Edit observation date"
-                                >
-                                  <i className="fas fa-pencil-alt text-xs"></i>
-                                </Button>
+                              <span className="inline-flex items-center gap-1 bg-space-blue-dark text-green-300 text-sm font-medium px-3 py-1 rounded-full whitespace-nowrap">
+                                <i className="fas fa-check-circle"></i> Observed {group.sessions.length}×
                               </span>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Journal-style notes display */}
-                        <div className="mt-2">
-                          {observation.observationNotes ? (
-                            <div className="bg-space-blue-dark rounded-lg p-4 text-star-white">
-                              <h5 className="text-nebula-pink text-sm font-medium mb-2 flex items-center">
-                                <i className="fas fa-sticky-note mr-2"></i> Observation Notes
-                              </h5>
-                              <p className="whitespace-pre-line text-sm">{observation.observationNotes}</p>
+
+                        {/* Dated sessions */}
+                        <div className="space-y-3">
+                          {group.sessions.map(session => (
+                            <div key={session.id} className="bg-space-blue-dark rounded-lg p-4">
+                              <div className="flex justify-between items-start gap-3">
+                                <div className="flex items-center text-sm text-star-dim">
+                                  <i className="fas fa-calendar mr-2"></i>
+                                  {formatObservedDate(session)}
+                                  <Button
+                                    variant="ghost"
+                                    className="ml-1 p-1 h-auto text-star-dim hover:text-stellar-gold"
+                                    onClick={() => handleOpenDateDialog(session)}
+                                    title="Edit observation date"
+                                  >
+                                    <i className="fas fa-pencil-alt text-xs"></i>
+                                  </Button>
+                                </div>
+                                <div className="flex items-center space-x-1 shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    className="text-star-dim hover:text-stellar-gold"
+                                    onClick={() => handleOpenNotesDialog(session)}
+                                    title="Edit notes"
+                                  >
+                                    <i className="fas fa-edit"></i>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    className="text-green-300 hover:text-yellow-400"
+                                    onClick={() => handleToggleObserved(session.id, session.isObserved!)}
+                                    title="Mark as not observed"
+                                  >
+                                    <i className="fas fa-check-circle"></i>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    className="text-star-dim hover:text-red-500"
+                                    onClick={() => handleRemove(session.id)}
+                                    title="Remove this observation"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </Button>
+                                </div>
+                              </div>
+                              {session.observationNotes ? (
+                                <p className="whitespace-pre-line text-sm text-star-white mt-2">{session.observationNotes}</p>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="text-star-dim text-sm mt-2 hover:text-stellar-gold"
+                                  onClick={() => handleOpenNotesDialog(session)}
+                                >
+                                  <i className="fas fa-plus-circle mr-1"></i> Add notes
+                                </button>
+                              )}
                             </div>
-                          ) : (
-                            <div className="border border-dashed border-cosmic-purple rounded-lg p-4 text-center cursor-pointer" 
-                                 onClick={() => handleOpenNotesDialog(observation)}>
-                              <p className="text-star-dim">
-                                <i className="fas fa-plus-circle mr-1"></i> Add your observation notes
-                              </p>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     ))}

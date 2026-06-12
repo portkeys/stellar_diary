@@ -216,6 +216,10 @@ export function getTypeSpecificFallbackImage(type: string): string {
       return 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800&h=500&fit=crop';
     case 'moon':
       return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop';
+    case 'constellation':
+      return 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800&h=500&fit=crop';
+    case 'satellite':
+      return 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&h=500&fit=crop';
     default:
       return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop';
   }
