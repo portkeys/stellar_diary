@@ -33,6 +33,10 @@ const CelestialCard = ({
         return <i className="fas fa-star-half-alt text-stellar-gold mr-1"></i>;
       case 'moon':
         return <i className="fas fa-moon text-stellar-gold mr-1"></i>;
+      case 'satellite':
+        return <i className="fas fa-satellite text-stellar-gold mr-1"></i>;
+      case 'constellation':
+        return <i className="fas fa-star text-stellar-gold mr-1"></i>;
       default:
         return <i className="fas fa-star text-stellar-gold mr-1"></i>;
     }
@@ -61,6 +65,10 @@ const CelestialCard = ({
         return 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=800&h=500&fit=crop&auto=format'; // Double star image
       case 'moon':
         return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format'; // Moon image
+      case 'constellation':
+        return 'https://images.unsplash.com/photo-1593331292296-1bb2644113cb?w=800&h=500&fit=crop&auto=format'; // Constellation / starfield image
+      case 'satellite':
+        return 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800&h=500&fit=crop&auto=format'; // Satellite / space image
       default:
         return 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&h=500&fit=crop&auto=format'; // Generic space image
     }

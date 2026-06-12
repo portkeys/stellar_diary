@@ -90,9 +90,17 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
     },
   });
   
-  // Filter out objects that are already in the observation list
-  const availableObjects = (celestialObjects as CelestialObject[]).filter((obj: CelestialObject) => 
-    !(observations as any[]).some((obs: any) => obs.objectId === obj.id)
+  // Count how many times each object has already been observed (to hint in the picker)
+  const observedCountByObjectId = (observations as any[]).reduce((acc: Record<number, number>, obs: any) => {
+    if (obs.isObserved && obs.objectId != null) {
+      acc[obs.objectId] = (acc[obs.objectId] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<number, number>);
+
+  // Show ALL catalog objects so the same object can be logged multiple times
+  const availableObjects = [...(celestialObjects as CelestialObject[])].sort((a, b) =>
+    a.name.localeCompare(b.name)
   );
   
   // Handle object selection from search
@@ -177,29 +185,16 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
   });
 
   const onSubmit = (values: FormValues) => {
-    // Check for duplicate if selecting existing object
-    if (values.selectedObjectId) {
-      const isDuplicate = (observations as any[]).some((obs: any) => obs.objectId === values.selectedObjectId);
-      if (isDuplicate) {
-        toast({
-          title: 'Object already in list',
-          description: 'This object is already in your observation list.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else {
-      // When creating new object, validate object type is provided
-      if (!values.objectType) {
-        toast({
-          title: 'Object type required',
-          description: 'Please select an object type when creating a new object.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    // When creating a new custom object, an object type is required
+    if (!values.selectedObjectId && !values.objectType) {
+      toast({
+        title: 'Object type required',
+        description: 'Please select an object type when creating a new object.',
+        variant: 'destructive',
+      });
+      return;
     }
-    
+
     addObservationMutation.mutate(values);
   };
 
@@ -314,6 +309,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
                                     <span className="font-medium">{obj.name}</span>
                                     <span className="text-xs text-star-dim">
                                       {obj.type.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                      {observedCountByObjectId[obj.id] ? ` · observed ${observedCountByObjectId[obj.id]}×` : ''}
                                     </span>
                                   </div>
                                 </CommandItem>
