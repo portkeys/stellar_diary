@@ -9,7 +9,11 @@
 ## ✅ Recently Shipped
 
 - **Codebase cleanup (2026-06-20):** removed dead deps (`axios` + unused auth stack, 31 npm
-  packages), 2 leftover Python files, and 31 unused shadcn/ui components. Typecheck + build green.
+  packages), 2 leftover Python files, and 31 unused shadcn/ui components. Verified via typecheck,
+  vite build, **and a live dev-server run** (all 6 API endpoints 200; all 6 routes render with no
+  new console errors; My Progress screenshot confirmed).
+- **`/verify` command (2026-06-20):** `.claude/commands/verify.md` — a repeatable runtime
+  verification playbook (run the app + browser smoke test, not just typecheck/build).
 - Allow repeat observations per object; add constellation/satellite object types (#3)
 - My Progress page: GitHub-style activity heatmap (replaced calendar), single-gold solid cells
 - Mobile APOD overlay fix, lazy-loaded YouTube video, search on Monthly Guide
