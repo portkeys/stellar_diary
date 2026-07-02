@@ -5,8 +5,9 @@ import {
   MonthlyGuide, InsertMonthlyGuide,
   GuideObject, InsertGuideObject,
   TelescopeTip, InsertTelescopeTip,
+  SkyEvent, InsertSkyEvent,
   users, celestialObjects, observations,
-  monthlyGuides, guideObjects, telescopeTips, apodCache
+  monthlyGuides, guideObjects, telescopeTips, apodCache, skyEvents
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, inArray } from "drizzle-orm";
@@ -55,6 +56,13 @@ export interface IStorage {
   getAllTelescopeTips(): Promise<TelescopeTip[]>;
   getTelescopeTipsByCategory(category: string): Promise<TelescopeTip[]>;
   createTelescopeTip(tip: InsertTelescopeTip): Promise<TelescopeTip>;
+
+  // Sky events operations (anticipated events watchlist)
+  getSkyEvent(id: number): Promise<SkyEvent | undefined>;
+  getAllSkyEvents(): Promise<SkyEvent[]>;
+  createSkyEvent(event: InsertSkyEvent): Promise<SkyEvent>;
+  updateSkyEvent(id: number, event: Partial<SkyEvent>): Promise<SkyEvent | undefined>;
+  deleteSkyEvent(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -266,6 +274,40 @@ export class DatabaseStorage implements IStorage {
       .values(insertTip)
       .returning();
     return tip;
+  }
+
+  async getSkyEvent(id: number): Promise<SkyEvent | undefined> {
+    const [event] = await db.select().from(skyEvents).where(eq(skyEvents.id, id));
+    return event || undefined;
+  }
+
+  async getAllSkyEvents(): Promise<SkyEvent[]> {
+    return await db.select().from(skyEvents);
+  }
+
+  async createSkyEvent(insertEvent: InsertSkyEvent): Promise<SkyEvent> {
+    const [event] = await db
+      .insert(skyEvents)
+      .values(insertEvent)
+      .returning();
+    return event;
+  }
+
+  async updateSkyEvent(id: number, update: Partial<SkyEvent>): Promise<SkyEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(skyEvents)
+      .set(update)
+      .where(eq(skyEvents.id, id))
+      .returning();
+    return updatedEvent || undefined;
+  }
+
+  async deleteSkyEvent(id: number): Promise<boolean> {
+    const [deleted] = await db
+      .delete(skyEvents)
+      .where(eq(skyEvents.id, id))
+      .returning();
+    return !!deleted;
   }
 }
 

@@ -9,10 +9,113 @@ import { celestialObjectExists, cleanupDuplicateCelestialObjects } from "./servi
 import {
   insertObservationSchema,
   insertCelestialObjectSchema,
+  insertSkyEventSchema,
   celestialObjectTypes
 } from "@shared/schema";
 import { extractCelestialObjectsFromText } from "./services/objectExtractor";
-import { autoPopulatePreview } from "./services/guideAutoPopulate";
+import { autoPopulatePreview, type SuggestedObject } from "./services/guideAutoPopulate";
+import { runSkyEventCheck } from "./services/skyEvents";
+
+/** Vercel cron requests carry `Authorization: Bearer ${CRON_SECRET}` when the env var is set */
+function isCronAuthorized(req: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return true;
+  return req.headers.authorization === `Bearer ${secret}`;
+}
+
+/** Create/update a monthly guide and link its objects (creating missing catalog entries with image search) */
+async function applyAutoPopulatedGuide(params: {
+  month: string;
+  year: number;
+  hemisphere: string;
+  headline: string;
+  description: string;
+  videoUrls: string[];
+  sources: string[];
+  objects: Array<Partial<SuggestedObject> & { name: string; type: string; description: string; highlights?: string }>;
+}): Promise<{ guideId: number; objectsAdded: number; objectsLinked: number }> {
+  const guides = await storage.getAllMonthlyGuides();
+  const existingGuide = guides.find(g =>
+    g.month === params.month && g.year === params.year && g.hemisphere === params.hemisphere
+  );
+
+  let guide;
+  if (existingGuide) {
+    guide = await storage.updateMonthlyGuide(existingGuide.id, {
+      headline: params.headline,
+      description: params.description,
+      videoUrls: params.videoUrls,
+      sources: params.sources,
+    });
+    // Clear existing guide objects to re-link
+    await storage.deleteGuideObjectsByGuide(existingGuide.id);
+  } else {
+    guide = await storage.createMonthlyGuide({
+      month: params.month,
+      year: params.year,
+      hemisphere: params.hemisphere,
+      headline: params.headline,
+      description: params.description,
+      videoUrls: params.videoUrls,
+      sources: params.sources,
+    });
+  }
+
+  if (!guide) {
+    throw new Error("Failed to create/update guide");
+  }
+
+  let objectsAdded = 0;
+  let objectsLinked = 0;
+
+  for (let i = 0; i < params.objects.length; i++) {
+    const obj = params.objects[i];
+    try {
+      let dbObject = await storage.getCelestialObjectByName(obj.name);
+
+      if (!dbObject) {
+        // Create new celestial object with image search
+        let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
+
+        try {
+          const imageResult = await searchCelestialObjectImage(obj.name) as any;
+          if (imageResult.success && imageResult.image_url) {
+            imageUrl = imageResult.image_url;
+          }
+        } catch {
+          // Use fallback image
+        }
+
+        dbObject = await storage.createCelestialObject({
+          name: obj.name,
+          type: obj.type,
+          description: obj.description,
+          imageUrl,
+          constellation: obj.constellation || null,
+          magnitude: obj.magnitude || null,
+        });
+        objectsAdded++;
+
+        // Small delay between image API calls
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // Link object to guide
+      await storage.createGuideObject({
+        guideId: guide.id,
+        objectId: dbObject.id,
+        viewingTips: obj.viewingTips || null,
+        highlights: obj.highlights || null,
+        sortOrder: i,
+      });
+      objectsLinked++;
+    } catch (err) {
+      console.log(`Skipped ${obj.name}: ${err}`);
+    }
+  }
+
+  return { guideId: guide.id, objectsAdded, objectsLinked };
+}
 
 export async function registerRoutes(app: Express, options?: { skipSeeding?: boolean }): Promise<Server | null> {
   // Skip seeding in serverless environments (run npm run db:seed separately)
@@ -631,99 +734,179 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
 
       const yearNum = parseInt(year);
 
-      // Create or update monthly guide
-      const guides = await storage.getAllMonthlyGuides();
-      const existingGuide = guides.find(g =>
-        g.month === month && g.year === yearNum && g.hemisphere === (hemisphere || 'Northern')
-      );
-
-      let guide;
-      if (existingGuide) {
-        guide = await storage.updateMonthlyGuide(existingGuide.id, {
-          headline,
-          description,
-          videoUrls: videoUrls || [],
-          sources: sources || [],
-        });
-        // Clear existing guide objects to re-link
-        await storage.deleteGuideObjectsByGuide(existingGuide.id);
-      } else {
-        guide = await storage.createMonthlyGuide({
-          month,
-          year: yearNum,
-          hemisphere: hemisphere || 'Northern',
-          headline,
-          description,
-          videoUrls: videoUrls || [],
-          sources: sources || [],
-        });
-      }
-
-      if (!guide) {
-        return res.status(500).json({ success: false, message: "Failed to create/update guide" });
-      }
-
-      // Process each selected object
-      let objectsAdded = 0;
-      let objectsLinked = 0;
-
-      for (let i = 0; i < objects.length; i++) {
-        const obj = objects[i];
-        try {
-          let dbObject = await storage.getCelestialObjectByName(obj.name);
-
-          if (!dbObject) {
-            // Create new celestial object with image search
-            let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
-
-            try {
-              const imageResult = await searchCelestialObjectImage(obj.name) as any;
-              if (imageResult.success && imageResult.image_url) {
-                imageUrl = imageResult.image_url;
-              }
-            } catch {
-              // Use fallback image
-            }
-
-            dbObject = await storage.createCelestialObject({
-              name: obj.name,
-              type: obj.type,
-              description: obj.description,
-              imageUrl,
-              constellation: obj.constellation || null,
-              magnitude: obj.magnitude || null,
-            });
-            objectsAdded++;
-
-            // Small delay between image API calls
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-
-          // Link object to guide
-          await storage.createGuideObject({
-            guideId: guide.id,
-            objectId: dbObject.id,
-            viewingTips: obj.viewingTips || null,
-            highlights: obj.highlights || null,
-            sortOrder: i,
-          });
-          objectsLinked++;
-        } catch (err) {
-          console.log(`Skipped ${obj.name}: ${err}`);
-        }
-      }
+      const result = await applyAutoPopulatedGuide({
+        month,
+        year: yearNum,
+        hemisphere: hemisphere || 'Northern',
+        headline,
+        description,
+        videoUrls: videoUrls || [],
+        sources: sources || [],
+        objects,
+      });
 
       res.json({
         success: true,
-        message: `Guide created for ${month} ${year} with ${objectsLinked} objects (${objectsAdded} new)`,
-        guideId: guide.id,
-        objectsAdded,
-        objectsLinked,
+        message: `Guide created for ${month} ${year} with ${result.objectsLinked} objects (${result.objectsAdded} new)`,
+        ...result,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
         message: `Failed to confirm auto-populate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
+  });
+
+  // Sky events watchlist (anticipated events like the T CrB nova)
+  app.get("/api/sky-events", async (_req: Request, res: Response) => {
+    try {
+      const events = await storage.getAllSkyEvents();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to get sky events: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.post("/api/sky-events", async (req: Request, res: Response) => {
+    try {
+      const validated = insertSkyEventSchema.parse(req.body);
+      const event = await storage.createSkyEvent(validated);
+      res.status(201).json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid sky event data", errors: error.errors });
+      }
+      res.status(500).json({
+        message: `Failed to create sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.patch("/api/sky-events/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const allowed = ["name", "description", "eventType", "status", "aavsoName", "triggerMagnitude", "newsQuery", "notes"] as const;
+      const update: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (key in req.body) update[key] = req.body[key];
+      }
+      const event = await storage.updateSkyEvent(id, update);
+      if (!event) {
+        return res.status(404).json({ message: "Sky event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to update sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  app.delete("/api/sky-events/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteSkyEvent(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Sky event not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to delete sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Run AAVSO brightness + news checks for one event immediately
+  app.post("/api/sky-events/:id/check", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const event = await storage.getSkyEvent(id);
+      if (!event) {
+        return res.status(404).json({ message: "Sky event not found" });
+      }
+      const updates = await runSkyEventCheck(event);
+      const updated = await storage.updateSkyEvent(id, updates);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({
+        message: `Failed to check sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Cron: daily check of all waiting/triggered sky events (mirrors the Vercel cron for local dev)
+  app.get("/api/cron/check-sky-events", async (req: Request, res: Response) => {
+    if (!isCronAuthorized(req)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const events = await storage.getAllSkyEvents();
+      const results = [];
+      for (const event of events) {
+        if (event.status === "dismissed") continue;
+        const updates = await runSkyEventCheck(event);
+        const updated = await storage.updateSkyEvent(event.id, updates);
+        results.push({
+          id: event.id,
+          name: event.name,
+          status: updated?.status,
+          currentMagnitude: updated?.currentMagnitude,
+        });
+      }
+      res.json({ success: true, checked: results.length, results });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Sky event check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  });
+
+  // Cron: auto-create the monthly guide on the 1st of each month (mirrors the Vercel cron for local dev)
+  app.get("/api/cron/monthly-guide", async (req: Request, res: Response) => {
+    if (!isCronAuthorized(req)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const month = getCurrentMonth();
+      const year = getCurrentYear();
+
+      const existing = await storage.getMonthlyGuideByMonthYear(month, year, 'Northern');
+      if (existing && req.query.force !== 'true') {
+        return res.json({
+          success: true,
+          skipped: true,
+          message: `Guide for ${month} ${year} already exists (id ${existing.id}) — pass ?force=true to regenerate`,
+        });
+      }
+
+      const preview = await autoPopulatePreview(month, year);
+      const result = await applyAutoPopulatedGuide({
+        month,
+        year,
+        hemisphere: 'Northern',
+        headline: preview.suggestedHeadline,
+        description: preview.suggestedDescription,
+        videoUrls: preview.videoUrls,
+        sources: [],
+        objects: preview.mergedObjects,
+      });
+
+      res.json({
+        success: true,
+        month,
+        year,
+        message: `Guide auto-created for ${month} ${year} with ${result.objectsLinked} objects (${result.objectsAdded} new)`,
+        ...result,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: `Monthly guide cron failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   });

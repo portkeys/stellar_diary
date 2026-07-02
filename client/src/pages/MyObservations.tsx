@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import AddObservationDialog from "@/components/astronomy/AddObservationDialog";
+import SkyEventWatchlist from "@/components/astronomy/SkyEventWatchlist";
 
 interface EnhancedObservation extends Observation {
   celestialObject?: any;
@@ -243,6 +244,9 @@ const MyObservations = () => {
           </div>
         </div>
       </div>
+
+      {/* Anticipated events watchlist (e.g. waiting for T CrB to go nova) */}
+      <SkyEventWatchlist />
 
       {/* Main content */}
       <div className="bg-space-blue rounded-xl shadow-xl overflow-hidden">

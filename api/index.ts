@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { pgTable, text, serial, integer, boolean, date, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, integer, boolean, date, timestamp, real } from 'drizzle-orm/pg-core';
 import { eq, desc } from 'drizzle-orm';
 
 // Inline schema definitions (Vercel can't resolve imports from outside /api)
@@ -60,6 +60,27 @@ const guideObjects = pgTable('guide_objects', {
   viewingTips: text('viewing_tips'),
   highlights: text('highlights'),
   sortOrder: integer('sort_order').default(0),
+});
+
+// Anticipated sky events watchlist (e.g. waiting for T CrB to go nova)
+const skyEvents = pgTable('sky_events', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  eventType: text('event_type').notNull().default('other'),
+  status: text('status').notNull().default('waiting'),
+  aavsoName: text('aavso_name'),
+  triggerMagnitude: real('trigger_magnitude'),
+  currentMagnitude: real('current_magnitude'),
+  magnitudeBand: text('magnitude_band'),
+  newsQuery: text('news_query'),
+  latestNewsTitle: text('latest_news_title'),
+  latestNewsUrl: text('latest_news_url'),
+  latestNewsDate: text('latest_news_date'),
+  lastCheckedAt: timestamp('last_checked_at'),
+  triggeredAt: timestamp('triggered_at'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // Database connection (lazy initialization)
@@ -1181,15 +1202,8 @@ async function fetchYouTubeSkyTel(month: string, year: number): Promise<YouTubeV
   } catch { return null; }
 }
 
-// Auto-populate preview endpoint
-app.post('/api/admin/auto-populate-preview', async (req, res) => {
-  try {
-    const { month, year } = req.body;
-    if (!month || !year) {
-      return res.status(400).json({ message: 'Month and year are required' });
-    }
-    const yearNum = parseInt(year);
-
+// Build the merged auto-populate suggestion set (shared by the admin preview endpoint and the monthly cron)
+async function buildAutoPopulatePreview(month: string, yearNum: number) {
     // Run all 3 sources in parallel
     const [tltoResult, hpResult, stResult] = await Promise.allSettled([
       Promise.resolve(getSeasonalObjects(month)),
@@ -1271,17 +1285,98 @@ app.post('/api/admin/auto-populate-preview', async (req, res) => {
       }
     }
 
-    res.json({
+    return {
       month, year: yearNum, sources, mergedObjects, videoUrls,
       suggestedHeadline: `${month} ${yearNum}: What to See in the Night Sky`,
       suggestedDescription: `Your guide to the ${month} ${yearNum} night sky featuring ${mergedObjects.length} celestial objects.${videoUrls.length > 0 ? ' Includes video guides from astronomy experts.' : ''}`,
-    });
+    };
+}
+
+// Auto-populate preview endpoint
+app.post('/api/admin/auto-populate-preview', async (req, res) => {
+  try {
+    const { month, year } = req.body;
+    if (!month || !year) {
+      return res.status(400).json({ message: 'Month and year are required' });
+    }
+    res.json(await buildAutoPopulatePreview(month, parseInt(year)));
   } catch (error) {
     res.status(500).json({
       message: `Failed to generate preview: ${error instanceof Error ? error.message : 'Unknown error'}`
     });
   }
 });
+
+// Create/update a monthly guide and link its objects (shared by the admin confirm endpoint and the monthly cron)
+async function applyAutoPopulatedGuide(params: {
+  month: string; year: number; hemisphere: string;
+  headline: string; description: string;
+  videoUrls: string[]; sources: string[];
+  objects: any[];
+}): Promise<{ guideId: number; objectsAdded: number; objectsLinked: number }> {
+  const { month, year: yearNum, hemisphere, headline, description, videoUrls, sources, objects } = params;
+
+  // Find or create guide
+  const existingGuides = await getDb().select().from(monthlyGuides);
+  let guide = existingGuides.find(g =>
+    g.month === month && g.year === yearNum && g.hemisphere === hemisphere
+  );
+
+  if (guide) {
+    const [updated] = await getDb().update(monthlyGuides).set({
+      headline, description, videoUrls, sources,
+    }).where(eq(monthlyGuides.id, guide.id)).returning();
+    guide = updated;
+    // Clear existing guide objects
+    await getDb().delete(guideObjects).where(eq(guideObjects.guideId, guide.id));
+  } else {
+    const [created] = await getDb().insert(monthlyGuides).values({
+      month, year: yearNum, hemisphere,
+      headline, description, videoUrls, sources,
+    }).returning();
+    guide = created;
+  }
+
+  let objectsAdded = 0;
+  let objectsLinked = 0;
+  const allExisting = await getDb().select().from(celestialObjects);
+  const nameMap = new Map(allExisting.map(o => [o.name.toLowerCase(), o]));
+
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    try {
+      let dbObj = nameMap.get(obj.name.toLowerCase());
+
+      if (!dbObj) {
+        let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
+        try {
+          const imgResult = await searchCelestialObjectImage(obj.name);
+          if (imgResult.success && imgResult.image_url) imageUrl = imgResult.image_url;
+        } catch { /* use fallback */ }
+
+        const [created] = await getDb().insert(celestialObjects).values({
+          name: obj.name, type: obj.type, description: obj.description,
+          imageUrl, constellation: obj.constellation || null, magnitude: obj.magnitude || null,
+        }).returning();
+        dbObj = created;
+        nameMap.set(obj.name.toLowerCase(), dbObj);
+        objectsAdded++;
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      await getDb().insert(guideObjects).values({
+        guideId: guide.id, objectId: dbObj.id,
+        viewingTips: obj.viewingTips || null, highlights: obj.highlights || null,
+        sortOrder: i,
+      });
+      objectsLinked++;
+    } catch (err) {
+      console.log(`Skipped ${obj.name}: ${err}`);
+    }
+  }
+
+  return { guideId: guide.id, objectsAdded, objectsLinked };
+}
 
 // Auto-populate confirm endpoint
 app.post('/api/admin/auto-populate-confirm', async (req, res) => {
@@ -1292,74 +1387,292 @@ app.post('/api/admin/auto-populate-confirm', async (req, res) => {
     }
     const yearNum = parseInt(year);
 
-    // Find or create guide
-    const existingGuides = await getDb().select().from(monthlyGuides);
-    let guide = existingGuides.find(g =>
-      g.month === month && g.year === yearNum && g.hemisphere === (hemisphere || 'Northern')
-    );
-
-    if (guide) {
-      const [updated] = await getDb().update(monthlyGuides).set({
-        headline, description, videoUrls: videoUrls || [], sources: sources || [],
-      }).where(eq(monthlyGuides.id, guide.id)).returning();
-      guide = updated;
-      // Clear existing guide objects
-      await getDb().delete(guideObjects).where(eq(guideObjects.guideId, guide.id));
-    } else {
-      const [created] = await getDb().insert(monthlyGuides).values({
-        month, year: yearNum, hemisphere: hemisphere || 'Northern',
-        headline, description, videoUrls: videoUrls || [], sources: sources || [],
-      }).returning();
-      guide = created;
-    }
-
-    let objectsAdded = 0;
-    let objectsLinked = 0;
-    const allExisting = await getDb().select().from(celestialObjects);
-    const nameMap = new Map(allExisting.map(o => [o.name.toLowerCase(), o]));
-
-    for (let i = 0; i < objects.length; i++) {
-      const obj = objects[i];
-      try {
-        let dbObj = nameMap.get(obj.name.toLowerCase());
-
-        if (!dbObj) {
-          let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
-          try {
-            const imgResult = await searchCelestialObjectImage(obj.name);
-            if (imgResult.success && imgResult.image_url) imageUrl = imgResult.image_url;
-          } catch { /* use fallback */ }
-
-          const [created] = await getDb().insert(celestialObjects).values({
-            name: obj.name, type: obj.type, description: obj.description,
-            imageUrl, constellation: obj.constellation || null, magnitude: obj.magnitude || null,
-          }).returning();
-          dbObj = created;
-          nameMap.set(obj.name.toLowerCase(), dbObj);
-          objectsAdded++;
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-        await getDb().insert(guideObjects).values({
-          guideId: guide.id, objectId: dbObj.id,
-          viewingTips: obj.viewingTips || null, highlights: obj.highlights || null,
-          sortOrder: i,
-        });
-        objectsLinked++;
-      } catch (err) {
-        console.log(`Skipped ${obj.name}: ${err}`);
-      }
-    }
+    const result = await applyAutoPopulatedGuide({
+      month, year: yearNum, hemisphere: hemisphere || 'Northern',
+      headline, description,
+      videoUrls: videoUrls || [], sources: sources || [],
+      objects,
+    });
 
     res.json({
       success: true,
-      message: `Guide created for ${month} ${yearNum} with ${objectsLinked} objects (${objectsAdded} new)`,
-      guideId: guide.id, objectsAdded, objectsLinked,
+      message: `Guide created for ${month} ${yearNum} with ${result.objectsLinked} objects (${result.objectsAdded} new)`,
+      ...result,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: `Failed to confirm: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Sky events watchlist (anticipated events like the T CrB nova)
+// ---------------------------------------------------------------------------
+
+// Fetch the most recent visual-band (V or Vis.) magnitude for a star from AAVSO WebObs.
+// Rows come back most-recent-first; we take the first parseable V/Vis. measurement.
+async function fetchAavsoVisualMagnitude(starName: string): Promise<{ magnitude: number; band: string; date: string } | null> {
+  const url = `https://apps.aavso.org/webobs/results/?star=${encodeURIComponent(starName)}&num_results=25`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StellarDiary/1.0)' },
+  });
+  if (!response.ok) return null;
+  const html = await response.text();
+
+  const target = starName.replace(/\s+/g, ' ').trim().toUpperCase();
+  for (const row of html.split(/<tr[^>]*>/i)) {
+    const cells = Array.from(row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)).map((m) =>
+      m[1].replace(/<[^>]+>/g, '').replace(/&mdash;/g, '—').trim()
+    );
+    // Observation rows: [ '', star, JD, calendar date, magnitude, error, filter, observer, ... ]
+    if (cells.length < 8) continue;
+    if (cells[1]?.toUpperCase() !== target) continue;
+    const magnitude = parseFloat(cells[4]);
+    const band = cells[6];
+    if (!Number.isFinite(magnitude)) continue;
+    if (band === 'V' || band === 'Vis.') {
+      return { magnitude, band, date: cells[3] };
+    }
+  }
+  return null;
+}
+
+// Fetch the newest headline from Google News RSS for a search query (no API key needed)
+async function fetchLatestNews(query: string): Promise<{ title: string; url: string; pubDate: string } | null> {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StellarDiary/1.0)' },
+  });
+  if (!response.ok) return null;
+  const xml = await response.text();
+
+  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).map((m) => m[1]);
+  let newest: { title: string; url: string; pubDate: string } | null = null;
+  for (const item of items.slice(0, 10)) {
+    const title = item.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/)?.[1]?.trim();
+    const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim();
+    const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]?.trim();
+    if (!title || !link || !pubDate) continue;
+    const time = Date.parse(pubDate);
+    if (!Number.isFinite(time)) continue;
+    if (!newest || time > Date.parse(newest.pubDate)) {
+      newest = { title, url: link, pubDate };
+    }
+  }
+  return newest;
+}
+
+// Run all applicable checks for one event and return the field updates to persist.
+// A failed source just leaves its fields unchanged.
+async function runSkyEventCheck(event: typeof skyEvents.$inferSelect): Promise<Record<string, unknown>> {
+  const updates: Record<string, unknown> = { lastCheckedAt: new Date() };
+
+  if (event.aavsoName) {
+    try {
+      const reading = await fetchAavsoVisualMagnitude(event.aavsoName);
+      if (reading) {
+        updates.currentMagnitude = reading.magnitude;
+        updates.magnitudeBand = reading.band;
+        if (
+          event.status === 'waiting' &&
+          event.triggerMagnitude != null &&
+          reading.magnitude <= event.triggerMagnitude
+        ) {
+          updates.status = 'triggered';
+          updates.triggeredAt = new Date();
+        }
+      }
+    } catch (error) {
+      console.error(`AAVSO check failed for ${event.name}:`, error);
+    }
+  }
+
+  if (event.newsQuery) {
+    try {
+      const news = await fetchLatestNews(event.newsQuery);
+      if (news) {
+        updates.latestNewsTitle = news.title;
+        updates.latestNewsUrl = news.url;
+        updates.latestNewsDate = news.pubDate;
+      }
+    } catch (error) {
+      console.error(`News check failed for ${event.name}:`, error);
+    }
+  }
+
+  return updates;
+}
+
+app.get('/api/sky-events', async (_req, res) => {
+  try {
+    const events = await getDb().select().from(skyEvents);
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to get sky events: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+app.post('/api/sky-events', async (req, res) => {
+  try {
+    const { name, description, eventType, aavsoName, triggerMagnitude, newsQuery, notes } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    const [event] = await getDb().insert(skyEvents).values({
+      name,
+      description: description || null,
+      eventType: eventType || 'other',
+      aavsoName: aavsoName || null,
+      triggerMagnitude: triggerMagnitude != null && triggerMagnitude !== '' ? parseFloat(triggerMagnitude) : null,
+      newsQuery: newsQuery || null,
+      notes: notes || null,
+    }).returning();
+    res.status(201).json(event);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to create sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+app.patch('/api/sky-events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const allowed = ['name', 'description', 'eventType', 'status', 'aavsoName', 'triggerMagnitude', 'newsQuery', 'notes'];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in req.body) update[key] = req.body[key];
+    }
+    const [event] = await getDb().update(skyEvents).set(update).where(eq(skyEvents.id, id)).returning();
+    if (!event) {
+      return res.status(404).json({ message: 'Sky event not found' });
+    }
+    res.json(event);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to update sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+app.delete('/api/sky-events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [deleted] = await getDb().delete(skyEvents).where(eq(skyEvents.id, id)).returning();
+    if (!deleted) {
+      return res.status(404).json({ message: 'Sky event not found' });
+    }
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to delete sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+// Run AAVSO brightness + news checks for one event immediately
+app.post('/api/sky-events/:id/check', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [event] = await getDb().select().from(skyEvents).where(eq(skyEvents.id, id));
+    if (!event) {
+      return res.status(404).json({ message: 'Sky event not found' });
+    }
+    const updates = await runSkyEventCheck(event);
+    const [updated] = await getDb().update(skyEvents).set(updates).where(eq(skyEvents.id, id)).returning();
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to check sky event: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Cron endpoints (configured in vercel.json; Vercel sends Authorization: Bearer CRON_SECRET)
+// ---------------------------------------------------------------------------
+
+function isCronAuthorized(req: express.Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return true;
+  return req.headers.authorization === `Bearer ${secret}`;
+}
+
+// Daily check of all waiting/triggered sky events
+app.get('/api/cron/check-sky-events', async (req, res) => {
+  if (!isCronAuthorized(req)) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  try {
+    const events = await getDb().select().from(skyEvents);
+    const results = [];
+    for (const event of events) {
+      if (event.status === 'dismissed') continue;
+      const updates = await runSkyEventCheck(event);
+      const [updated] = await getDb().update(skyEvents).set(updates).where(eq(skyEvents.id, event.id)).returning();
+      results.push({
+        id: event.id,
+        name: event.name,
+        status: updated?.status,
+        currentMagnitude: updated?.currentMagnitude,
+      });
+    }
+    res.json({ success: true, checked: results.length, results });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: `Sky event check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    });
+  }
+});
+
+// Auto-create the monthly guide on the 1st of each month
+app.get('/api/cron/monthly-guide', async (req, res) => {
+  if (!isCronAuthorized(req)) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  try {
+    // Resolve "current month" in Pacific time so the 1st-of-month run labels the right month
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles', month: 'long', year: 'numeric',
+    }).formatToParts(new Date());
+    const month = parts.find(p => p.type === 'month')!.value;
+    const year = parseInt(parts.find(p => p.type === 'year')!.value);
+
+    const guides = await getDb().select().from(monthlyGuides);
+    const existing = guides.find(g => g.month === month && g.year === year);
+    if (existing && req.query.force !== 'true') {
+      return res.json({
+        success: true,
+        skipped: true,
+        message: `Guide for ${month} ${year} already exists (id ${existing.id}) — pass ?force=true to regenerate`,
+      });
+    }
+
+    const preview = await buildAutoPopulatePreview(month, year);
+    const result = await applyAutoPopulatedGuide({
+      month, year, hemisphere: 'Northern',
+      headline: preview.suggestedHeadline,
+      description: preview.suggestedDescription,
+      videoUrls: preview.videoUrls,
+      sources: [],
+      objects: preview.mergedObjects,
+    });
+
+    res.json({
+      success: true,
+      month, year,
+      message: `Guide auto-created for ${month} ${year} with ${result.objectsLinked} objects (${result.objectsAdded} new)`,
+      ...result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: `Monthly guide cron failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     });
   }
 });

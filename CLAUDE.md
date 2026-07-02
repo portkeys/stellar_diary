@@ -1,6 +1,6 @@
 # StellarDiary - Project Context
 
-> **Last Updated:** 2026-02-04
+> **Last Updated:** 2026-07-02
 > **Status:** Active development - Deployed on Vercel at stellardiary.org
 
 ## Overview
@@ -67,6 +67,10 @@ StellarDiary/
 | `GET/POST/PATCH/DELETE /api/observations` | User observations |
 | `GET/PATCH /api/monthly-guide` | Monthly sky guides |
 | `GET /api/telescope-tips` | Educational tips |
+| `GET/POST/PATCH/DELETE /api/sky-events` | Anticipated events watchlist (e.g. T CrB nova) |
+| `POST /api/sky-events/:id/check` | Run AAVSO brightness + news check for one event now |
+| `GET /api/cron/monthly-guide` | Vercel cron (1st of month, 14:00 UTC): auto-create current month's guide |
+| `GET /api/cron/check-sky-events` | Vercel cron (daily, 15:00 UTC): check all sky events |
 | `POST /api/admin/*` | Admin operations |
 
 ## Database Schema (shared/schema.ts)
@@ -76,6 +80,7 @@ StellarDiary/
 - `monthlyGuides` - Curated monthly viewing guides
 - `telescopeTips` - Educational content
 - `apodCache` - NASA APOD response cache
+- `skyEvents` - Anticipated events watchlist (AAVSO star name, trigger magnitude, news query, status)
 - `users` - User accounts (Passport.js ready)
 
 ## Commands
@@ -97,6 +102,7 @@ vercel dev           # Test Vercel functions locally
 DATABASE_URL=      # Neon PostgreSQL connection string
 NASA_API_KEY=      # NASA API key (optional, has DEMO_KEY fallback)
 YOUTUBE_API_KEY=   # YouTube Data API v3 key (optional, for auto-populate monthly guides)
+CRON_SECRET=       # Optional; if set on Vercel, cron endpoints require Authorization: Bearer <secret>
 NODE_ENV=          # production | development
 ```
 
@@ -112,6 +118,9 @@ NODE_ENV=          # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-07-02:** Sky events watchlist: `sky_events` table, daily AAVSO brightness check (T CrB nova) + Google News headline pull, app-wide alert banner when triggered
+- **2026-07-02:** Monthly guide now auto-creates via Vercel cron on the 1st (skips if guide exists; `?force=true` regenerates)
+- **2026-07-02:** My Progress planet tracker shows real NASA planet portraits from DB (grayscale until observed); replaced bad planet images (Mars was the InSight lander) with classic portraits
 - **2026-02-04:** Completed Vercel migration with custom domain (stellardiary.org)
 - **2026-01-08:** Migrated from Render to Vercel (serverless)
 - **2026-01-08:** Replaced Python scripts with Node.js for NASA/Wikipedia image search
@@ -122,7 +131,9 @@ NODE_ENV=          # production | development
 
 - Image search uses native Node.js fetch for NASA/Wikipedia APIs (no Python)
 - Celestial objects support hemisphere-based filtering (Northern/Southern/Both)
-- Monthly guides are admin-managed via Admin panel
+- Monthly guides auto-create via cron on the 1st; Admin panel still works for manual curation
+- Sky event checks scrape AAVSO WebObs (visual magnitude) and Google News RSS — no API keys needed
+- `npm run check` does NOT cover `api/` (tsconfig excludes it) — typecheck with `npx tsc --noEmit --esModuleInterop --skipLibCheck --strict --target es2022 --module esnext --moduleResolution bundler api/index.ts`
 - Session auth infrastructure in place but not fully implemented
 - Deployed on Vercel with serverless functions in `/api/`
 - Database seeding is a one-time operation via `npm run db:seed`
