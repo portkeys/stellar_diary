@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Check } from "lucide-react";
 import type { CelestialObject, Observation } from "@shared/schema";
@@ -17,7 +18,61 @@ const PLANETS = [
   { name: "Neptune", color: "bg-blue-500" },
 ];
 
+/** NASA image library assets ship a small ~thumb variant — plenty for a 64px circle */
+function toThumbnailUrl(url: string): string {
+  if (url.includes("images-assets.nasa.gov")) {
+    return url.replace(/~(orig|large|medium|small)\./, "~thumb.");
+  }
+  return url;
+}
+
+/** Planet photo with fallback chain: thumbnail → full image → colored circle */
+const PlanetImage = ({
+  imageUrl,
+  name,
+  color,
+  isObserved,
+}: {
+  imageUrl: string | null;
+  name: string;
+  color: string;
+  isObserved: boolean;
+}) => {
+  const [failedThumb, setFailedThumb] = useState(false);
+  const [failedFull, setFailedFull] = useState(false);
+
+  if (!imageUrl || failedFull) {
+    return (
+      <div
+        className={`w-14 h-14 rounded-full ${color} ${isObserved ? "" : "grayscale"}`}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={failedThumb ? imageUrl : toThumbnailUrl(imageUrl)}
+      alt={name}
+      loading="lazy"
+      className={`w-14 h-14 rounded-full object-cover ${isObserved ? "" : "grayscale"}`}
+      onError={() => (failedThumb ? setFailedFull(true) : setFailedThumb(true))}
+    />
+  );
+};
+
 const SolarSystemTracker = ({ celestialObjects, observations }: SolarSystemTrackerProps) => {
+  // Map planet name (lowercase) -> catalog imageUrl (NASA photos stored in DB)
+  const planetImageMap = new Map<string, string | null>();
+  celestialObjects.forEach((obj) => {
+    if (obj.type === "planet") {
+      PLANETS.forEach((p) => {
+        if (obj.name.toLowerCase().includes(p.name.toLowerCase())) {
+          planetImageMap.set(p.name.toLowerCase(), obj.imageUrl);
+        }
+      });
+    }
+  });
+
   // Build a set of observed planet names (lowercase)
   const observedPlanetNames = new Set<string>();
 
@@ -81,11 +136,11 @@ const SolarSystemTracker = ({ celestialObjects, observations }: SolarSystemTrack
                   : "bg-space-blue-dark/50 border-cosmic-purple/30 opacity-50"
               }`}
             >
-              {/* Planet circle */}
-              <div
-                className={`w-12 h-12 rounded-full ${planet.color} ${
-                  isObserved ? "" : "grayscale"
-                }`}
+              <PlanetImage
+                imageUrl={planetImageMap.get(planet.name.toLowerCase()) ?? null}
+                name={planet.name}
+                color={planet.color}
+                isObserved={isObserved}
               />
               <span
                 className={`text-sm font-medium ${

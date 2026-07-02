@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SkyEventAlertBanner from "@/components/astronomy/SkyEventAlertBanner";
 import NotFound from "@/pages/not-found";
 import StarryBackground from "@/components/StarryBackground";
 import Home from "@/pages/Home";
@@ -34,6 +35,7 @@ function App() {
         <div className="min-h-screen flex flex-col">
           <StarryBackground />
           <Navbar />
+          <SkyEventAlertBanner />
           <main className="flex-grow">
             <Router />
           </main>

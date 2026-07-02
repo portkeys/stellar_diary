@@ -6,5 +6,12 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/index.ts": { "maxDuration": 60 }
+  },
+  "crons": [
+    { "path": "/api/cron/monthly-guide", "schedule": "0 14 1 * *" },
+    { "path": "/api/cron/check-sky-events", "schedule": "0 15 * * *" }
   ]
 }

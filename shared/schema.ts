@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -90,6 +90,46 @@ export const insertGuideObjectSchema = createInsertSchema(guideObjects).omit({
   id: true,
 });
 
+// Anticipated sky events watchlist (e.g. waiting for T CrB to go nova)
+export const skyEventTypes = ["nova", "supernova", "comet", "eclipse", "occultation", "conjunction", "other"] as const;
+export type SkyEventType = typeof skyEventTypes[number];
+
+export const skyEventStatuses = ["waiting", "triggered", "dismissed"] as const;
+export type SkyEventStatus = typeof skyEventStatuses[number];
+
+export const skyEvents = pgTable("sky_events", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  eventType: text("event_type").notNull().default("other"),
+  status: text("status").notNull().default("waiting"),
+  aavsoName: text("aavso_name"), // AAVSO star identifier (e.g. "T CrB") enables automated brightness checks
+  triggerMagnitude: real("trigger_magnitude"), // event triggers when star is at least this bright (mag <= value)
+  currentMagnitude: real("current_magnitude"), // latest visual magnitude from AAVSO
+  magnitudeBand: text("magnitude_band"), // band of the latest measurement (V, Vis.)
+  newsQuery: text("news_query"), // Google News search query for headline pulls
+  latestNewsTitle: text("latest_news_title"),
+  latestNewsUrl: text("latest_news_url"),
+  latestNewsDate: text("latest_news_date"),
+  lastCheckedAt: timestamp("last_checked_at"),
+  triggeredAt: timestamp("triggered_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSkyEventSchema = createInsertSchema(skyEvents).omit({
+  id: true,
+  status: true,
+  currentMagnitude: true,
+  magnitudeBand: true,
+  latestNewsTitle: true,
+  latestNewsUrl: true,
+  latestNewsDate: true,
+  lastCheckedAt: true,
+  triggeredAt: true,
+  createdAt: true,
+});
+
 // Telescope tips schema
 export const telescopeTips = pgTable("telescope_tips", {
   id: serial("id").primaryKey(),
@@ -121,6 +161,9 @@ export type InsertGuideObject = z.infer<typeof insertGuideObjectSchema>;
 
 export type TelescopeTip = typeof telescopeTips.$inferSelect;
 export type InsertTelescopeTip = z.infer<typeof insertTelescopeTipSchema>;
+
+export type SkyEvent = typeof skyEvents.$inferSelect;
+export type InsertSkyEvent = z.infer<typeof insertSkyEventSchema>;
 
 // NASA APOD response type
 export const apodCache = pgTable("apod_cache", {
