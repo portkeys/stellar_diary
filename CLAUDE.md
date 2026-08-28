@@ -1,6 +1,6 @@
 # StellarDiary - Project Context
 
-> **Last Updated:** 2026-07-02
+> **Last Updated:** 2026-08-28
 > **Status:** Active development - Deployed on Vercel at stellardiary.org
 
 ## Overview
@@ -76,7 +76,7 @@ StellarDiary/
 ## Database Schema (shared/schema.ts)
 
 - `celestialObjects` - Astronomical objects with coordinates, magnitude, images
-- `observations` - User observation records
+- `observations` - User observation records (incl. optional `videoUrl` for the user's own footage)
 - `monthlyGuides` - Curated monthly viewing guides
 - `telescopeTips` - Educational content
 - `apodCache` - NASA APOD response cache
@@ -118,6 +118,7 @@ NODE_ENV=          # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-08-28:** Observations can carry a personal video link (`observations.video_url`); YouTube watch/shorts/youtu.be URLs render as an inline embed on My Observations, other URLs as a link
 - **2026-07-02:** Sky events watchlist: `sky_events` table, daily AAVSO brightness check (T CrB nova) + Google News headline pull, app-wide alert banner when triggered
 - **2026-07-02:** Monthly guide now auto-creates via Vercel cron on the 1st (skips if guide exists; `?force=true` regenerates)
 - **2026-07-02:** My Progress planet tracker shows real NASA planet portraits from DB (grayscale until observed); replaced bad planet images (Mars was the InSight lander) with classic portraits

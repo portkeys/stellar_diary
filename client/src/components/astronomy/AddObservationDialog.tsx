@@ -49,6 +49,7 @@ const formSchema = z.object({
   isObserved: z.boolean().default(false),
   observationDate: z.string().optional(),
   observationNotes: z.string().optional(),
+  videoUrl: z.string().url({ message: "Enter a valid URL." }).optional().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -87,6 +88,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
       isObserved: false,
       observationDate: '',
       observationNotes: '',
+      videoUrl: '',
     },
   });
   
@@ -160,6 +162,7 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
         objectId,
         isObserved: values.isObserved,
         observationNotes: values.observationNotes,
+        videoUrl: values.videoUrl || null,
         plannedDate: values.observationDate,
       });
     },
@@ -436,6 +439,27 @@ const AddObservationDialog: React.FC<AddObservationDialogProps> = ({ open, onOpe
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="videoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-star-white">Video Link (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://youtube.com/shorts/..."
+                      className="bg-space-blue-dark border-cosmic-purple"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-sm text-star-dim">
+                    Link to your own video or photo of this observation
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
