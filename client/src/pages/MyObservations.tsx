@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import AddObservationDialog from "@/components/astronomy/AddObservationDialog";
 import SkyEventWatchlist from "@/components/astronomy/SkyEventWatchlist";
+import { getYouTubeEmbedUrl } from '@/lib/utils';
 
 interface EnhancedObservation extends Observation {
   celestialObject?: any;
@@ -43,6 +44,7 @@ const MyObservations = () => {
   const [selectedObservation, setSelectedObservation] = useState<EnhancedObservation | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [videoUrlInput, setVideoUrlInput] = useState("");
   const [openDateDialog, setOpenDateDialog] = useState(false);
   const [dateInput, setDateInput] = useState("");
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -96,8 +98,8 @@ const MyObservations = () => {
 
   // Mutation to update observation notes
   const updateNotesMutation = useMutation({
-    mutationFn: async ({ id, notes }: { id: number, notes: string }) => {
-      await apiRequest('PATCH', `/api/observations/${id}`, { observationNotes: notes });
+    mutationFn: async ({ id, notes, videoUrl }: { id: number, notes: string, videoUrl: string }) => {
+      await apiRequest('PATCH', `/api/observations/${id}`, { observationNotes: notes, videoUrl });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/observations'] });
@@ -127,12 +129,13 @@ const MyObservations = () => {
   const handleOpenNotesDialog = (observation: EnhancedObservation) => {
     setSelectedObservation(observation);
     setNotesInput(observation.observationNotes || "");
+    setVideoUrlInput(observation.videoUrl || "");
     setOpenDialog(true);
   };
 
   const handleSaveNotes = () => {
     if (selectedObservation) {
-      updateNotesMutation.mutate({ id: selectedObservation.id, notes: notesInput });
+      updateNotesMutation.mutate({ id: selectedObservation.id, notes: notesInput, videoUrl: videoUrlInput.trim() });
     }
   };
   
@@ -491,6 +494,30 @@ const MyObservations = () => {
                                   <i className="fas fa-plus-circle mr-1"></i> Add notes
                                 </button>
                               )}
+                              {session.videoUrl && (
+                                <div className="mt-3">
+                                  {getYouTubeEmbedUrl(session.videoUrl) ? (
+                                    <div className="max-w-[280px] aspect-[9/16] rounded-lg overflow-hidden border border-cosmic-purple">
+                                      <iframe
+                                        src={getYouTubeEmbedUrl(session.videoUrl)!}
+                                        title="Observation video"
+                                        className="w-full h-full"
+                                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                      />
+                                    </div>
+                                  ) : (
+                                    <a
+                                      href={session.videoUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center text-sm text-stellar-gold hover:underline"
+                                    >
+                                      <i className="fas fa-video mr-2"></i> Watch my video
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -542,7 +569,18 @@ const MyObservations = () => {
               onChange={(e) => setNotesInput(e.target.value)}
             />
           </div>
-          
+
+          <div className="mb-4">
+            <label className="block text-sm text-star-white mb-1">Video link (optional)</label>
+            <input
+              type="url"
+              className="w-full rounded-md bg-space-blue-dark border-cosmic-purple p-2 text-star-white focus:outline-none focus:ring-2 focus:ring-nebula-pink"
+              placeholder="https://youtube.com/shorts/..."
+              value={videoUrlInput}
+              onChange={(e) => setVideoUrlInput(e.target.value)}
+            />
+          </div>
+
           <DialogFooter>
             <Button
               variant="outline"

@@ -40,6 +40,7 @@ export const observations = pgTable("observations", {
   objectId: integer("object_id"), // Not enforcing foreign key in memory storage
   isObserved: boolean("is_observed").default(false),
   observationNotes: text("observation_notes"),
+  videoUrl: text("video_url"), // Optional link to the user's own video of the observation
   dateAdded: timestamp("date_added").defaultNow(),
   plannedDate: date("planned_date"),
 });

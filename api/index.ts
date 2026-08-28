@@ -23,6 +23,7 @@ const observations = pgTable('observations', {
   objectId: integer('object_id'),
   isObserved: boolean('is_observed').default(false),
   observationNotes: text('observation_notes'),
+  videoUrl: text('video_url'),
   dateAdded: timestamp('date_added').defaultNow(),
   plannedDate: date('planned_date'),
 });
@@ -898,7 +899,7 @@ app.post('/api/celestial-objects', async (req, res) => {
 // Create a new observation
 app.post('/api/observations', async (req, res) => {
   try {
-    const { objectId, isObserved, observationNotes, plannedDate } = req.body;
+    const { objectId, isObserved, observationNotes, plannedDate, videoUrl } = req.body;
 
     if (!objectId) {
       return res.status(400).json({ message: 'objectId is required' });
@@ -924,6 +925,7 @@ app.post('/api/observations', async (req, res) => {
       objectId,
       isObserved: isObserved || false,
       observationNotes: observationNotes || null,
+      videoUrl: videoUrl || null,
       plannedDate: plannedDate || null,
     }).returning();
 
@@ -968,6 +970,7 @@ app.patch('/api/observations/:id', async (req, res) => {
     if (req.body.isObserved !== undefined) updateData.isObserved = req.body.isObserved;
     if (req.body.observationNotes !== undefined) updateData.observationNotes = req.body.observationNotes;
     if (req.body.plannedDate !== undefined) updateData.plannedDate = req.body.plannedDate;
+    if (req.body.videoUrl !== undefined) updateData.videoUrl = req.body.videoUrl || null;
 
     const [updatedObservation] = await getDb()
       .update(observations)

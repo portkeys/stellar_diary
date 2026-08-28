@@ -72,3 +72,5 @@ api/index.mjs
 
 # Playwright MCP test artifacts
 .playwright-mcp/
+# Vercel CLI link config (contains org/project IDs)
+.vercel/
