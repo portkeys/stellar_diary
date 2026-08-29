@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ObservationCalendar from "@/components/astronomy/ObservationCalendar";
 import SolarSystemTracker from "@/components/astronomy/SolarSystemTracker";
 import MessierChallenge from "@/components/astronomy/MessierChallenge";
+import EclipseTracker from "@/components/astronomy/EclipseTracker";
 import type { CelestialObject, Observation } from "@shared/schema";
 
 interface EnhancedObservation extends Observation {
@@ -169,6 +170,10 @@ const MyProgress = () => {
           <Card className="bg-space-blue border-cosmic-purple/30">
             <CardContent className="p-6">
               <SolarSystemTracker
+                celestialObjects={objects}
+                observations={obs}
+              />
+              <EclipseTracker
                 celestialObjects={objects}
                 observations={obs}
               />
