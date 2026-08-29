@@ -4,10 +4,9 @@ import {
   Observation, InsertObservation,
   MonthlyGuide, InsertMonthlyGuide,
   GuideObject, InsertGuideObject,
-  TelescopeTip, InsertTelescopeTip,
   SkyEvent, InsertSkyEvent,
   users, celestialObjects, observations,
-  monthlyGuides, guideObjects, telescopeTips, apodCache, skyEvents
+  monthlyGuides, guideObjects, apodCache, skyEvents
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, inArray } from "drizzle-orm";
@@ -50,12 +49,6 @@ export interface IStorage {
   getGuideObjectsWithDetails(guideId: number): Promise<(GuideObject & { object: CelestialObject })[]>;
   createGuideObject(guideObject: InsertGuideObject): Promise<GuideObject>;
   deleteGuideObjectsByGuide(guideId: number): Promise<boolean>;
-  
-  // Telescope tips operations
-  getTelescopeTip(id: number): Promise<TelescopeTip | undefined>;
-  getAllTelescopeTips(): Promise<TelescopeTip[]>;
-  getTelescopeTipsByCategory(category: string): Promise<TelescopeTip[]>;
-  createTelescopeTip(tip: InsertTelescopeTip): Promise<TelescopeTip>;
 
   // Sky events operations (anticipated events watchlist)
   getSkyEvent(id: number): Promise<SkyEvent | undefined>;
@@ -253,27 +246,6 @@ export class DatabaseStorage implements IStorage {
   async deleteGuideObjectsByGuide(guideId: number): Promise<boolean> {
     await db.delete(guideObjects).where(eq(guideObjects.guideId, guideId));
     return true;
-  }
-
-  async getTelescopeTip(id: number): Promise<TelescopeTip | undefined> {
-    const [tip] = await db.select().from(telescopeTips).where(eq(telescopeTips.id, id));
-    return tip || undefined;
-  }
-
-  async getAllTelescopeTips(): Promise<TelescopeTip[]> {
-    return await db.select().from(telescopeTips);
-  }
-
-  async getTelescopeTipsByCategory(category: string): Promise<TelescopeTip[]> {
-    return await db.select().from(telescopeTips).where(eq(telescopeTips.category, category));
-  }
-
-  async createTelescopeTip(insertTip: InsertTelescopeTip): Promise<TelescopeTip> {
-    const [tip] = await db
-      .insert(telescopeTips)
-      .values(insertTip)
-      .returning();
-    return tip;
   }
 
   async getSkyEvent(id: number): Promise<SkyEvent | undefined> {

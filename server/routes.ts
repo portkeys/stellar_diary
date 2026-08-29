@@ -517,25 +517,6 @@ export async function registerRoutes(app: Express, options?: { skipSeeding?: boo
     }
   });
 
-  // Get telescope tips
-  app.get("/api/telescope-tips", async (req: Request, res: Response) => {
-    try {
-      const { category } = req.query;
-
-      if (category) {
-        const tips = await storage.getTelescopeTipsByCategory(category as string);
-        return res.json(tips);
-      }
-
-      const tips = await storage.getAllTelescopeTips();
-      res.json(tips);
-    } catch (error) {
-      res.status(500).json({
-        message: `Failed to get telescope tips: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-  });
-
   // Admin routes for monthly guide management
   app.post("/api/admin/update-monthly-guide", async (req: Request, res: Response) => {
     try {
