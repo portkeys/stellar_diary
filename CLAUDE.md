@@ -55,7 +55,7 @@ StellarDiary/
 2. **Celestial Object Database** - Planets, galaxies, nebulae, clusters (7 types)
 3. **Observation Tracking** - Personal observation journal with CRUD
 4. **Monthly Sky Guides** - Curated viewing guides by hemisphere
-5. **Educational Content** - Telescope tips, collimation guide
+5. **Educational Content** - Collimation guide
 6. **Image Fallback System** - NASA Images → Wikipedia → defaults
 
 ## API Endpoints
@@ -66,7 +66,6 @@ StellarDiary/
 | `GET/POST /api/celestial-objects` | Celestial object CRUD |
 | `GET/POST/PATCH/DELETE /api/observations` | User observations |
 | `GET/PATCH /api/monthly-guide` | Monthly sky guides |
-| `GET /api/telescope-tips` | Educational tips |
 | `GET/POST/PATCH/DELETE /api/sky-events` | Anticipated events watchlist (e.g. T CrB nova) |
 | `POST /api/sky-events/:id/check` | Run AAVSO brightness + news check for one event now |
 | `GET /api/cron/monthly-guide` | Vercel cron (1st of month, 14:00 UTC): auto-create current month's guide |
@@ -78,7 +77,6 @@ StellarDiary/
 - `celestialObjects` - Astronomical objects with coordinates, magnitude, images
 - `observations` - User observation records (incl. optional `videoUrl` for the user's own footage)
 - `monthlyGuides` - Curated monthly viewing guides
-- `telescopeTips` - Educational content
 - `apodCache` - NASA APOD response cache
 - `skyEvents` - Anticipated events watchlist (AAVSO star name, trigger magnitude, news query, status)
 - `users` - User accounts (Passport.js ready)
@@ -118,6 +116,7 @@ NODE_ENV=          # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-08-28:** Removed the telescope-tips feature (orphaned since the Learn page was replaced by My Progress): component, Express route, storage methods, seed data, and the `telescope_tips` table
 - **2026-08-28:** My Progress gained an Eclipses Seen tracker (lunar + solar) under the planet grid; counts sightings rather than a one-time check, since eclipses recur
 - **2026-08-28:** Observations can carry a personal video link (`observations.video_url`); YouTube watch/shorts/youtu.be URLs render as an inline embed on My Observations, other URLs as a link
 - **2026-07-02:** Sky events watchlist: `sky_events` table, daily AAVSO brightness check (T CrB nova) + Google News headline pull, app-wide alert banner when triggered

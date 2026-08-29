@@ -95,30 +95,8 @@ const seedCelestialObjects: InsertCelestialObject[] = [
   },
 ];
 
-// Telescope tips seed data
-const seedTelescopeTips = [
-  {
-    title: "Collimating Your Apertura AD8 Dobsonian",
-    content: "Good collimation is crucial for sharp views with your Apertura AD8. The included laser collimator makes this easy with just two main steps: 1) First, align the secondary mirror by adjusting the secondary mirror housing hex screws until the laser hits the center spot on the primary mirror. 2) Then, align the primary mirror by loosening the white thumb screws and adjusting the black knobs until the laser returns back to the laser collimator's 45-degree reflective surface. This process takes under 2 minutes once you've practiced a few times and will significantly improve your viewing experience.",
-    category: "Maintenance",
-    imageUrl: "/collimate_AD8.jpg"
-  },
-  {
-    title: "Best Eyepieces for Your Dob",
-    content: "Discover which eyepieces work best with your 8-inch Dobsonian for different celestial objects, from planets to deep sky targets.",
-    category: "Equipment",
-    imageUrl: "https://images.unsplash.com/photo-1536697246787-1f7ae568d89a?auto=format&fit=crop&w=600&h=300"
-  },
-  {
-    title: "Understanding Aperture",
-    content: "When it comes to telescopes, there's one key feature that stands out from everything else: aperture. The aperture of a telescope is the diameter of the lens or mirror, and the bigger the aperture, the more light the telescope can gather. As a result, observers are able to identify fainter objects and see more detail than would be possible with a smaller aperture scope. The downside? Larger apertures can lack portability, and of course, they cost more!",
-    category: "Astronomy Basics",
-    imageUrl: "https://images.unsplash.com/photo-1522124624696-7ea32eb9592c?auto=format&fit=crop&w=600&h=300"
-  }
-];
-
 /**
- * Seeds the database with initial celestial objects and telescope tips
+ * Seeds the database with initial celestial objects
  */
 export async function seedDatabase(): Promise<void> {
   // Seed celestial objects
@@ -128,15 +106,6 @@ export async function seedDatabase(): Promise<void> {
       await storage.createCelestialObject(object);
     }
     console.log('Seeded celestial objects');
-  }
-
-  // Seed telescope tips
-  const existingTips = await storage.getAllTelescopeTips();
-  if (existingTips.length === 0) {
-    for (const tip of seedTelescopeTips) {
-      await storage.createTelescopeTip(tip);
-    }
-    console.log('Seeded telescope tips');
   }
 
   // Check if we have an APOD cache entry

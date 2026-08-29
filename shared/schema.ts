@@ -131,19 +131,6 @@ export const insertSkyEventSchema = createInsertSchema(skyEvents).omit({
   createdAt: true,
 });
 
-// Telescope tips schema
-export const telescopeTips = pgTable("telescope_tips", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  category: text("category").notNull(), // Collimation, Eyepieces, Maintenance, etc.
-  imageUrl: text("image_url"),
-});
-
-export const insertTelescopeTipSchema = createInsertSchema(telescopeTips).omit({
-  id: true,
-});
-
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -159,9 +146,6 @@ export type InsertMonthlyGuide = z.infer<typeof insertMonthlyGuideSchema>;
 
 export type GuideObject = typeof guideObjects.$inferSelect;
 export type InsertGuideObject = z.infer<typeof insertGuideObjectSchema>;
-
-export type TelescopeTip = typeof telescopeTips.$inferSelect;
-export type InsertTelescopeTip = z.infer<typeof insertTelescopeTipSchema>;
 
 export type SkyEvent = typeof skyEvents.$inferSelect;
 export type InsertSkyEvent = z.infer<typeof insertSkyEventSchema>;
