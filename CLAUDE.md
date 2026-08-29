@@ -118,6 +118,7 @@ NODE_ENV=          # production | development
 ## Recent Changes
 
 <!-- Update this section after each significant PR -->
+- **2026-08-28:** My Progress gained an Eclipses Seen tracker (lunar + solar) under the planet grid; counts sightings rather than a one-time check, since eclipses recur
 - **2026-08-28:** Observations can carry a personal video link (`observations.video_url`); YouTube watch/shorts/youtu.be URLs render as an inline embed on My Observations, other URLs as a link
 - **2026-07-02:** Sky events watchlist: `sky_events` table, daily AAVSO brightness check (T CrB nova) + Google News headline pull, app-wide alert banner when triggered
 - **2026-07-02:** Monthly guide now auto-creates via Vercel cron on the 1st (skips if guide exists; `?force=true` regenerates)
