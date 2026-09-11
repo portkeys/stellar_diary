@@ -27,13 +27,20 @@ async function main() {
     );
     if (!canonical) continue;
 
+    // Never lose a real image: if the kept row has the placeholder and the duplicate doesn't, copy it over
+    const isPlaceholder = (url: string | null) => !url || url.includes("unsplash.com");
+    const takeImage = isPlaceholder(canonical.imageUrl) && !isPlaceholder(dup.imageUrl);
+
     const links = await db.select().from(guideObjects).where(eq(guideObjects.objectId, dup.id));
     const obs = await db.select().from(observations).where(eq(observations.objectId, dup.id));
     console.log(
-      `#${dup.id} "${dup.name}" -> #${canonical.id} "${canonical.name}"  (${links.length} guide links, ${obs.length} observations)`
+      `#${dup.id} "${dup.name}" -> #${canonical.id} "${canonical.name}"  (${links.length} guide links, ${obs.length} observations${takeImage ? ", taking image" : ""})`
     );
 
     if (apply) {
+      if (takeImage) {
+        await db.update(celestialObjects).set({ imageUrl: dup.imageUrl }).where(eq(celestialObjects.id, canonical.id));
+      }
       for (const link of links) {
         const clash = await db.select().from(guideObjects)
           .where(eq(guideObjects.guideId, link.guideId));
