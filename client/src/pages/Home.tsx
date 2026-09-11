@@ -14,9 +14,20 @@ const Home = () => {
           <h1 className="text-4xl lg:text-5xl text-space font-bold text-stellar-gold mb-4">
             StellarDiary
           </h1>
-          <p className="text-lg mb-6 max-w-2xl">
+          <p className="text-lg mb-3 max-w-2xl">
             My personal journey exploring the cosmos with my Apertura AD8 Dobsonian telescope. 
             Follow along as I track celestial events, record observations, and share discoveries about our fascinating universe.
+          </p>
+          <p className="text-sm text-star-dim mb-6">
+            Creator:{" "}
+            <a
+              href="https://threeportkeys.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-stellar-gold hover:underline"
+            >
+              Wen
+            </a>
           </p>
         </div>
       </div>
