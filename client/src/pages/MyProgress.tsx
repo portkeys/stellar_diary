@@ -7,6 +7,7 @@ import SolarSystemTracker from "@/components/astronomy/SolarSystemTracker";
 import MessierChallenge from "@/components/astronomy/MessierChallenge";
 import EclipseTracker from "@/components/astronomy/EclipseTracker";
 import type { CelestialObject, Observation } from "@shared/schema";
+import { extractMessierNumber } from "@shared/catalog";
 
 interface EnhancedObservation extends Observation {
   celestialObject?: any;
@@ -72,19 +73,23 @@ const MyProgress = () => {
         }
       });
 
-      // Messier count
-      const messierObjs = objects.filter((obj) => /\bM\s*(\d{1,3})\b/i.test(obj.name));
-      const messierObservedCount = messierObjs.filter((obj) =>
-        observedObjectIds.has(obj.id)
-      ).length;
+      // Messier count, one per Messier number (the DB may hold duplicate rows for the same object)
+      const messierNumbers = new Set<number>();
+      const observedMessierNumbers = new Set<number>();
+      objects.forEach((obj) => {
+        const mNum = extractMessierNumber(obj.name);
+        if (!mNum) return;
+        messierNumbers.add(mNum);
+        if (observedObjectIds.has(obj.id)) observedMessierNumbers.add(mNum);
+      });
 
       return {
         dateCountMap: dcm,
         totalObserved: observed.length,
         uniqueNights: dcm.size,
         planetCount: observedPlanetNames.size,
-        messierCount: messierObservedCount,
-        messierTotal: messierObjs.length,
+        messierCount: observedMessierNumbers.size,
+        messierTotal: messierNumbers.size,
       };
     }, [obs, objects]);
 
