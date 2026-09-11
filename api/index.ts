@@ -5,6 +5,25 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { pgTable, text, serial, integer, boolean, date, timestamp, real } from 'drizzle-orm/pg-core';
 import { eq, desc } from 'drizzle-orm';
 
+// Catalog designation matching (mirrors shared/catalog.ts; api/ can't import shared/)
+const DESIGNATION_RE = /\b(M|NGC|IC|C)\s*(\d{1,4})\b/gi;
+function extractCatalogIds(name: string): string[] {
+  const ids: string[] = [];
+  let m: RegExpExecArray | null;
+  DESIGNATION_RE.lastIndex = 0;
+  while ((m = DESIGNATION_RE.exec(name)) !== null) ids.push(`${m[1].toUpperCase()}${parseInt(m[2], 10)}`);
+  return ids;
+}
+/** Match by exact (case-insensitive) name, then by primary catalog designation (e.g. "M15" ↔ "Great Pegasus Cluster (M15)") */
+function findMatchingObject<T extends { name: string }>(name: string, objects: T[]): T | undefined {
+  const lower = name.trim().toLowerCase();
+  const exact = objects.find(o => o.name.toLowerCase() === lower);
+  if (exact) return exact;
+  const ids = extractCatalogIds(name);
+  if (ids.length === 0) return undefined;
+  return objects.find(o => extractCatalogIds(o.name)[0] === ids[0]);
+}
+
 // Inline schema definitions (Vercel can't resolve imports from outside /api)
 // Simplified celestial objects - static catalog without time-specific info
 const celestialObjects = pgTable('celestial_objects', {
@@ -706,10 +725,9 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
     // Add objects to database with NASA/Wikipedia image search
     let objectsAdded = 0;
     const existingObjects = await getDb().select().from(celestialObjects);
-    const existingNames = new Set(existingObjects.map(o => o.name.toLowerCase()));
 
     for (const obj of extractedObjects) {
-      if (!existingNames.has(obj.name.toLowerCase())) {
+      if (!findMatchingObject(obj.name, existingObjects)) {
         try {
           // Search for image from NASA or Wikipedia
           let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
@@ -725,16 +743,16 @@ app.post('/api/admin/update-monthly-guide', async (req, res) => {
             console.log(`⚠ Image search failed for ${obj.name}: ${imgErr}`);
           }
 
-          await getDb().insert(celestialObjects).values({
+          const [inserted] = await getDb().insert(celestialObjects).values({
             name: obj.name,
             type: obj.type,
             description: obj.description,
             imageUrl: imageUrl,
             constellation: obj.constellation || null,
             magnitude: obj.magnitude || null,
-          });
+          }).returning();
           objectsAdded++;
-          existingNames.add(obj.name.toLowerCase());
+          existingObjects.push(inserted);
           console.log(`✓ Added: ${obj.name} [image: ${imageSource}]`);
 
           // Small delay between API calls
@@ -863,13 +881,11 @@ app.post('/api/celestial-objects', async (req, res) => {
 
     // Check if a celestial object with this name already exists
     const existingObjects = await getDb().select().from(celestialObjects);
-    const exists = existingObjects.some(
-      (obj) => obj.name.toLowerCase() === req.body.name?.toLowerCase()
-    );
+    const existing = findMatchingObject(String(req.body.name || ''), existingObjects);
 
-    if (exists) {
+    if (existing) {
       return res.status(409).json({
-        message: `A celestial object with the name "${req.body.name}" already exists`
+        message: `A celestial object matching "${req.body.name}" already exists: "${existing.name}"`
       });
     }
 
@@ -1279,9 +1295,8 @@ async function buildAutoPopulatePreview(month: string, yearNum: number) {
 
     // Check DB existence
     const existingObjects = await getDb().select().from(celestialObjects);
-    const existingMap = new Map(existingObjects.map(o => [o.name.toLowerCase(), o]));
     for (const obj of mergedObjects) {
-      const dbObj = existingMap.get(obj.name.toLowerCase());
+      const dbObj = findMatchingObject(obj.name, existingObjects);
       if (dbObj) {
         obj.existsInDb = true;
         obj.dbId = dbObj.id;
@@ -1343,12 +1358,11 @@ async function applyAutoPopulatedGuide(params: {
   let objectsAdded = 0;
   let objectsLinked = 0;
   const allExisting = await getDb().select().from(celestialObjects);
-  const nameMap = new Map(allExisting.map(o => [o.name.toLowerCase(), o]));
 
   for (let i = 0; i < objects.length; i++) {
     const obj = objects[i];
     try {
-      let dbObj = nameMap.get(obj.name.toLowerCase());
+      let dbObj = findMatchingObject(obj.name, allExisting);
 
       if (!dbObj) {
         let imageUrl = 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?auto=format&fit=crop&w=800&h=500';
@@ -1362,7 +1376,7 @@ async function applyAutoPopulatedGuide(params: {
           imageUrl, constellation: obj.constellation || null, magnitude: obj.magnitude || null,
         }).returning();
         dbObj = created;
-        nameMap.set(obj.name.toLowerCase(), dbObj);
+        allExisting.push(dbObj);
         objectsAdded++;
         await new Promise(resolve => setTimeout(resolve, 300));
       }

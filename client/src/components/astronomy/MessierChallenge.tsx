@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Check } from "lucide-react";
 import type { CelestialObject, Observation } from "@shared/schema";
+import { extractMessierNumber } from "@shared/catalog";
 
 interface MessierChallengeProps {
   celestialObjects: CelestialObject[];
@@ -18,11 +19,6 @@ const TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-/** Extract Messier number from a name like "Crab Nebula (M1)" or "M42" */
-function extractMessierNumber(name: string): number | null {
-  const match = name.match(/\bM\s*(\d{1,3})\b/i);
-  return match ? parseInt(match[1], 10) : null;
-}
 
 const MessierChallenge = ({ celestialObjects, observations }: MessierChallengeProps) => {
   const [typeFilter, setTypeFilter] = useState<MessierType>("all");
@@ -34,16 +30,28 @@ const MessierChallenge = ({ celestialObjects, observations }: MessierChallengePr
     [observations]
   );
 
-  // Get all Messier objects from celestial objects
+  // One entry per Messier number. If the DB has several rows for the same number
+  // (e.g. "M15" and "Great Pegasus Cluster (M15)"), prefer the observed one, then the descriptive name.
   const messierObjects = useMemo(() => {
-    return celestialObjects
-      .map((obj) => {
-        const mNum = extractMessierNumber(obj.name);
-        return mNum ? { ...obj, messierNumber: mNum } : null;
-      })
-      .filter((obj): obj is CelestialObject & { messierNumber: number } => obj !== null)
-      .sort((a, b) => a.messierNumber - b.messierNumber);
-  }, [celestialObjects]);
+    const byNumber = new Map<number, CelestialObject & { messierNumber: number }>();
+    for (const obj of celestialObjects) {
+      const mNum = extractMessierNumber(obj.name);
+      if (!mNum) continue;
+      const current = byNumber.get(mNum);
+      const candidate = { ...obj, messierNumber: mNum };
+      if (!current) {
+        byNumber.set(mNum, candidate);
+        continue;
+      }
+      const currentObserved = observedObjectIds.has(current.id);
+      const candidateObserved = observedObjectIds.has(obj.id);
+      if ((candidateObserved && !currentObserved) ||
+          (candidateObserved === currentObserved && obj.name.length > current.name.length)) {
+        byNumber.set(mNum, candidate);
+      }
+    }
+    return Array.from(byNumber.values()).sort((a, b) => a.messierNumber - b.messierNumber);
+  }, [celestialObjects, observedObjectIds]);
 
   const observedCount = messierObjects.filter((obj) => observedObjectIds.has(obj.id)).length;
   const progressPercent = messierObjects.length > 0 ? (observedCount / messierObjects.length) * 100 : 0;

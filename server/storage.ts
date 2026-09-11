@@ -1,3 +1,4 @@
+import { findMatchingObject } from "@shared/catalog";
 import {
   User, InsertUser,
   CelestialObject, InsertCelestialObject,
@@ -82,9 +83,11 @@ export class DatabaseStorage implements IStorage {
     return object || undefined;
   }
   
+  /** Exact name match first, then any shared catalog designation ("M15" ↔ "Great Pegasus Cluster (M15)") */
   async getCelestialObjectByName(name: string): Promise<CelestialObject | undefined> {
     const [object] = await db.select().from(celestialObjects).where(eq(celestialObjects.name, name));
-    return object || undefined;
+    if (object) return object;
+    return findMatchingObject(name, await db.select().from(celestialObjects));
   }
 
   async getAllCelestialObjects(): Promise<CelestialObject[]> {

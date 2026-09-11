@@ -13,12 +13,11 @@ function formatDateKey(date: Date) {
 }
 
 const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
-  const { weeks, monthPositions, totalYear } = useMemo(() => {
+  const { weeks, monthPositions, totalYear, year } = useMemo(() => {
     const today = new Date();
-    // Go back ~52 weeks (364 days)
-    const start = new Date(today);
-    start.setDate(start.getDate() - 363);
-    // Align to Sunday
+    const year = today.getFullYear();
+    // Show the current calendar year (Jan 1 → today), starting on the Sunday on or before Jan 1
+    const start = new Date(year, 0, 1);
     start.setDate(start.getDate() - start.getDay());
 
     const weeksArr: { date: Date; count: number; key: string }[][] = [];
@@ -31,7 +30,7 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
     while (cursor <= today) {
       const key = formatDateKey(cursor);
       const count = dateCountMap.get(key) || 0;
-      total += count;
+      if (cursor.getFullYear() === year) total += count;
 
       if (cursor.getDay() === 0 && currentWeek.length > 0) {
         weeksArr.push(currentWeek);
@@ -49,7 +48,7 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
     }
     if (currentWeek.length > 0) weeksArr.push(currentWeek);
 
-    return { weeks: weeksArr, monthPositions: monthPos, totalYear: total };
+    return { weeks: weeksArr, monthPositions: monthPos, totalYear: total, year };
   }, [dateCountMap]);
 
   const getCellStyle = (count: number): string => {
@@ -63,7 +62,7 @@ const ObservationCalendar = ({ dateCountMap }: ObservationCalendarProps) => {
     <div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm text-star-dim">
-          {totalYear} observation{totalYear !== 1 ? "s" : ""} in the last year
+          {totalYear} observation{totalYear !== 1 ? "s" : ""} in {year}
         </p>
       </div>
 
