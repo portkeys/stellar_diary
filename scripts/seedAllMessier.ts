@@ -12,6 +12,7 @@
 import { db } from "../server/db";
 import { celestialObjects } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import { extractMessierNumber } from "../shared/catalog";
 import { MESSIER_2MASS_IMAGES, TWOMASS_BASE_URL } from "../server/data/messier2mass";
 
 interface MessierObject {
@@ -151,13 +152,11 @@ async function seedAllMessier() {
     // Create the display name (e.g., "Crab Nebula (M1)")
     const displayName = obj.name === obj.messier ? obj.messier : `${obj.name} (${obj.messier})`;
 
-    // Check if object already exists (by Messier number in name)
+    // Check if object already exists, by Messier number only. Matching on the generic
+    // name (e.g. "Globular Cluster in Ophiuchus") wrongly skipped M14 because M9/M10/M12 share it.
     const existing = await db.select().from(celestialObjects);
-    const existingObj = existing.find(e =>
-      e.name.includes(`(${obj.messier})`) ||
-      e.name === obj.messier ||
-      e.name.toLowerCase().includes(obj.name.toLowerCase())
-    );
+    const messierNumber = parseInt(obj.messier.slice(1), 10);
+    const existingObj = existing.find(e => extractMessierNumber(e.name) === messierNumber);
 
     if (existingObj) {
       // Update existing object with 2MASS image if it doesn't have one or has a placeholder
